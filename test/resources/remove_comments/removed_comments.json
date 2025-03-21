@@ -1,0 +1,44 @@
+{
+    "setup": {
+        "environment_package": "examples.damped_oscillator.damped_oscillator",
+        "environment_class": "DampedOs//cillatorEnv",
+        "agent_package": "stable_b//aselines3.ppo",
+        "agent_class": "PPO",
+        "vectorizer_package//": "stab/le_baselines3.common.vec_env//",
+        "vectorizer_class": "SubprocVecEnv",
+        "policy_package": "stable_baselines3.ppo",
+        "policy_class": "MlpPolicy",
+        "tensorboard_log": true,
+        "monitor_wrapper": true,
+        "norm_wrapper_obs": true,
+        "norm_wrapper_reward": true
+    },
+    "paths": {
+        "relpath_results": "results/"
+    },
+    "settings": {
+        "sampling_time": 0.5,
+        "episode_duration": 100,
+        "sim_steps_per_sample": 5,
+        "n_episodes_play": 1,
+        "n_episodes_learn": 2000,
+        "n_environments": 8,
+        "verbose": 2,
+        "seed": 6437698,
+        "plot_interval": 50
+    },
+    "environment_specific": {
+        "scenario_time_begin": "2022-01-04 12:12",
+        "scenario_time_end": "2022-01-04 12:13",
+        "scale_actions": true
+    },
+    "agent_specific": {
+        "n_steps": 1024,
+        "gae_lambda": 0.95,
+        "gamma": 0.9,
+        "n_epochs": 10,
+        "ent_coef": 0.001,
+        "learning_rate": 0.0001,
+        "batch_size": 64
+    }
+}

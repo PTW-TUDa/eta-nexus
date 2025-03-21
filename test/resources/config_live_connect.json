@@ -1,0 +1,82 @@
+{
+    "system": [
+        {
+            "name": "CHP",
+            "servers": {"glt": {"url": "127.0.0.1:4840", "protocol": "opcua", "usr": "admin", "pwd": "0"}},
+            "nodes": [
+                {
+                    "name": "power_elek",
+                    "server": "glt",
+                    "opc_id": "ns=6;s=.Exchange.SytemCHP.PowerElek",
+                    "dtype": "float"
+                },
+                {
+                    "name": "operation",
+                    "server": "glt",
+                    "opc_id": "ns=6;s=.Exchange.SytemCHP.Operation",
+                    "dtype": "bool"
+                },
+                {
+                    "name": "opti_mode",
+                    "server": "glt",
+                    "opc_id": "ns=6;s=.Exchange.SytemCHP.OpRequest.Mode",
+                    "dtype": "bool"
+                },
+                {
+                    "name": "op_request",
+                    "server": "glt",
+                    "opc_id": "ns=6;s=.Exchange.SytemCHP.OpRequest.Value",
+                    "dtype": "bool"
+                },
+                {
+                    "name": "control_mode",
+                    "server": "glt",
+                    "opc_id": "ns=6;s=.Exchange.SytemCHP.Control.Mode",
+                    "dtype": "bool"
+                },
+                {
+                    "name": "control_value",
+                    "server": "glt",
+                    "opc_id": "ns=6;s=.Exchange.SytemCHP.Control.Value",
+                    "dtype": "bool"
+                },
+                {
+                    "name": "control_mode_opti",
+                    "server": "glt",
+                    "opc_id": "ns=6;s=.Exchange.SytemCHP.CHP.Control.Mode",
+                    "dtype": "sbyte"
+                },
+                {
+                    "name": "control_value_opti",
+                    "server": "glt",
+                    "opc_id": "ns=6;s=.Exchange.SytemCHP.CHP.Control.Value",
+                    "dtype": "float"
+                }
+            ],
+            "set_value": {
+                "name": "u",
+                "node": "control_value_opti",
+                "min": 0,
+                "max": 1,
+                "threshold": 0.5,
+                "add": 0,
+                "mult": 100
+            },
+            "activation_indicators": {"op_request": {"compare": "==", "value": true}},
+            "observe": ["power_elek", "operation", "control_value_opti"],
+            "actions": {
+                "activate": {"op_request": true, "control_mode_opti": 0},
+                "deactivate": {"op_request": false},
+                "init": {"opti_mode": true, "control_mode": true, "control_value": true},
+                "close": {
+                    "opti_mode": false,
+                    "op_request": false,
+                    "control_mode": false,
+                    "control_value": false,
+                    "control_mode_opti": 0,
+                    "control_value_opti": 0
+                }
+            }
+        }
+    ]
+}

@@ -1,0 +1,26 @@
+categories:
+  feature: New Features
+  breaking: Breaking Changes
+  bug: Bug Fixes
+  internal: Internal changes
+
+template: |
+  {% if categories %}
+  {% each categories %}
+  ### {{ title }} ({% if single_change %}1 change{% else %}{{ count }} changes{% end %})
+
+  {% each entries %}
+  {% if commit.trailers.Description %}
+  - {{ commit.trailers.Description }}\
+  {% else %}
+  - {{ title }}\
+  {% end %}
+  {% if merge_request %} ({{ merge_request.reference }}){% end %}\
+  {% if commit.trailers.Closes %} ({{ commit.trailers.Closes }}){% end %}
+
+  {% end %}
+
+  {% end %}
+  {% else %}
+  No changes.
+  {% end %}
