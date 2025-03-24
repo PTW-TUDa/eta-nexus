@@ -151,8 +151,7 @@ test3.11_updated_deps:
 
 # Publish local gitlab pages
 deploy-pages:
-  # extends: .deploy
-  stage: deploy
+  extends: .deploy
   script:
     - sphinx-build --version && sphinx-apidoc --version
     - rm -rf docs/_build docs/_stubs public/html/*
