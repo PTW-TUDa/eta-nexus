@@ -159,7 +159,7 @@ deploy-pages:
     - make html
     - mv _build/html ../public
   artifacts:
-    name: "eta_connect-docs-$CI_COMMIT_REF_NAME"
+    name: "eta-connect_$CI_COMMIT_TAG"
     paths:
       - public/
   pages: true
