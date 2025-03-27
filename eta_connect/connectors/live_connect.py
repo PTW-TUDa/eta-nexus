@@ -14,10 +14,10 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from eta_connect import json_import
 from eta_connect.connectors import name_map_from_node_sequence
 from eta_connect.connectors.base_classes import Connection
 from eta_connect.connectors.node import Node
+from eta_connect.util import load_config
 
 if TYPE_CHECKING:
     import types
@@ -282,7 +282,7 @@ class LiveConnect(AbstractContextManager):
         return vals, bool(missing_keys)
 
     @classmethod
-    def from_json(
+    def from_config(
         cls,
         files: Path | Sequence[Path],
         usr: str | None = None,
@@ -303,19 +303,18 @@ class LiveConnect(AbstractContextManager):
         :return: LiveConnect instance as specified by the JSON file.
         """
         files = [files] if not isinstance(files, Sequence) else files
-
-        config: dict[str, list[Any]] = {"system": []}
+        main_config: dict[str, list[Any]] = {"system": []}
         for file_path in files:
-            file = pathlib.Path(file_path) if not isinstance(file_path, pathlib.Path) else file_path
-            result = json_import(file)
-            if not isinstance(result, dict):
-                raise TypeError(f"JSON file {file} must define a dictionary of options.")
-            if "system" in result:
-                config["system"].extend(result["system"])
+            file = pathlib.Path(file_path)
+            config = load_config(file)
+            if not isinstance(config, dict):
+                raise ValueError("Config file must define a dictionary of options.")
+            if "system" in config:
+                main_config["system"].extend(config["system"])
             else:
-                config["system"].append(result)
+                main_config["system"].append(config)
 
-        return cls.from_dict(usr=usr, pwd=pwd, step_size=step_size, max_error_count=max_error_count, **config)
+        return cls.from_dict(**main_config, usr=usr, pwd=pwd, step_size=step_size, max_error_count=max_error_count)
 
     @classmethod
     def from_dict(

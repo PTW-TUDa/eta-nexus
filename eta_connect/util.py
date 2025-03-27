@@ -34,7 +34,7 @@ if TYPE_CHECKING:
     import types
     from collections.abc import Generator
     from tempfile import _TemporaryFileWrapper
-    from typing import Any
+    from typing import Any, Callable
     from urllib.parse import ParseResult
 
     from typing_extensions import Self
@@ -223,6 +223,35 @@ def yaml_import(path: Path) -> dict[str, Any]:
         raise
 
     return result
+
+
+def load_config(file: Path) -> dict[str, Any]:
+    """Load configuration from JSON, TOML, or YAML file.
+    The read file is expected to contain a dictionary of configuration options.
+
+    :param file: Path to the configuration file.
+    :return: Dictionary of configuration options.
+    """
+    possible_extensions: dict[str, Callable] = {
+        ".json": json_import,
+        ".toml": toml_import,
+        ".yml": yaml_import,
+        ".yaml": yaml_import,
+    }
+    file_path = pathlib.Path(file)
+
+    for extension, import_method in possible_extensions.items():
+        _file_path: pathlib.Path = file_path.with_suffix(extension)
+        if _file_path.exists():
+            config = import_method(_file_path)
+            break
+    else:
+        raise FileNotFoundError(f"Config file not found: {file}")
+
+    if not isinstance(config, dict):
+        raise TypeError(f"Config file {file} must define a dictionary of options.")
+
+    return config
 
 
 def url_parse(url: str | None, scheme: str = "") -> tuple[ParseResult, str | None, str | None]:

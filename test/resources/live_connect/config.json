@@ -1,7 +1,7 @@
 {
-    "system": [
-        {
-            "name": "CHP",
+    "system": [  // Test Comment 1
+        {  // Test Comment 2
+            "name": "CHP",  // Test Comment 3
             "servers": {"glt": {"url": "127.0.0.1:4840", "protocol": "opcua", "usr": "admin", "pwd": "0"}},
             "nodes": [
                 {

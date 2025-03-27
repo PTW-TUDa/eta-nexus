@@ -1,4 +1,3 @@
-import json
 import logging
 import pathlib
 from datetime import datetime, timezone
@@ -10,10 +9,20 @@ from eta_connect.util import (
     SelfsignedKeyCertPair,
     dict_search,
     get_logger,
-    json_import,
+    load_config,
     log_add_filehandler,
     round_timestamp,
 )
+
+
+def test_from_config(config_live_connect):
+    file = pathlib.Path(config_live_connect["file"])
+
+    config_json = load_config(file.with_suffix(".json"))
+    config_toml = load_config(file.with_suffix(".toml"))
+    config_yaml = load_config(file.with_suffix(".yaml"))
+
+    assert config_json == config_toml == config_yaml
 
 
 def test_log_file_handler():
@@ -97,13 +106,6 @@ def test_dict_search():
 def test_dict_search_fail():
     with pytest.raises(ValueError, match=r".*not specified in specified dictionary"):
         dict_search({}, "value")
-
-
-def test_remove_comments_json():
-    with pathlib.Path(pathlib.Path(__file__).parent / "resources/remove_comments/removed_comments.json").open() as f:
-        control = json.load(f)
-
-    assert json_import(pathlib.Path(__file__).parent / "resources/remove_comments/with_comments.json") == control
 
 
 def test_selfsignedkeycertpair_empty():

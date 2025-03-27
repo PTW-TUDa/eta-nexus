@@ -1,0 +1,90 @@
+[[system]]
+name = "CHP"
+observe = [ "power_elek", "operation", "control_value_opti" ]
+
+[system.servers.glt]
+url = "127.0.0.1:4840"
+protocol = "opcua"
+usr = "admin"
+pwd = "0"
+
+[[system.nodes]]
+name = "power_elek"
+server = "glt"
+opc_id = "ns=6;s=.Exchange.SytemCHP.PowerElek"
+dtype = "float"
+
+[[system.nodes]]
+name = "operation"
+server = "glt"
+opc_id = "ns=6;s=.Exchange.SytemCHP.Operation"
+dtype = "bool"
+
+[[system.nodes]]
+name = "opti_mode"
+server = "glt"
+opc_id = "ns=6;s=.Exchange.SytemCHP.OpRequest.Mode"
+dtype = "bool"
+
+[[system.nodes]]
+name = "op_request"
+server = "glt"
+opc_id = "ns=6;s=.Exchange.SytemCHP.OpRequest.Value"
+dtype = "bool"
+
+[[system.nodes]]
+name = "control_mode"
+server = "glt"
+opc_id = "ns=6;s=.Exchange.SytemCHP.Control.Mode"
+dtype = "bool"
+
+[[system.nodes]]
+name = "control_value"
+server = "glt"
+opc_id = "ns=6;s=.Exchange.SytemCHP.Control.Value"
+dtype = "bool"
+
+[[system.nodes]]
+name = "control_mode_opti"
+server = "glt"
+opc_id = "ns=6;s=.Exchange.SytemCHP.CHP.Control.Mode"
+dtype = "sbyte"
+
+[[system.nodes]]
+name = "control_value_opti"
+server = "glt"
+opc_id = "ns=6;s=.Exchange.SytemCHP.CHP.Control.Value"
+dtype = "float"
+
+[system.set_value]
+name = "u"
+node = "control_value_opti"
+min = 0
+max = 1
+threshold = 0.5
+add = 0
+mult = 100
+
+[system.activation_indicators.op_request]
+compare = "=="
+value = true
+
+[system.actions.activate]
+op_request = true
+control_mode_opti = 0
+
+[system.actions.deactivate]
+op_request = false
+
+[system.actions.init]
+opti_mode = true
+control_mode = true
+control_value = true
+
+[system.actions.close]
+opti_mode = false
+op_request = false
+control_mode = false
+control_value = false
+control_mode_opti = 0
+control_value_opti = 0
