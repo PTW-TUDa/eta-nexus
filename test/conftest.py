@@ -68,12 +68,6 @@ def config_eneffco():
 
 
 @pytest.fixture(scope="session")
-def config_cumulocity():
-    """Test configuration for Cumulocity."""
-    return {"user": "", "pw": "", "url": "", "tenant": ""}
-
-
-@pytest.fixture(scope="session")
 def config_entsoe():
     """Test configuration for entso-e connector"""
     return {"path": pathlib.Path(__file__).parent / "resources/entsoe/"}
