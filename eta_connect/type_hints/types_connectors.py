@@ -5,7 +5,6 @@ from typing import TypeVar, Union
 
 from eta_connect.connectors.node import (
     Node,
-    NodeCumulocity,
     NodeEmonio,
     NodeEnEffCo,
     NodeEntsoE,
@@ -25,7 +24,6 @@ AnyNode = Union[
     NodeOpcUa,
     NodeEnEffCo,
     NodeEntsoE,
-    NodeCumulocity,
     NodeWetterdienstObservation,
     NodeWetterdienstPrediction,
     NodeEmonio,

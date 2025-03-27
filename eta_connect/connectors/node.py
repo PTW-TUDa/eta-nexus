@@ -46,7 +46,6 @@ default_schemes = {
     "eneffco": "https",
     "local": "https",
     "entsoe": "https",
-    "cumulocity": "https",
     "wetterdienst_observation": "https",
     "wetterdienst_prediction": "https",
     "forecast_solar": "https",
@@ -752,60 +751,6 @@ class NodeEntsoE(Node, protocol="entsoe"):
         try:
             return cls(
                 name, url, "entsoe", usr=usr, pwd=pwd, endpoint=endpoint, bidding_zone=bidding_zone, interval=interval
-            )
-        except (TypeError, AttributeError) as e:
-            raise TypeError(f"Could not convert all types for node {name}.") from e
-
-
-class NodeCumulocity(Node, protocol="cumulocity"):
-    """Node for the Cumulocity API."""
-
-    # parameters for reading/writing from/to cumulocity nodes
-    device_id: str = field(kw_only=True, converter=str)
-    measurement: str = field(kw_only=True, converter=str)
-    fragment: str = field(kw_only=True, converter=str, default="")
-
-    def __attrs_post_init__(self) -> None:
-        """Ensure username and password are processed correctly."""
-        super().__attrs_post_init__()
-
-    @classmethod
-    def _from_dict(cls, dikt: dict[str, Any]) -> NodeCumulocity:
-        """Create a Cumulocity node from a dictionary of node information.
-
-        :param dikt: dictionary with node information.
-        :return: NodeCumulocity object.
-        """
-        name, pwd, url, usr, interval = cls._read_dict_info(dikt)
-        try:
-            device_id = cls._try_dict_get_any(dikt, "id", "device_id")
-        except KeyError as e:
-            raise KeyError(
-                f"The required parameter for the node configuration was not found (see log). The node {name} could "
-                f"not load."
-            ) from e
-        try:
-            measurement = cls._try_dict_get_any(dikt, "measurement", "Measurement")
-        except KeyError as e:
-            raise KeyError(
-                f"The required parameter for the node configuration was not found (see log). The node {name} could "
-                f"not load."
-            ) from e
-
-        try:
-            fragment = cls._try_dict_get_any(dikt, "fragment", "Fragment")
-        except KeyError:
-            fragment = ""
-        try:
-            return cls(
-                name,
-                url,
-                "cumulocity",
-                usr=usr,
-                pwd=pwd,
-                device_id=device_id,
-                measurement=measurement,
-                fragment=fragment,
             )
         except (TypeError, AttributeError) as e:
             raise TypeError(f"Could not convert all types for node {name}.") from e
