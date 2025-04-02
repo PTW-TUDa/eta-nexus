@@ -16,7 +16,7 @@ dynamic = ["classifiers", "dependencies"]
 [project.urls]
 homepage = "https://www.ptw.tu-darmstadt.de"
 repository = "https://git.ptw.maschinenbau.tu-darmstadt.de/eta-fabrik/public/eta-connect"
-documentation = "https://eta-utility.readthedocs.io/"  # TODO: Change to the correct URL
+documentation = "https://git-pages.ptw.maschinenbau.tu-darmstadt.de/eta-fabrik/public/eta-connect/"  # TODO: Change to the correct URL
 issues = "https://git.ptw.maschinenbau.tu-darmstadt.de/eta-fabrik/public/eta-connect/-/issues"
 
 [tool.poetry]
