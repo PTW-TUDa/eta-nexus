@@ -192,3 +192,15 @@ deploy-local:
 #     paths:
 #       - dist/
 #       - eta_connect.egg-info/
+
+# Create readthedocs documentation
+
+deploy-readthedocs:
+  extends: .deploy
+  needs:
+    - deploy-local
+    - pages
+  before_script: []
+  script:
+    - echo $CI_COMMIT_TAG
+    - curl -X POST -d "branches=main" -d "token=$READTHEDOCS_TOKEN" https://readthedocs.org/api/v2/webhook/eta-connect/294118/
