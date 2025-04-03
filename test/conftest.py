@@ -63,13 +63,13 @@ def config_host_ip():
 
 @pytest.fixture(scope="session")
 def config_eneffco():
-    """Test configuration for EnEffCo."""
+    """Test configuration for Eneffco."""
     return {"user": "", "pw": "", "url": "", "postman_token": ""}
 
 
 @pytest.fixture(scope="session")
 def config_entsoe():
-    """Test configuration for entso-e connector"""
+    """Test configuration for entso-e connection"""
     return {"path": pathlib.Path(__file__).parent / "resources/entsoe/"}
 
 

@@ -25,18 +25,18 @@ Please read the development guide before starting development on *eta_connect*: 
 .. toctree::
     :maxdepth: 1
     :hidden:
-    :caption: Connectors
+    :caption: connections
 
-    /connectors/introduction
-    /connectors/Modbus_connection
-    /connectors/emonio
-    /connectors/OpcUa_connection
-    /connectors/EnEffco_Connection
-    /connectors/ENTSO-E_Connection
-    /connectors/forecast_solar_connection
-    /connectors/wetterdienst_connection
-    /connectors/sub_handlers
-    /connectors/live_connect
+    /connections/introduction
+    /connections/modbus
+    /connections/emonio
+    /connections/opcua
+    /connections/eneffco
+    /connections/entsoe
+    /connections/forecastsolar
+    /connections/wetterdienst
+    /connections/sub_handlers
+    /connections/live_connect
 
 .. toctree::
     :maxdepth: 1

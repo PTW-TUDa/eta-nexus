@@ -1,8 +1,8 @@
 import pytest
 
-from eta_connect.connectors import Node
-from eta_connect.connectors.util import bitarray_to_registers, encode_bits
+from eta_connect.nodes import Node
 from eta_connect.servers import ModbusServer
+from eta_connect.util.modbus_utils import bitarray_to_registers, encode_bits
 
 nodes = (
     {

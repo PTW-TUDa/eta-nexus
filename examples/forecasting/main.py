@@ -12,18 +12,18 @@ import onnxruntime
 import pandas as pd
 
 from eta_connect import get_logger
-from eta_connect.connectors import (
-    DFSubHandler,
-    OpcUaConnection,
-    name_map_from_node_sequence,
+from eta_connect.connections import (
+    OpcuaConnection,
 )
-from eta_connect.connectors.node import NodeOpcUa
-from eta_connect.servers import OpcUaServer
+from eta_connect.nodes import OpcuaNode
+from eta_connect.nodes.node_utils import name_map_from_node_sequence
+from eta_connect.servers import OpcuaServer
+from eta_connect.subhandlers import DFSubHandler
 
 if TYPE_CHECKING:
     from typing import Final
 
-    from eta_connect.type_hints import Path, TimeStep
+    from eta_connect.util.type_annotations import Path, TimeStep
 
 log = get_logger(level=1)
 
@@ -84,7 +84,7 @@ def forecasting() -> None:
     )
 
     # Create input connections
-    connection = OpcUaConnection.from_ids(
+    connection = OpcuaConnection.from_ids(
         Config.NODES, f"opc.tcp://{Config.OPC_SERVER['ip']}:{Config.OPC_SERVER['port']}"
     )
     sub_handler = DFSubHandler(write_interval=Config.INTERVAL, size_limit=100, auto_fillna=False)
@@ -117,8 +117,8 @@ async def local_server() -> None:
     current_line = 0
 
     # initialize the server
-    nodes: list[NodeOpcUa] = [
-        NodeOpcUa(
+    nodes: list[OpcuaNode] = [
+        OpcuaNode(
             name=name,
             url=f"opc.tcp://{Config.OPC_SERVER['ip']}:{Config.OPC_SERVER['port']}",
             protocol="opcua",
@@ -127,9 +127,9 @@ async def local_server() -> None:
         )
         for name in data.columns
     ]
-    server = OpcUaServer(namespace=2, ip=str(Config.OPC_SERVER["ip"]), port=int(Config.OPC_SERVER["port"]))
+    server = OpcuaServer(namespace=2, ip=str(Config.OPC_SERVER["ip"]), port=int(Config.OPC_SERVER["port"]))
     server.create_nodes(nodes)
-    node_map: dict[str, NodeOpcUa] = name_map_from_node_sequence(nodes)  # type: ignore
+    node_map: dict[str, OpcuaNode] = name_map_from_node_sequence(nodes)
     while True:
         server.write({node_map[name]: value for name, value in data.iloc[current_line].items()})
         current_line = current_line + 1 if current_line < len(data) else 0
@@ -218,13 +218,13 @@ async def inference_loop(
 
     model_input_list: deque = deque(maxlen=maxlen)
 
-    output_node = NodeOpcUa(
+    output_node = OpcuaNode(
         name="EMAG-GT-forecast-opcua",
         url="opc.tcp://localhost",
         protocol="opcua",
         opc_id=publish_name,
     )
-    with OpcUaServer(namespace=6, ip="localhost") as output_server:
+    with OpcuaServer(namespace=6, ip="localhost") as output_server:
         output_server.create_nodes({output_node})
 
         while True:
