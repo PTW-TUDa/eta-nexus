@@ -3,7 +3,7 @@
 # Run build_and_push_docker to build and push all images
 
 # Pass the python version as a build argument
-ARG PYTHON_VERSION=3.9
+ARG PYTHON_VERSION=3.10
 ARG POETRY_VERSION=2.1.1
 
 FROM python:${PYTHON_VERSION}-slim-bullseye
@@ -35,5 +35,5 @@ COPY eta_connect ${APP_PATH}/eta_connect
 # Install poetry and dependencies
 RUN curl -sSL https://install.python-poetry.org | POETRY_VERSION=${POETRY_VERSION} python3 - && \
     # Remove torch and add torch+cpu because nvidia packages (cuda) are not needed
-    poetry sync -E develop && \
+    poetry sync && \
     rm -rf ${APP_PATH}/* ${POETRY_CACHE_DIR}/*

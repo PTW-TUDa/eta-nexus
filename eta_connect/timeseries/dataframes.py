@@ -114,7 +114,7 @@ def df_from_csv(
         delimiter=delimiter,
         index_col=0,
         parse_dates=parse_dates,
-        converters={y: converter for y in range(1, length)},
+        converters=dict.fromkeys(range(1, length), converter),
     )
 
     if conversion_string:

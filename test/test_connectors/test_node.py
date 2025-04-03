@@ -82,13 +82,13 @@ fail_nodes = (
             "name": "Serv.NodeName",
             "url": "",
             "protocol": "wetterdienst_observation",
-            "parameter": "temperature_air_mean_200",
+            "parameter": "temperature_air_mean_2m",
             "station_id": "0",
             "interval": "60",
         },
         re.escape(
-            "Parameter TEMPERATURE_AIR_MEAN_200 is not valid for the given resolution. "
-            "Valid resolutions for parameter TEMPERATURE_AIR_MEAN_200 are: "
+            "Parameter TEMPERATURE_AIR_MEAN_2M is not valid for the given resolution. "
+            "Valid resolutions for parameter TEMPERATURE_AIR_MEAN_2M are: "
             "['MINUTE_10', 'HOURLY', 'SUBDAILY', 'DAILY', 'MONTHLY', 'ANNUAL']"
         ),
     ),
@@ -97,7 +97,7 @@ fail_nodes = (
             "name": "Serv.NodeName",
             "url": "",
             "protocol": "wetterdienst_observation",
-            "parameter": "temperature_air_mean_200",
+            "parameter": "temperature_air_mean_2m",
             "station_id": "0",
             "interval": "200",
         },
@@ -503,13 +503,13 @@ nodes = (
             "name": "Serv.NodeName",
             "url": "https://some_url.de/path",
             "protocol": "wetterdienst_observation",
-            "parameter": "temperature_air_mean_200",
+            "parameter": "temperature_air_mean_2m",
             "interval": "3600",
             "station_id": "00917",
         },
         {
             "url": "https://opendata.dwd.de",
-            "parameter": "TEMPERATURE_AIR_MEAN_200",
+            "parameter": "TEMPERATURE_AIR_MEAN_2M",
             "interval": 3600,
             "station_id": "00917",
         },
@@ -519,13 +519,13 @@ nodes = (
             "name": "Serv.NodeName",
             "url": "https://some_url.de/path",
             "protocol": "wetterdienst_prediction",
-            "parameter": "temperature_air_mean_200",
+            "parameter": "temperature_air_mean_2m",
             "mosmix_type": "SMALL",
             "station_id": "K2596",
         },
         {
             "url": "https://opendata.dwd.de",
-            "parameter": "TEMPERATURE_AIR_MEAN_200",
+            "parameter": "TEMPERATURE_AIR_MEAN_2M",
             "mosmix_type": "SMALL",
             "station_id": "K2596",
         },

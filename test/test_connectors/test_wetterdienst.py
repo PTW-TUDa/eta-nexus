@@ -17,7 +17,7 @@ pred_nodes = [
         "pred_node2",
         "https://opendata.dwd.de",
         "wetterdienst_prediction",
-        parameter="temperature_air_mean_200",
+        parameter="temperature_air_mean_2m",
         mosmix_type="LARGE",
         latlon=(49.86376654168076, 8.681726558050716),
         number_of_stations=3,
@@ -29,7 +29,7 @@ obsv_nodes = [
         "obsv_node1",
         "https://opendata.dwd.de",
         "wetterdienst_observation",
-        parameter="temperature_air_mean_200",
+        parameter="temperature_air_mean_2m",
         station_id="00917",  # Darmstadt observation ID
         interval=600,
     ),
@@ -55,6 +55,7 @@ obsv_nodes = [
 
 class TestWetterdienstConnection:
     @pytest.mark.xfail(reason="The Wetterdienst API is unstable.")
+    @pytest.mark.timeout(60)
     def test_observation(self):
         connector = WetterdienstConnection.from_node(obsv_nodes)
 
@@ -66,6 +67,7 @@ class TestWetterdienstConnection:
         assert result.shape == (16, 5)
 
     @pytest.mark.xfail(reason="The Wetterdienst API is unstable.")
+    @pytest.mark.timeout(60)
     def test_prediction(self):
         connector = WetterdienstConnection.from_node(pred_nodes)
 
