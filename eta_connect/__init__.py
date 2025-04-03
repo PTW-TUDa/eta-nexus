@@ -7,7 +7,6 @@ from .util import (
     PEMKeyCertPair as PEMKeyCertPair,
     SelfsignedKeyCertPair as SelfsignedKeyCertPair,
     Suppressor as Suppressor,
-    deep_mapping_update as deep_mapping_update,
     dict_get_any as dict_get_any,
     dict_pop_any as dict_pop_any,
     dict_search as dict_search,

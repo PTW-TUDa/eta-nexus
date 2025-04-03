@@ -4,10 +4,7 @@ handles data using pandas dataframe objects.
 
 from __future__ import annotations
 
-import csv
 import operator as op
-import pathlib
-import re
 import warnings
 from datetime import datetime, timedelta
 from logging import getLogger
@@ -17,111 +14,11 @@ import numpy as np
 import pandas as pd
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
     from typing import Literal
 
-    from eta_connect.type_hints import FillMethod, Path, TimeStep
+    from eta_connect.util.type_annotations import FillMethod, TimeStep
 
 log = getLogger(__name__)
-
-
-def df_from_csv(
-    path: Path,
-    *,
-    delimiter: str = ";",
-    infer_datetime_from: str | Sequence[int] | tuple[int, int] = "dates",
-    time_conversion_str: str = "%Y-%m-%d %H:%M",
-) -> pd.DataFrame:
-    """Take data from a csv file, process it and return a Timeseries (pandas Data Frame) object.
-
-    Open and read the .csv file, perform error checks and ensure that valid float values are obtained. This
-    assumes that the first column is always the date and time column and provides multiple methods to convert
-    this column. It also assumes that the first row is the header row.
-    The header row is converted to lower case and spaces are converted to _. If header values contain special
-    characters, everything starting from the first special character is discarded.
-
-    :param path: Path to the .csv file.
-    :param delimiter: Delimiter used between csv fields.
-    :param infer_datetime_from: Specify how date and time values should be inferred. This can be 'dates' or 'string'
-                                or a tuple/list with two values.
-
-                                * If 'dates' is specified, pandas will be used to automatically infer the datetime
-                                  format from the file.
-                                * If 'string' is specified, the parameter 'time_conversion_str' must specify the
-                                  string (in python strptime format) to convert datetime values.
-                                * If a tuple/list of two values is given, the time format specification (according to
-                                  python strptime format) will be read from the specified field in the .csv
-                                  file ('row', 'column').
-
-    :param time_conversion_str: Time conversion string according to the python (strptime) format.
-    """
-    path = pathlib.Path(path) if not isinstance(path, pathlib.Path) else path
-
-    conversion_string = None
-    infer_datetime_format = False
-    parse_dates = False
-    if isinstance(infer_datetime_from, str):
-        infer_datetime_format = infer_datetime_from == "dates"
-        conversion_string = time_conversion_str if infer_datetime_from == "string" else None
-    elif isinstance(infer_datetime_from, (list, tuple)):
-        if not len(infer_datetime_from) == 2:
-            raise ValueError(
-                f"Field for date format must be specified in the format ['row', 'col']. Got {infer_datetime_from}"
-            )
-
-    else:
-        raise ValueError(
-            "infer_datetime_from must be one of 'dates', 'string', or a tuple of ('row', 'col'), "
-            f"Got: {infer_datetime_from}"
-        )
-
-    # Read names from header and format them such that they can be used easily as dataframe indices.
-    # If required by infer_datetime_from also read time format from the file.
-    with path.open("r") as f:
-        reader = csv.reader(f, delimiter=delimiter)
-        try:
-            first_line = next(reader)
-            if isinstance(infer_datetime_from, (list, tuple)):
-                if infer_datetime_from[0] > 0:
-                    for _ in range(1, infer_datetime_from[0]):
-                        conversion_line = next(reader)
-                else:
-                    conversion_line = first_line
-                conversion_string = "%" + conversion_line[infer_datetime_from[1]].split("%", 1)[1].strip()
-        except StopIteration:
-            raise EOFError(
-                f"The CSV file does not contain the specified date format field {infer_datetime_from}. \n"
-                f"File path: {path}"
-            ) from None
-
-        # Find number of fields, names of fields and a conversion string for time
-        length = len(first_line)
-        splitter = re.compile("[^A-Za-z0-9 _-]")
-        names = [splitter.split(s.strip(), 1)[0].lower().strip().replace(" ", "_") for s in first_line]
-
-    # Load the CSV file
-    if infer_datetime_format:
-        parse_dates = True
-
-    def converter(val: str) -> float:
-        val = str(val).strip().replace(" ", "").replace(",", ".")
-        return float(val) if len(val) > 0 else float("nan")
-
-    data = pd.read_csv(
-        path,
-        header=0,
-        names=names,
-        delimiter=delimiter,
-        index_col=0,
-        parse_dates=parse_dates,
-        converters=dict.fromkeys(range(1, length), converter),
-    )
-
-    if conversion_string:
-        data.index = pd.to_datetime(data.index, format=conversion_string)
-
-    log.info(f"Loaded data from csv file: {path}")
-    return data
 
 
 def find_time_slice(
