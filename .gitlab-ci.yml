@@ -34,14 +34,15 @@ default:
     - python
     - docker
   interruptible: true
-  image: ${REGISTRY_IMAGE}:py3.9
+  image: ${REGISTRY_IMAGE}:py3.10
   before_script:
     - python --version
     - rm -rf dist doc eta_connect.egg-info build
     - rm -rf docs/_build docs/_stubs
     - ls -la
     # Install development dependencies
-    - poetry sync -E develop
+    - poetry sync
+
   # Cache gets invalidated when poetry.lock changes
   cache:
     key: "global-deps-$(checksum poetry.lock)"
@@ -125,23 +126,34 @@ linkcheck-docs:
         path: coverage.xml
 
 # This job has test coverage report
-test3.9:
+test3.10:
   extends: .coverage
 
-test3.10:
-  extends: .test
-  image: ${REGISTRY_IMAGE}:py3.10
 
 test3.11:
   extends: .test
   image: ${REGISTRY_IMAGE}:py3.11
 
-test3.11_updated_deps:
+test3.12:
   extends: .test
-  image: ${REGISTRY_IMAGE}:py3.11
-  script:
-    - poetry update
-    - pytest --cov --cov-report term --junitxml=./junit.xml
+  image: ${REGISTRY_IMAGE}:py3.12
+
+# test3.12_updated_deps:
+#   extends: .test
+#   image: ${REGISTRY_IMAGE}:py3.12
+#   needs:
+#     - test3.12
+#   cache: []
+#   script:
+#     - cp poetry.lock poetry.lock.bak  # Backup the lockfile
+#     - poetry update
+#     - |
+#       if ! cmp -s poetry.lock poetry.lock.bak; then
+#         echo "Dependencies were updated! poetry.lock has changed."
+#         pytest --cov --cov-report term --junitxml=./junit.xml
+#       else
+#         echo "No dependencies changed. Skipping tests."
+#       fi
 
 
 .deploy:

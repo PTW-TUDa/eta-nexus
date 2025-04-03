@@ -683,7 +683,7 @@ class Suppressor(io.TextIOBase):
 
     def __enter__(self) -> Self:
         self.stderr = sys.stderr
-        sys.stderr = self  # type: ignore
+        sys.stderr = self
         return self
 
     def __exit__(

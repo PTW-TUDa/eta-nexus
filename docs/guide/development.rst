@@ -89,17 +89,14 @@ After this, navigate to the root directory **eta-connect**
 
    $ cd eta-connect
 
-\.. and install the project via poetry with the
-extra *develop* . This includes all requirements plus everything required for development
-and continuous integration checks:
+\.. and install the project via poetry. This includes main and development dependencies:
 
 .. code-block:: console
 
-   $ poetry sync --extras develop
+   $ poetry sync
 
 .. note::
     Updating the project dependencies is done with the same command.
-
 
 We use pre-commit to check code before committing. Therefore, after the installation completes,
 please install pre-commit before performing the first commits to the repository.
