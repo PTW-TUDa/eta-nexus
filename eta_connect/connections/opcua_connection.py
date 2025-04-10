@@ -28,7 +28,6 @@ from asyncua.crypto.security_policies import SecurityPolicyBasic256Sha256
 # Synchronous imports
 from asyncua.sync import Client, Subscription
 from asyncua.ua import SecurityPolicy, uaerrors
-from typing_extensions import deprecated
 
 from eta_connect import KeyCertPair, Suppressor
 from eta_connect.connections.connection_utils import IntervalChecker, RetryWaiter
@@ -39,8 +38,6 @@ if TYPE_CHECKING:
     from typing import Any
 
     # Sync import
-    from asyncua.sync import SyncNode as SyncOpcNode
-
     # Async import
     # TODO: add async import: from asyncua import Node as asyncSyncOpcNode
     # https://git.ptw.maschinenbau.tu-darmstadt.de/eta-fabrik/public/eta-utility/-/issues/270
@@ -184,93 +181,6 @@ class OpcuaConnection(Connection[OpcuaNode], protocol="opcua"):
                     opcua_variable_type = opcua_variable.read_data_type_as_variant_type()
                     value = node.dtype(values[node]) if node.dtype is not None else values[node]
                     opcua_variable.write_value(ua.DataValue(ua.Variant(value, opcua_variable_type)))
-                except uaerrors.BadNodeIdUnknown as e:
-                    raise ConnectionError(
-                        f"The node id ({node.opc_id}) refers to a node that does not exist in the server address space "
-                        f"{self.url}. (BadNodeIdUnknown)"
-                    ) from e
-                except RuntimeError as e:
-                    raise ConnectionError(str(e)) from e
-
-    @deprecated("This functionality is deprecated and will be removed in the future.")
-    def create_nodes(self, nodes: Nodes[OpcuaNode]) -> None:
-        """Create nodes on the server from a list of nodes. This will try to create the entire node path.
-
-        :param nodes: List or set of nodes to create.
-        :raises ConnectionError: When an error occurs during node creation.
-        """
-
-        def create_object(parent: SyncOpcNode, child: OpcuaNode) -> SyncOpcNode:
-            children: list[SyncOpcNode] = asyncua.sync._to_sync(parent.tloop, parent.get_children())
-            for obj in children:
-                ident = obj.nodeid.Identifier
-                ident = ident.strip() if isinstance(ident, str) else ident
-                if child.opc_path_str == ident:
-                    return obj
-            return asyncua.sync._to_sync(parent.tloop, parent.add_object(child.opc_id, child.opc_name))
-
-        _nodes = self._validate_nodes(nodes)
-
-        with self._connection():
-            for node in _nodes:
-                try:
-                    if len(node.opc_path) == 0:
-                        last_obj = asyncua.sync._to_sync(
-                            self.connection.tloop, self.connection.aio_obj.get_objects_node()
-                        )
-                    else:
-                        sync_node = asyncua.sync._to_sync(
-                            self.connection.tloop, self.connection.aio_obj.get_objects_node()
-                        )
-                        last_obj = create_object(sync_node, node.opc_path[0])
-
-                    for key in range(1, len(node.opc_path)):
-                        last_obj = create_object(last_obj, node.opc_path[key])
-
-                    init_val: Any
-                    if not hasattr(node, "dtype"):
-                        init_val = 0.0
-                    elif node.dtype is int:
-                        init_val = 0
-                    elif node.dtype is bool:
-                        init_val = False
-                    elif node.dtype is str:
-                        init_val = ""
-                    else:
-                        init_val = 0.0
-
-                    last_obj.add_variable(node.opc_id, node.opc_name, init_val)
-                    log.debug(f"OPC UA Node created: {node.opc_id}")
-                except uaerrors.BadNodeIdExists:
-                    log.warning(f"Node with NodeId : {node.opc_id} could not be created. It already exists.")
-                except RuntimeError as e:
-                    raise ConnectionError(str(e)) from e
-
-    @deprecated("This functionality is deprecated and will be removed in the future.")
-    def delete_nodes(self, nodes: Nodes[OpcuaNode]) -> None:
-        """Delete the given nodes and their parents (if the parents do not have other children).
-
-        :param nodes: List or set of nodes to be deleted.
-        :raises ConnectionError: If deletion of nodes fails.
-        """
-
-        def delete_node_parents(node: SyncOpcNode, depth: int = 20) -> None:
-            parents = node.get_references(direction=ua.BrowseDirection.Inverse)
-            if not node.get_children():
-                node.delete(delete_references=True)
-                log.info(f"Deleted Node {node.nodeid} from server {self.url}.")
-            else:
-                log.info(f"Node {node.nodeid} on server {self.url} has remaining children and was not deleted.")
-            for parent in parents:
-                if depth > 0:
-                    delete_node_parents(self.connection.get_node(parent.NodeId), depth=depth - 1)
-
-        _nodes = self._validate_nodes(nodes)
-
-        with self._connection():
-            for node in _nodes:
-                try:
-                    delete_node_parents(self.connection.get_node(node.opc_id))
                 except uaerrors.BadNodeIdUnknown as e:
                     raise ConnectionError(
                         f"The node id ({node.opc_id}) refers to a node that does not exist in the server address space "

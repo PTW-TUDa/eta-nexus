@@ -24,7 +24,7 @@ Path = Union[str, PathLike]
 Number = Union[float, int, np.floating, np.signedinteger, np.unsignedinteger]
 TimeStep = Union[int, float, datetime.timedelta]
 
-FillMethod = Literal["ffill", "fillna", "bfill", "interpolate", "asfreq"]
+FillMethod = Literal["ffill", "bfill", "interpolate", "asfreq"]
 
 PrivateKey = Union[
     dh.DHPrivateKey,

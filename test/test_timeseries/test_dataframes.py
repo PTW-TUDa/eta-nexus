@@ -69,10 +69,6 @@ class TestResample:
         msg = f"Index has non-unique values. Dropping duplicates: {[duplicate_df.index[0]]}"
         assert msg in caplog.text
 
-    def test_deprecation_warning(self, even_dataframe):
-        with pytest.warns(DeprecationWarning):
-            df_resample(even_dataframe, 60, missing_data="fillna")
-
     def test_isna_warning(self, even_dataframe, caplog):
         even_dataframe.iloc[0] = np.nan
         df_resampled = df_resample(even_dataframe, 60, missing_data="ffill")

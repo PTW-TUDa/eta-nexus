@@ -4,7 +4,6 @@ import io
 import logging
 import pathlib
 import sys
-import warnings
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -29,7 +28,6 @@ LOG_FORMATS = {
 
 
 def get_logger(
-    name: str | None = None,  # for legacy reasons
     level: int = 10,
     log_format: str = "simple",
 ) -> logging.Logger:
@@ -46,13 +44,6 @@ def get_logger(
     :param log_format: Format of the log output. One of: simple, logname, time. (default: simple).
     :return: The *eta_connect* logger.
     """
-    if name is not None:
-        warnings.warn(
-            "The 'name' argument is deprecated and will be removed in future versions.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-
     # Main logger
     log = logging.getLogger(LOG_PREFIX)
     log.propagate = False

@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING, Generic
 import pandas as pd
 from attr import field
 from dateutil import tz
-from typing_extensions import deprecated
 
 from eta_connect import url_parse
 from eta_connect.nodes.node import Node
@@ -233,11 +232,6 @@ class Connection(Generic[N], ABC):
         return _nodes
 
 
-@deprecated("Use `Connection` instead.")
-class BaseConnection(Connection[N], ABC):
-    """Deprecated BaseConnection class. Use Connection instead."""
-
-
 class SeriesConnection(Connection[N], ABC):
     """Connection object for protocols with the ability to provide access to timeseries data.
 
@@ -293,8 +287,3 @@ class SeriesConnection(Connection[N], ABC):
         :param kwargs: Any additional arguments required by subclasses.
         """
         pass
-
-
-@deprecated("Use `SeriesConnection` instead.")
-class BaseSeriesConnection(SeriesConnection[N], ABC):
-    """Deprecated BaseSeriesConnection class. Use SeriesConnection instead."""

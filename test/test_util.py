@@ -8,7 +8,6 @@ from dateutil import tz
 from eta_connect.util import (
     SelfsignedKeyCertPair,
     dict_search,
-    get_logger,
     load_config,
     log_add_filehandler,
     round_timestamp,
@@ -50,15 +49,6 @@ def test_log_file_handler_no_path(caplog):
 
     logging.shutdown()
     pathlib.Path(log.handlers[-1].baseFilename).unlink()
-    log.handlers.clear()
-
-
-def test_log_name_deprecation_warning():
-    msg = "The 'name' argument is deprecated and will be removed in future versions."
-    with pytest.warns(DeprecationWarning, match=msg):
-        log = get_logger(name="test")
-    # Remove actions of get_logger()
-    log.propagate = True
     log.handlers.clear()
 
 
