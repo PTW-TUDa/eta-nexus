@@ -303,20 +303,3 @@ class Node(metaclass=MetaNode):
         input_ = pd.read_excel(file, sheet_name=sheet_name, dtype=str)
 
         return cls.from_dict(list(input_.to_dict("index").values()), fail)
-
-    @classmethod
-    def get_eneffco_nodes_from_codes(cls, code_list: Sequence[str], eneffco_url: str) -> list[Self]:
-        """
-        Utility function to retrieve Node objects from a list of Eneffco Codes (Identifiers).
-
-        .. deprecated:: v2.0.0
-            Use the *from_ids* function of the EneffcoConnection Class instead.
-
-        :param code_list: List of Eneffco identifiers to create nodes from.
-        :param eneffco_url: URL to the Eneffco system.
-        :return: List of Eneffco nodes.
-        """
-        nodes = []
-        for code in code_list:
-            nodes.append(cls(name=code, url=eneffco_url, protocol="eneffco", eneffco_code=code))
-        return nodes

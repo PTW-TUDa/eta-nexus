@@ -839,10 +839,3 @@ def test_node_from_excel(create_excel):
     for idx, item in enumerate(expected):
         for key, value in item.items():
             assert getattr(nodes[idx], key) == value, f"assert {nodes[idx]} == {item}"
-
-
-def test_get_eneffco_nodes_from_codes():
-    """Check if get_eneffco_nodes_from_codes works"""
-    sample_codes = ["CH1.Elek_U.L1-N", "CH1.Elek_U.L1-N"]
-    nodes = Node.get_eneffco_nodes_from_codes(sample_codes, eneffco_url=None)
-    assert {nodes[0].eneffco_code, nodes[1].eneffco_code} == set(sample_codes)

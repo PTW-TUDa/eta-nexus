@@ -5,18 +5,19 @@ handles data using pandas dataframe objects.
 from __future__ import annotations
 
 import operator as op
-import warnings
 from datetime import datetime, timedelta
 from logging import getLogger
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, get_args
 
 import numpy as np
 import pandas as pd
 
+from eta_connect.util.type_annotations import FillMethod
+
 if TYPE_CHECKING:
     from typing import Literal
 
-    from eta_connect.util.type_annotations import FillMethod, TimeStep
+    from eta_connect.util.type_annotations import TimeStep
 
 log = getLogger(__name__)
 
@@ -121,17 +122,13 @@ def df_resample(
                            be resampled to the interval specified by the fourth argument and so on.
     :param missing_data: Specify a method for handling missing data values. If this is not specified, missing
                          data will not be handled. Valid methods are: 'ffill', 'bfill', 'interpolate', 'asfreq'.
-                         Default is 'asfreq'. 'fillna' is supported for backwards compatibility, but deprecated.
+                         Default is 'asfreq'.
     :return: Resampled copy of the DataFrame.
     """
     # Set default value for missing_data
     missing_data = missing_data or "asfreq"
-    if missing_data == "fillna":
-        msg = "fillna is deprecated for parameter 'missing_data', use ffill instead."
-        warnings.warn(msg, DeprecationWarning, stacklevel=2)
-        missing_data = "ffill"
 
-    valid_methods = ("ffill", "bfill", "interpolate", "asfreq")  # ref to FillMethod
+    valid_methods = get_args(FillMethod)
     if missing_data not in valid_methods:
         raise ValueError(f"Invalid value for 'missing_data': {missing_data}. Valid values are: {valid_methods}")
 

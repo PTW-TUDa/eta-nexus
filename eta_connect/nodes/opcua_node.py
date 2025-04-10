@@ -8,7 +8,6 @@ from attrs import (
     field,
     validators as vld,
 )
-from typing_extensions import deprecated
 
 from eta_connect import dict_get_any
 from eta_connect.nodes.node import Node
@@ -87,29 +86,6 @@ class OpcuaNode(Node, protocol="opcua"):
 
         # Determine the name of the opc node
         object.__setattr__(self, "opc_name", self.opc_path_str.split(".")[-1])  # type: ignore
-
-    @property
-    @deprecated("This attribute will be removed in the future")
-    def opc_path(self) -> list[OpcuaNode]:
-        split_path = (
-            self.opc_path_str.rsplit(".", maxsplit=len(self.opc_path_str.split(".")) - 2)  # type: ignore
-            if self.opc_path_str[0] == "."  # type: ignore
-            else self.opc_path_str.split(".")  # type: ignore
-        )
-
-        path = []
-        for k in range(len(split_path) - 1):
-            path.append(
-                OpcuaNode(
-                    split_path[k].strip(" ."),
-                    self.url,
-                    "opcua",
-                    usr=self.usr,
-                    pwd=self.pwd,
-                    opc_id="ns={};s={}".format(self.opc_ns, ".".join(split_path[: k + 1])),
-                )
-            )
-        return path
 
     @classmethod
     def _from_dict(cls, dikt: dict[str, Any]) -> Self:
