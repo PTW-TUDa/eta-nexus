@@ -4,13 +4,13 @@ Eneffco Connection
 ======================
 EneffcoConnection
 ----------------------------------------------------
-.. autoclass:: eta_connect.connections::EneffcoConnection
+.. autoclass:: eta_nexus.connections::EneffcoConnection
     :members:
     :noindex:
 
 EneffcoNode
 ----------------------------------------------------
-.. autoclass:: eta_connect.nodes::EneffcoNode
+.. autoclass:: eta_nexus.nodes::EneffcoNode
     :inherited-members:
     :exclude-members: get_eneffco_nodes_from_codes, from_dict, from_excel, protocol, as_dict, as_tuple, evolve
     :noindex:

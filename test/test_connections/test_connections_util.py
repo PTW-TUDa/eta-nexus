@@ -1,7 +1,7 @@
 import pytest
 
-from eta_connect.connections.connection_utils import RetryWaiter
-from eta_connect.util.modbus_utils import encode_bits
+from eta_nexus.connections.connection_utils import RetryWaiter
+from eta_nexus.util.modbus_utils import encode_bits
 
 modbus_values = (
     (5, "big", 8, bytes([0x05])),

@@ -2,8 +2,8 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from eta_connect.connections import WetterdienstConnection
-from eta_connect.nodes import Node
+from eta_nexus.connections import WetterdienstConnection
+from eta_nexus.nodes import Node
 
 pred_nodes = [
     Node(

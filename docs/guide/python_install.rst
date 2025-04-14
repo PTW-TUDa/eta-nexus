@@ -9,7 +9,7 @@ If you have already set this up, you can go to the :ref:`install` or :ref:`devel
 Installation of Python
 ------------------------
 
-If you do not already have it, install Python (64 Bit) on your device. eta_connect supports Python versions between
+If you do not already have it, install Python (64 Bit) on your device. eta_nexus supports Python versions between
 **3.9** and **3.11**.
 
 Below, the installation is illustrated using Python 3.10.10, 64 Bit. You can install Python for

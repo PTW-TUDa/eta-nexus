@@ -54,25 +54,25 @@ any adjustments.
 Installation via pip
 ------------------------------
 
-You can install `eta_connect` using pip:
+You can install `eta_nexus` using pip:
 
 .. code-block:: console
 
-   $ pip install eta_connect
+   $ pip install eta_nexus
 
 It's recommended to install the package in a virtual environment. See :ref:`create_virtual_environment`
 
 .. note::
 
-   eta-connect supports Python versions between 3.9 and 3.11 (inclusive).
+   eta-nexus supports Python versions between 3.9 and 3.11 (inclusive).
 
 There are multiple classes of optional requirements. If you would like to use some of the optional components, please install one or more of the following:
 
 - *examples*: Dependencies required to run the examples
-- *develop*: All of the above and additional dependencies for the continuous integration processes. Required when performing development work on eta_connect.
+- *develop*: All of the above and additional dependencies for the continuous integration processes. Required when performing development work on eta_nexus.
 
 The optional requirements can be installed using pip. For example:
 
 .. code-block:: console
 
-   $ pip install eta_connect[develop]
+   $ pip install eta_nexus[develop]

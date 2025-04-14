@@ -1,13 +1,13 @@
-ETA Connect
+ETA Nexus
 #############
 
-*ETA Connect* is a Python package designed to manage and facilitate inbound as well as outbound connections to various endpoints, including PLC controllers, field devices, and API services. The package aims to provide standardized connectivity through one unified notation across multiple communication protocols, currently supporting OPC UA, Modbus TCP, and REST.
+*ETA Nexus* is a Python package designed to manage and facilitate inbound as well as outbound connections to various endpoints, including PLC controllers, field devices, and API services. The package aims to provide standardized connectivity through one unified notation across multiple communication protocols, currently supporting OPC UA, Modbus TCP, and REST.
 
-If you want to record timeseries continuously, you can also use the `Datarecorder Application <https://git.ptw.maschinenbau.tu-darmstadt.de/eta-fabrik/public/eta-datarecorder>`_ which uses the *eta_connect* package. Currently, only StatusConnectionType-Connections are supported by the Datarecorder.
+If you want to record timeseries continuously, you can also use the `Datarecorder Application <https://git.ptw.maschinenbau.tu-darmstadt.de/eta-fabrik/public/eta-datarecorder>`_ which uses the *eta_nexus* package. Currently, only StatusConnectionType-Connections are supported by the Datarecorder.
 
 Docs
 *******
-`Full documentation can be found here: eta-connect.readthedocs.io (TODO: Make this a link as soon as first docs version is released.)
+`Full documentation can be found here: eta-nexus.readthedocs.io (TODO: Make this a link as soon as first docs version is released.)
 
 .. warning::
 
@@ -16,8 +16,8 @@ Docs
 Currently Available Connection Protocols
 =========================================
 
-.. image:: _static/eta_connect.svg
-   :alt: See the docs for ETA Connect's Class structure
+.. image:: _static/eta_nexus.svg
+   :alt: See the docs for ETA Nexus's Class structure
 
 
 There are two interfaces for connections: ``StatusConnectionType`` and ``SeriesConnectionType``.
@@ -61,7 +61,7 @@ While ``StatusConnectionType`` implements ``read()`` and ``write()``, to handle 
 Contributing
 =============
 
-Please read the :doc:`development guide <guide/development>` before starting development on *eta_connect*
+Please read the :doc:`development guide <guide/development>` before starting development on *eta_nexus*
 
 Citing this Project / Authors
 ================================

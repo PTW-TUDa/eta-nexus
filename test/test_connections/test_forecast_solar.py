@@ -9,8 +9,8 @@ import requests
 import requests_cache
 from attrs import validators
 
-from eta_connect.connections import ForecastsolarConnection
-from eta_connect.nodes import ForecastsolarNode, Node
+from eta_nexus.connections import ForecastsolarConnection
+from eta_nexus.nodes import ForecastsolarNode, Node
 
 from ..utilities.requests.forecast_solar_request import request
 

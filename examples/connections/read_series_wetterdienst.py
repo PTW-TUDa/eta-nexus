@@ -2,8 +2,8 @@ from datetime import datetime
 
 import pandas as pd
 
-from eta_connect.connections import WetterdienstConnection
-from eta_connect.nodes import WetterdienstNode
+from eta_nexus.connections import WetterdienstConnection
+from eta_nexus.nodes import WetterdienstNode
 
 
 def main() -> None:

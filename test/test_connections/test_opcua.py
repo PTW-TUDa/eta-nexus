@@ -4,10 +4,10 @@ import datetime
 import pandas as pd
 import pytest
 
-from eta_connect.connections import OpcuaConnection
-from eta_connect.nodes import Node
-from eta_connect.servers import OpcuaServer
-from eta_connect.subhandlers import DFSubHandler
+from eta_nexus.connections import OpcuaConnection
+from eta_nexus.nodes import Node
+from eta_nexus.servers import OpcuaServer
+from eta_nexus.subhandlers import DFSubHandler
 
 from ..conftest import stop_execution
 

@@ -4,7 +4,7 @@ Emonio Connection
 ======================================
 Eta-connect includes a connection class designed to read data from an Emonio device.
 To ensure proper communication, the Emonio must be connected to the same network
-as the machine running the eta-connect.
+as the machine running the eta-nexus.
 Additionally, because the EmonioConnection uses the Modbus protocol,
 it is essential that the `Modbus Server` on the Emonio is set to `Enabled`.
 
@@ -16,7 +16,7 @@ https://wiki.emonio.de/de/Emonio_P3
 
 EmonioConnection
 ----------------------------------------------------
-.. autoclass:: eta_connect.connections::EmonioConnection
+.. autoclass:: eta_nexus.connections::EmonioConnection
     :members:
     :noindex:
 
@@ -65,20 +65,20 @@ EmonioConnection
 .. note::
     For reading MIN and MAX values, the phase must be specified. "abc" is not allowed.
 
-.. autoclass:: eta_connect.connections.emonio_connection::ModbusNodeFactory
+.. autoclass:: eta_nexus.connections.emonio_connection::ModbusNodeFactory
     :members:
     :noindex:
 
 EmonioNode
 ----------------------------------------------------
-.. autoclass:: eta_connect.nodes::EmonioNode
+.. autoclass:: eta_nexus.nodes::EmonioNode
     :inherited-members:
     :exclude-members: get_eneffco_nodes_from_codes, from_dict, from_excel, protocol, as_dict, as_tuple, evolve  upper_cased
     :noindex:
 
 Example Usage
 --------------------------------------
-This example demonstrates how to create a :class:`~eta_connect.connections.live_connect.LiveConnect` from a dictionary to read data from an Emonio device.
+This example demonstrates how to create a :class:`~eta_nexus.connections.live_connect.LiveConnect` from a dictionary to read data from an Emonio device.
 Alternatively, the LiveConnection can be created from a JSON file, with the JSON having the same structure as the dictionary.
 
 ``url`` has to be replaced with the IP address and port of the Emonio device, e.g. ``"192.168.178.123:502"``.
@@ -89,15 +89,15 @@ Alternatively, the LiveConnection can be created from a JSON file, with the JSON
     :dedent:
 
 Here we create the Emonio nodes manually and read them with the
-:class:`~eta_connect.connections.EmonioConnection` class.
+:class:`~eta_nexus.connections.EmonioConnection` class.
 
 .. literalinclude:: ../../examples/connections/read_emonio_live.py
     :start-after: --emonio--
     :end-before: --emonio--
     :dedent:
 
-The :class:`~eta_connect.connections.emonio_connection.ModbusNodeFactory` can be used to create modbus nodes directly.
-But this is not recommended, as the :class:`~eta_connect.connections.EmonioConnection` class is more convenient and has extra error checking.
+The :class:`~eta_nexus.connections.emonio_connection.ModbusNodeFactory` can be used to create modbus nodes directly.
+But this is not recommended, as the :class:`~eta_nexus.connections.EmonioConnection` class is more convenient and has extra error checking.
 
 .. literalinclude:: ../../examples/connections/read_emonio_live.py
     :start-after: --modbus--

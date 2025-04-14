@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from eta_connect.timeseries.dataframes import df_interpolate, df_resample
+from eta_nexus.timeseries.dataframes import df_interpolate, df_resample
 
 uneven_data = [100, 200, 0, 0, 300, 500]
 uneven_index = pd.DatetimeIndex(

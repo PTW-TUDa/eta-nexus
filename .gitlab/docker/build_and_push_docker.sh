@@ -11,7 +11,7 @@ PYTHON_VERSIONS=("3.9" "3.10" "3.11")
 POETRY_VERSION="2.1.1"
 DOCKERFILE_PATH=".gitlab/docker/dockerfile"
 REGISTRY_URL="git-reg.ptw.maschinenbau.tu-darmstadt.de"
-IMAGE_PATH="/eta-fabrik/public/eta-connect/"
+IMAGE_PATH="/eta-fabrik/public/eta-nexus/"
 
 docker login ${REGISTRY_URL}
 if [ $? -ne 0 ]; then

@@ -29,7 +29,7 @@ RUN set -eux && \
     rm -rf /var/lib/apt/lists/*
 
 COPY pyproject.toml poetry.lock LICENSE README.rst ${APP_PATH}
-COPY eta_connect ${APP_PATH}/eta_connect
+COPY eta_nexus ${APP_PATH}/eta_nexus
 
 
 # Install poetry and dependencies

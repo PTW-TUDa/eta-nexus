@@ -3,10 +3,10 @@ from collections.abc import Generator
 
 import pytest
 
-from eta_connect.connections.emonio_connection import EmonioConnection, ModbusNodeFactory
-from eta_connect.nodes import EmonioNode, Node
-from eta_connect.servers.modbus_server import ModbusServer
-from eta_connect.subhandlers import DFSubHandler
+from eta_nexus.connections.emonio_connection import EmonioConnection, ModbusNodeFactory
+from eta_nexus.nodes import EmonioNode, Node
+from eta_nexus.servers.modbus_server import ModbusServer
+from eta_nexus.subhandlers import DFSubHandler
 
 node_values = {
     "Serv.Spannung": 230,

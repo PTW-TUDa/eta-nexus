@@ -4,14 +4,14 @@ ENTSO-E Connection
 ======================
 ENTSO-E Node
 ----------------------------------------------------
-.. autoclass:: eta_connect.nodes::EntsoeNode
+.. autoclass:: eta_nexus.nodes::EntsoeNode
     :inherited-members:
     :exclude-members: get_eneffco_nodes_from_codes, from_dict, from_excel, protocol, as_dict, as_tuple, evolve
     :noindex:
 
 ENTSO-E Connection
 ----------------------------------------------------
-.. autoclass:: eta_connect.connections::EntsoeConnection
+.. autoclass:: eta_nexus.connections::EntsoeConnection
     :members:
     :noindex:
 

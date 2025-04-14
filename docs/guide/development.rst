@@ -3,7 +3,7 @@
 Installation and Guide for Developers
 =================================================================================
 
-This section describes how to install *eta_connect* using *poetry*, and how to contribute to development.
+This section describes how to install *eta_nexus* using *poetry*, and how to contribute to development.
 
 Contributing to development
 -----------------------------
@@ -14,12 +14,12 @@ implement your changes there.
 
 If you are planning to develop on this package, based on the requirements of another
 package, you might want to import directly from a local git repository. To do this,
-uninstall eta_connect from the other projects virtual environment and add the path to the local
-*eta_connect* repository to the other projects main file:
+uninstall eta_nexus from the other projects virtual environment and add the path to the local
+*eta_nexus* repository to the other projects main file:
 
 .. code-block::
 
-    sys.path.append("<path to local eta_connect repository>")
+    sys.path.append("<path to local eta_nexus repository>")
 
 
 .. _install_poetry:
@@ -66,14 +66,14 @@ The virtual environments will be installed in:
 For more information, see the `Poetry documentation <https://python-poetry.org/docs/#installing-with-pipx>`_.
 
 
-Installation of eta_connect
+Installation of eta_nexus
 -------------------------------------
 First, clone the repository to a directory of your choosing. You can use a git GUI for this or
 execute the following command. See also :ref:`install_git`.
 
 .. code-block:: console
 
-    $ git clone https://git.ptw.maschinenbau.tu-darmstadt.de/eta-fabrik/public/eta-connect
+    $ git clone https://git.ptw.maschinenbau.tu-darmstadt.de/eta-fabrik/public/eta-nexus
 
 You might be asked for your git login credentials.
 
@@ -83,11 +83,11 @@ You might be asked for your git login credentials.
 
     Git login window.
 
-After this, navigate to the root directory **eta-connect**
+After this, navigate to the root directory **eta-nexus**
 
 .. code-block:: console
 
-   $ cd eta-connect
+   $ cd eta-nexus
 
 \.. and install the project via poetry. This includes main and development dependencies:
 
@@ -159,7 +159,7 @@ For more information, see the `Poetry docs <https://python-poetry.org/docs/manag
 Testing your code
 -------------------------------
 Please always execute the tests before committing changes. You can do this by navigating to the main
-folder of the *eta_connect* repository and executing the following command in a terminal.
+folder of the *eta_nexus* repository and executing the following command in a terminal.
 
 .. code-block:: console
 
@@ -172,7 +172,7 @@ Or if you have the virtual environment already activated:
     $ pytest
 
 Please always refresh the *test_nsga2_agent.zip* file when changes are made in the nsga2 agent and in julia files. The zip-file is located
-in *eta-connect/test/resources/agents* and creates a new NSGA2 model for the tests. To do this, execute the following
+in *eta-nexus/test/resources/agents* and creates a new NSGA2 model for the tests. To do this, execute the following
 command in the terminal:
 
 .. code-block:: console
@@ -183,7 +183,7 @@ Editing this documentation
 -----------------------------
 
 Sphinx is used as a documentation-generator. The relevant files are located in the *docs*
-folder of the repository. If you correctly installed *eta_connect* with the develop
+folder of the repository. If you correctly installed *eta_nexus* with the develop
 extension, sphinx should already be installed.
 
 You can edit the *.rst-files* in the *docs* folder. A simple text editor is sufficient for this.
@@ -236,7 +236,7 @@ inside the project folder:
 
 .. code-block:: console
 
-    $ docker build -t git-reg.ptw.maschinenbau.tu-darmstadt.de/eta-fabrik/public/eta-connect/pyjulia:py3.9-jl1.9 -f .gitlab/docker/pyjulia-39-19.dockerfile .
+    $ docker build -t git-reg.ptw.maschinenbau.tu-darmstadt.de/eta-fabrik/public/eta-nexus/pyjulia:py3.9-jl1.9 -f .gitlab/docker/pyjulia-39-19.dockerfile .
 
 Using tags for the images is a good practice to differentiate image versions, in case it's not used it's automatic
 labeled as *latest*. Currently there are three images for Python environments called *python*, with Python versions
@@ -246,4 +246,4 @@ The last step is to upload the images to the private docker registry.
 
 .. code-block:: console
 
-    $ docker push git-reg.ptw.maschinenbau.tu-darmstadt.de/eta-fabrik/public/eta-connect/pyjulia:py3.9-jl1.9
+    $ docker push git-reg.ptw.maschinenbau.tu-darmstadt.de/eta-fabrik/public/eta-nexus/pyjulia:py3.9-jl1.9

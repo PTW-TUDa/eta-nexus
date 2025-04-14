@@ -5,9 +5,9 @@ import pandas as pd
 import pytest
 import requests_cache
 
-from eta_connect.connections import EneffcoConnection
-from eta_connect.nodes import Node
-from eta_connect.subhandlers import DFSubHandler
+from eta_nexus.connections import EneffcoConnection
+from eta_nexus.nodes import Node
+from eta_nexus.subhandlers import DFSubHandler
 
 from ..utilities.requests.eneffco_request import request
 

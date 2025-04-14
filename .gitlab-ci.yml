@@ -37,7 +37,7 @@ default:
   image: ${REGISTRY_IMAGE}:py3.10
   before_script:
     - python --version
-    - rm -rf dist doc eta_connect.egg-info build
+    - rm -rf dist doc eta_nexus.egg-info build
     - rm -rf docs/_build docs/_stubs
     - ls -la
     # Install development dependencies
@@ -171,7 +171,7 @@ deploy-pages:
     - make html
     - mv _build/html ../public
   artifacts:
-    name: "eta-connect_$CI_COMMIT_TAG"
+    name: "eta-nexus_$CI_COMMIT_TAG"
     paths:
       - public/
   pages: true
@@ -200,10 +200,10 @@ deploy-local:
 #     - rm -rf dist
 #     - poetry publish --build --username $USERNAME --password $PASSWORD
 #   artifacts:
-#     name: "eta_connect-build-$CI_COMMIT_REF_NAME-$CI_JOB_STATUS"
+#     name: "eta_nexus-build-$CI_COMMIT_REF_NAME-$CI_JOB_STATUS"
 #     paths:
 #       - dist/
-#       - eta_connect.egg-info/
+#       - eta_nexus.egg-info/
 
 # Create readthedocs documentation
 
@@ -215,4 +215,4 @@ deploy-readthedocs:
   before_script: []
   script:
     - echo $CI_COMMIT_TAG
-    - curl -X POST -d "branches=main" -d "token=$READTHEDOCS_TOKEN" https://readthedocs.org/api/v2/webhook/eta-connect/294118/
+    - curl -X POST -d "branches=main" -d "token=$READTHEDOCS_TOKEN" https://readthedocs.org/api/v2/webhook/eta-nexus/294118/

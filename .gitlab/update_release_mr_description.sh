@@ -5,7 +5,7 @@
 ## Optional variables for manual execution
 PROJECT_ID=581
 CI_API_V4_URL=https://git.ptw.maschinenbau.tu-darmstadt.de/api/v4
-CI_PROJECT_PATH=eta-fabrik/public/eta-connect
+CI_PROJECT_PATH=eta-fabrik/public/eta-nexus
 CI_DEPLOY_TOKEN=insert_token_here
 
 # Go to main branch and copy the SHA of the last release commit

@@ -9,8 +9,8 @@ def main() -> None:
 
 def read_series() -> pd.DataFrame:
     # --begin_forecast_solar_doc_example1--
-    from eta_connect.connections import ForecastsolarConnection
-    from eta_connect.nodes import ForecastsolarNode
+    from eta_nexus.connections import ForecastsolarConnection
+    from eta_nexus.nodes import ForecastsolarNode
 
     # ------------------------------
     # Simple node without API key:

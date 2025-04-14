@@ -3,10 +3,10 @@ import asyncio
 import pandas as pd
 import pytest
 
-from eta_connect.connections import ModbusConnection
-from eta_connect.nodes import Node
-from eta_connect.servers import ModbusServer
-from eta_connect.subhandlers import DFSubHandler
+from eta_nexus.connections import ModbusConnection
+from eta_nexus.nodes import Node
+from eta_nexus.servers import ModbusServer
+from eta_nexus.subhandlers import DFSubHandler
 
 from ..conftest import stop_execution
 

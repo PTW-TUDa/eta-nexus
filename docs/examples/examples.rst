@@ -2,7 +2,7 @@
 
 Usage examples
 ================
-*eta_connect* contains example implementations for different usages of the package.
+*eta_nexus* contains example implementations for different usages of the package.
 This page gives a short overview of the examples.
 
 Connections

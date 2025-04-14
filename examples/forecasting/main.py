@@ -11,19 +11,19 @@ import numpy as np
 import onnxruntime
 import pandas as pd
 
-from eta_connect import get_logger
-from eta_connect.connections import (
+from eta_nexus import get_logger
+from eta_nexus.connections import (
     OpcuaConnection,
 )
-from eta_connect.nodes import OpcuaNode
-from eta_connect.nodes.node_utils import name_map_from_node_sequence
-from eta_connect.servers import OpcuaServer
-from eta_connect.subhandlers import DFSubHandler
+from eta_nexus.nodes import OpcuaNode
+from eta_nexus.nodes.node_utils import name_map_from_node_sequence
+from eta_nexus.servers import OpcuaServer
+from eta_nexus.subhandlers import DFSubHandler
 
 if TYPE_CHECKING:
     from typing import Final
 
-    from eta_connect.util.type_annotations import Path, TimeStep
+    from eta_nexus.util.type_annotations import Path, TimeStep
 
 log = get_logger(level=1)
 

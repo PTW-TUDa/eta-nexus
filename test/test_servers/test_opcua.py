@@ -1,8 +1,8 @@
 import asyncua as opcua
 import pytest
 
-from eta_connect.nodes import Node
-from eta_connect.servers import OpcuaServer
+from eta_nexus.nodes import Node
+from eta_nexus.servers import OpcuaServer
 
 nodes = (
     {

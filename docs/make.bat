@@ -16,7 +16,7 @@ if "%SPHINXAPIDOC%" == "" (
 set SOURCEDIR=.
 set BUILDDIR=_build
 set STUBSDIR=_stubs
-set MODULEDIR=../eta_connect
+set MODULEDIR=../eta_nexus
 
 if "%1" == "" goto help
 

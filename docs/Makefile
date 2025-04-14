@@ -9,7 +9,7 @@ SPHINXAPIDOC  ?= sphinx-apidoc
 SOURCEDIR     = .
 BUILDDIR      = _build
 STUBSDIR      = _stubs
-MODULEDIR     = ../eta_connect
+MODULEDIR     = ../eta_nexus
 
 # Put it first so that "make" without argument is like "make help".
 help:
