@@ -1,11 +1,11 @@
 import pandas as pd
 
-from eta_connect.nodes import EmonioNode
+from eta_nexus.nodes import EmonioNode
 
 
 def live_from_dict(url: str) -> dict[str, float]:
     # --live--
-    from eta_connect.connections.live_connect import LiveConnect
+    from eta_nexus.connections.live_connect import LiveConnect
 
     live = {
         "system": [
@@ -29,7 +29,7 @@ def live_from_dict(url: str) -> dict[str, float]:
 
 def emonio_manual(url: str) -> pd.DataFrame:
     # --emonio--
-    from eta_connect.connections import EmonioConnection
+    from eta_nexus.connections import EmonioConnection
 
     voltage_node = EmonioNode("V_RMS", url, "emonio")
     current_node = EmonioNode("I_RMS", url, "emonio", phase="a")
@@ -44,8 +44,8 @@ def emonio_manual(url: str) -> pd.DataFrame:
 
 def modbus_manual(url: str) -> pd.DataFrame:
     # --modbus--
-    from eta_connect.connections import ModbusConnection
-    from eta_connect.connections.emonio_connection import ModbusNodeFactory
+    from eta_nexus.connections import ModbusConnection
+    from eta_nexus.connections.emonio_connection import ModbusNodeFactory
 
     factory = ModbusNodeFactory(url)
 

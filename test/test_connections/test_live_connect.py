@@ -1,9 +1,9 @@
 import pytest
 
-from eta_connect import json_import
-from eta_connect.connections import LiveConnect
-from eta_connect.nodes import Node
-from eta_connect.servers import OpcuaServer
+from eta_nexus import json_import
+from eta_nexus.connections import LiveConnect
+from eta_nexus.nodes import Node
+from eta_nexus.servers import OpcuaServer
 
 
 @pytest.fixture

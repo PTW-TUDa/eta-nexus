@@ -1,12 +1,12 @@
- Project: eta-connect
+ Project: eta-nexus
 ########################
 
-This project was part of the `eta-utility <https://git.ptw.maschinenbau.tu-darmstadt.de/eta-fabrik/public/eta-utility>` framework by Benedikt Grosch, which was split into eta-connect and eta-optimize to provide a more focused and modular package.
+This project was part of the `eta-utility <https://git.ptw.maschinenbau.tu-darmstadt.de/eta-fabrik/public/eta-utility>` framework by Benedikt Grosch, which was split into eta-nexus and eta-optimize to provide a more focused and modular package.
 For a full list of foundational contributors, please refer to eta_utility: https://git.ptw.maschinenbau.tu-darmstadt.de/eta-fabrik/public/eta-utility
 
 Active Contributors
 -------------------
-These individuals have contributed to this repository (eta_connect) through development, design, testing, or documentation.
+These individuals have contributed to this repository (eta_nexus) through development, design, testing, or documentation.
 
 - *Andreas Clement*
 - *Jerome Stock*

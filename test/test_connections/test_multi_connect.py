@@ -4,10 +4,10 @@ import pytest
 import requests_cache
 from pyModbusTCP import client as mbclient
 
-from eta_connect.connections.base_classes import Connection
-from eta_connect.nodes import Node
-from eta_connect.servers import OpcuaServer
-from eta_connect.subhandlers import CsvSubHandler
+from eta_nexus.connections.base_classes import Connection
+from eta_nexus.nodes import Node
+from eta_nexus.servers import OpcuaServer
+from eta_nexus.subhandlers import CsvSubHandler
 
 from ..conftest import stop_execution
 from ..utilities.pyModbusTCP.client import ModbusClient as MockModbusClient

@@ -26,7 +26,7 @@ For more information, visit the `forecast.solar API documentation <https://doc.f
 ForecastsolarConnection
 ----------------------------------------------------
 
-.. autoclass:: eta_connect.connections::ForecastsolarConnection
+.. autoclass:: eta_nexus.connections::ForecastsolarConnection
     :members:
     :noindex:
 
@@ -34,7 +34,7 @@ ForecastsolarConnection
 
 ForecastsolarNode
 ----------------------------------------------------
-.. autoclass:: eta_connect.nodes::ForecastsolarNode
+.. autoclass:: eta_nexus.nodes::ForecastsolarNode
     :members:
     :noindex:
 

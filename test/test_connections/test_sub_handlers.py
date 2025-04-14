@@ -6,8 +6,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from eta_connect.nodes import Node
-from eta_connect.subhandlers import CsvSubHandler, DFSubHandler, SubscriptionHandler
+from eta_nexus.nodes import Node
+from eta_nexus.subhandlers import CsvSubHandler, DFSubHandler, SubscriptionHandler
 
 sample_series = pd.Series(
     data=[1, 2, 3], index=pd.DatetimeIndex(["2020-11-05 10:00:00", "2020-11-05 10:00:01.1", "2020-11-05 10:00:01.7"])

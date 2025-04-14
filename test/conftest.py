@@ -19,12 +19,12 @@ def pytest_runtest_setup(item):
     # Check for the disable_logging marker
     root_level = logging.CRITICAL if "disable_logging" in item.keywords else logging.NOTSET
     # Set logging level to INFO if caplog is used
-    eta_connect_level = logging.INFO if "caplog" in item.fixturenames else logging.ERROR
+    eta_nexus_level = logging.INFO if "caplog" in item.fixturenames else logging.ERROR
 
     # Set disable logging level for root logger
     logging.disable(root_level)
-    # Set logger level for "eta_connect" namespace
-    logging.getLogger("eta_connect").setLevel(eta_connect_level)
+    # Set logger level for "eta_nexus" namespace
+    logging.getLogger("eta_nexus").setLevel(eta_nexus_level)
 
 
 @pytest.fixture(scope="session")

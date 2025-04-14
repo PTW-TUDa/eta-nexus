@@ -1,5 +1,5 @@
 [project]
-name = "eta-connect"
+name = "eta-nexus"
 version = "v0.1.0"
 description = "Provides a standardized way to connect to machines and devices in a factory or other factory systems"
 license = "BSD-2-Clause"
@@ -20,9 +20,9 @@ dynamic = ["classifiers", "dependencies"]
 
 [project.urls]
 homepage = "https://www.ptw.tu-darmstadt.de"
-repository = "https://git.ptw.maschinenbau.tu-darmstadt.de/eta-fabrik/public/eta-connect"
-documentation = "https://eta-connect.readthedocs.io/"
-issues = "https://git.ptw.maschinenbau.tu-darmstadt.de/eta-fabrik/public/eta-connect/-/issues"
+repository = "https://git.ptw.maschinenbau.tu-darmstadt.de/eta-fabrik/public/eta-nexus"
+documentation = "https://eta-nexus.readthedocs.io/"
+issues = "https://git.ptw.maschinenbau.tu-darmstadt.de/eta-fabrik/public/eta-nexus/-/issues"
 
 [tool.poetry]
 requires-poetry = ">=2.0"
@@ -46,7 +46,7 @@ include = [
 #  '^' limits to the next major version, '~' limits to the next minor version
 # e.g. ^3.9.0: 3.9.0 <= x < 4.0.0 and ~3.9.0: 3.9.0 <= x < 3.10.0
 [tool.poetry.dependencies]
-# default dependencies of eta_connect
+# default dependencies of eta_nexus
 attrs = "^25.3.0"
 python-dateutil = "^2.8.2"
 numpy = "^2.0.0"
@@ -89,7 +89,7 @@ types-pytz = "^2025.2.0.20250326"
 
 [tool.mypy]
 python_version = "3.10"
-files = ["eta_connect", "examples"]
+files = ["eta_nexus", "examples"]
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
 no_implicit_optional = true
@@ -137,7 +137,7 @@ markers = [
 # Configuration for pytest-cov
 [tool.coverage.run]
 source = [
-    "eta_connect"
+    "eta_nexus"
 ]
 omit = [
     "*/venv/*",
@@ -145,7 +145,7 @@ omit = [
     "*/docs/*",
     "*/build/*",
     "*/dist/*",
-    "*/eta_connect/type_hints/*",
+    "*/eta_nexus/type_hints/*",
 ]
 
 [tool.coverage.report]

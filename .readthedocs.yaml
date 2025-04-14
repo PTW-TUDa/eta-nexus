@@ -23,7 +23,7 @@ build:
       - VIRTUAL_ENV=$READTHEDOCS_VIRTUALENV_PATH poetry install
     pre_build:
       # Build documentation stubs for the API documentation
-      - sphinx-apidoc --tocfile api -e -M -o docs/_stubs eta_connect
+      - sphinx-apidoc --tocfile api -e -M -o docs/_stubs eta_nexus
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:

@@ -49,7 +49,7 @@ You can force resetting the git credentials in Windows:
 
 - open "Credential Manager" in system control
 - Delete information about the git server you are trying to login to
-  (in  case of eta_connect: "git.ptw.maschinenbau.tu-darmstadt.de <git.ptw.maschinenbau.tu-darmstadt.de>"_).
+  (in  case of eta_nexus: "git.ptw.maschinenbau.tu-darmstadt.de <git.ptw.maschinenbau.tu-darmstadt.de>"_).
 
 
 .. _sphinx_not_found:
@@ -81,11 +81,11 @@ First, find the path to your sphinx installation, then add it via the terminal o
 
 .. _packages_error:
 
-I want to start *eta_connect*, but in some external packages there were changes
+I want to start *eta_nexus*, but in some external packages there were changes
 ----------------------------------------------------------------------------------
-If you want to use *eta_connect*, but you get errors in some Python packages, because there were changes in the source \
-code, update *eta_connect* with the following command (add extra requirements like `eta_x` as needed):
+If you want to use *eta_nexus*, but you get errors in some Python packages, because there were changes in the source \
+code, update *eta_nexus* with the following command (add extra requirements like `eta_x` as needed):
 
 .. code-block:: console
 
-    $ pip install --upgrade --upgrade-strategy=only-if-needed eta_connect
+    $ pip install --upgrade --upgrade-strategy=only-if-needed eta_nexus

@@ -28,6 +28,6 @@ accordingly. Once this is done, the different nodes can be configured. For examp
 from the CHP, nodes for writing to the building automation and other nodes which are used to check the current status
 of the system.
 
-.. autoclass:: eta_connect.connections::LiveConnect
+.. autoclass:: eta_nexus.connections::LiveConnect
     :members:
     :noindex:

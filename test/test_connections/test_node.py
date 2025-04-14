@@ -5,7 +5,7 @@ import re
 import pandas as pd
 import pytest
 
-from eta_connect.nodes import Node
+from eta_nexus.nodes import Node
 
 fail_nodes = (
     (

@@ -1,9 +1,9 @@
-.. _eta_connect:
+.. _eta_nexus:
 
 
 .. include:: ../README.rst
 
-Please read the development guide before starting development on *eta_connect*: :ref:`development`.
+Please read the development guide before starting development on *eta_nexus*: :ref:`development`.
 
  .. note::
     Information for students at ETA-Factory: Student work stations do not have direct access

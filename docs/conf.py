@@ -11,11 +11,11 @@ from pathlib import Path
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path.append(str(Path("../eta_connect").resolve()))  # Insert path to eta_connect
+sys.path.append(str(Path("../eta_nexus").resolve()))  # Insert path to eta_nexus
 
 
 # -- Project information -----------------------------------------------------
-project = "eta_connect"
+project = "eta_nexus"
 release = get_version(project)  # The full version, including alpha/beta/rc tags
 version = ".".join(release.split(".")[:3])  # Top level version
 copyright = "Technical University of Darmstadt, Institute for Production Management, Technology and Machine Tools (PTW)"  # noqa: A001

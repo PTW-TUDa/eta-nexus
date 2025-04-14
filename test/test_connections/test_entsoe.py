@@ -6,10 +6,10 @@ import pytest
 import requests_cache
 from lxml import etree
 
-from eta_connect.connections import EntsoeConnection
-from eta_connect.connections.entsoe_connection import _ConnectionConfiguration
-from eta_connect.nodes import Node
-from eta_connect.util import dict_search, round_timestamp
+from eta_nexus.connections import EntsoeConnection
+from eta_nexus.connections.entsoe_connection import _ConnectionConfiguration
+from eta_nexus.nodes import Node
+from eta_nexus.util import dict_search, round_timestamp
 
 ENTSOE_TOKEN = ""
 

@@ -2,8 +2,8 @@ from datetime import datetime
 
 import pandas as pd
 
-from eta_connect.connections import EntsoeConnection
-from eta_connect.nodes import EntsoeNode
+from eta_nexus.connections import EntsoeConnection
+from eta_nexus.nodes import EntsoeNode
 
 
 def main() -> None:

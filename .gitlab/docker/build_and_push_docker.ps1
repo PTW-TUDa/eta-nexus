@@ -21,7 +21,7 @@ $PYTHON_VERSIONS = @("3.10", "3.11", "3.12")
 $POETRY_VERSION = "2.1.1"
 $DOCKERFILE_PATH = ".gitlab/docker/dockerfile"
 $REGISTRY_URL = "git-reg.ptw.maschinenbau.tu-darmstadt.de"
-$IMAGE_PATH = "eta-fabrik/public/eta-connect/"
+$IMAGE_PATH = "eta-fabrik/public/eta-nexus/"
 
 # Ensure DEPLOY_TOKEN is set
 if (-not $env:DEPLOY_TOKEN) {

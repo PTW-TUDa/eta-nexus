@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 import pytest
 from dateutil import tz
 
-from eta_connect.util import (
+from eta_nexus.util import (
     SelfsignedKeyCertPair,
     dict_search,
     load_config,
@@ -44,8 +44,8 @@ def test_log_file_handler():
 def test_log_file_handler_no_path(caplog):
     log = log_add_filehandler(None, level=3)
 
-    assert "No filename specified for filehandler. Using default filename eta_connect" in caplog.text
-    assert "eta_connect" in log.handlers[-1].baseFilename
+    assert "No filename specified for filehandler. Using default filename eta_nexus" in caplog.text
+    assert "eta_nexus" in log.handlers[-1].baseFilename
 
     logging.shutdown()
     pathlib.Path(log.handlers[-1].baseFilename).unlink()

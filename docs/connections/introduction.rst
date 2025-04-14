@@ -3,12 +3,12 @@
 
 Introduction
 =================
-The *eta_connect.connections* module is meant to provide a standardized interface for multiple different
+The *eta_nexus.connections* module is meant to provide a standardized interface for multiple different
 protocols which are used in factory operations or for the optimization of factory operations. Two important
 protocols which we encounter regularly are **Modbus TCP** and **OPC UA**. In addition to this  we have also created
 connections for additional API which we work with.
 
-The *eta_connect* connection format has the advantage that it can be used for many different kinds of protocols
+The *eta_nexus* connection format has the advantage that it can be used for many different kinds of protocols
 and APIs, with the limitation that some of them do not support all functions (for example, specific APIs/protocols
 may not provide write access). Each connection can contain multiple *Nodes* (see below). These are used as the
 default data points when reading data from the connection. Read data will be returned in a
@@ -44,12 +44,12 @@ The URL may contain the username and password (``schema://username:password@host
 automatically by the connections and the username and password will be removed before creating a connection.
 
 
-.. autoclass:: eta_connect.nodes::Node
+.. autoclass:: eta_nexus.nodes::Node
     :noindex:
 
 The following classes are there to document the required parameters for each type of node.
 
-.. autoclass:: eta_connect.nodes::LocalNode
+.. autoclass:: eta_nexus.nodes::LocalNode
     :inherited-members:
     :exclude-members: get_eneffco_nodes_from_codes, from_dict, from_excel, protocol, as_dict, as_tuple, evolve
     :noindex:
@@ -61,8 +61,8 @@ working with multiple nodes and you want to ensure that all nodes are of the sam
 
   .. code-block:: python
 
-    from eta_connect.connections import Node, ModbusNode, OpcuaNode
-    from eta_connect.util.type_annotations import Nodes
+    from eta_nexus.connections import Node, ModbusNode, OpcuaNode
+    from eta_nexus.util.type_annotations import Nodes
 
     # Example of typing nodes
     modbus_node: ModbusNode = Node("modbus://localhost:502/0/0", "modbus", ...)
@@ -100,7 +100,7 @@ If you have one or multiple nodes, use :attr:`from_nodes`. Create all of the :cl
 :attr:`from_nodes` then returns a dictionary of connections and automatically assigns the nodes to their correct connection.
 It requires less duplicate information than direct instantiation.
 
-.. autofunction:: eta_connect.connections.base_classes::Connection.from_nodes
+.. autofunction:: eta_nexus.connections.base_classes::Connection.from_nodes
     :noindex:
 
 Create one Connection
@@ -108,7 +108,7 @@ Create one Connection
 If you have one or more :class:`Node` objects for the same hostname/protocol and just want to create one connection, you should use the :attr:`from_node` method of
 the :class:`Connection` class.
 
-.. autofunction:: eta_connect.connections.base_classes::Connection.from_node
+.. autofunction:: eta_nexus.connections.base_classes::Connection.from_node
     :noindex:
 
 Direct Instantiation (not recommended)
@@ -121,7 +121,7 @@ Direct Instantiation (not recommended)
 .. code-block:: python
 
     # Example for a Modbus connection
-    from eta_connect.connections import ModbusConnection
+    from eta_nexus.connections import ModbusConnection
 
     url = "modbus://192.168.178.123:502"
     username = ("admin",)
@@ -139,5 +139,5 @@ connection.
     example is shown :ref:`connections`. Refer to the API documentation of the connection you would like to use to see if the
     method exists and which parameters are required.
 
-.. autofunction:: eta_connect.connections::EneffcoConnection.from_ids
+.. autofunction:: eta_nexus.connections::EneffcoConnection.from_ids
     :noindex:
