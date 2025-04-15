@@ -7,8 +7,7 @@ from eta_nexus.connections import ModbusConnection
 from eta_nexus.nodes import Node
 from eta_nexus.servers import ModbusServer
 from eta_nexus.subhandlers import DFSubHandler
-
-from ..conftest import stop_execution
+from test.conftest import stop_execution
 
 init_tests = (
     (("modbus.tcp://someurl:48050", None, None), {}, {"url": "modbus.tcp://someurl:48050"}),
@@ -340,10 +339,10 @@ class TestConnectionSubscriptions:
             for value in values:
                 try:
                     assert value in data[node].array
-                except AssertionError as exception:
+                except AssertionError:
                     max_missing_values -= 1
                     if max_missing_values < 0:
-                        raise exception
+                        raise
 
         connection.close_sub()
 

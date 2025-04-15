@@ -37,13 +37,14 @@ if TYPE_CHECKING:
     from collections.abc import Generator, Mapping, Sequence
     from typing import Any
 
+    from eta_nexus.subhandlers import SubscriptionHandler
+
     # Sync import
     # Async import
     # TODO: add async import: from asyncua import Node as asyncSyncOpcNode
     # https://git.ptw.maschinenbau.tu-darmstadt.de/eta-fabrik/public/eta-utility/-/issues/270
     from eta_nexus.util.type_annotations import Nodes, TimeStep
 
-from eta_nexus.subhandlers import SubscriptionHandler
 
 from .base_classes import Connection
 
@@ -128,8 +129,7 @@ class OpcuaConnection(Connection[OpcuaNode], protocol="opcua"):
         return cls(nodes[0].url, usr, pwd, nodes=nodes)
 
     def read(self, nodes: OpcuaNode | Nodes[OpcuaNode] | None = None) -> pd.DataFrame:
-        """
-        Read some manually selected values from OPC UA capable controller.
+        """Read some manually selected values from OPC UA capable controller.
 
         :param nodes: Single node or list/set of nodes to read from.
         :return: pandas.DataFrame containing current values of the OPC UA-variables.
@@ -148,7 +148,6 @@ class OpcuaConnection(Connection[OpcuaNode], protocol="opcua"):
                         raise ConnectionError(
                             f"Failed to typecast value '{value}' at {node.name} to {node.dtype.__name__}."
                         ) from e
-                return {node.name: [value]}
             except uaerrors.BadNodeIdUnknown:
                 raise ConnectionError(
                     f"The node id ({node.opc_id}) refers to a node that does not exist in the server address space "
@@ -156,6 +155,8 @@ class OpcuaConnection(Connection[OpcuaNode], protocol="opcua"):
                 ) from None
             except RuntimeError as e:
                 raise ConnectionError(str(e)) from e
+            else:
+                return {node.name: [value]}
 
         values: dict[str, list] = {}
         with self._connection(), concurrent.futures.ThreadPoolExecutor() as executor:
@@ -166,8 +167,7 @@ class OpcuaConnection(Connection[OpcuaNode], protocol="opcua"):
         return pd.DataFrame(values, index=[self._assert_tz_awareness(datetime.now())])
 
     def write(self, values: Mapping[OpcuaNode, Any]) -> None:
-        """
-        Writes some manually selected values on OPC UA capable controller.
+        """Writes some manually selected values on OPC UA capable controller.
 
         :param values: Dictionary of nodes and data to write {node: value}.
         :raises ConnectionError: When an error occurs during reading.
@@ -226,7 +226,6 @@ class OpcuaConnection(Connection[OpcuaNode], protocol="opcua"):
         :param handler: Handler object with a push function to receive data.
         :param interval: Interval for requesting data in seconds.
         """
-
         subscribed = False
         while self._subscription_open:
             try:
@@ -234,23 +233,23 @@ class OpcuaConnection(Connection[OpcuaNode], protocol="opcua"):
                     await self._retry.wait_async()
                     try:
                         self._connect()
-                    except ConnectionError as e:
-                        log.warning(f"Retrying connection to {self.url} after: {e}.")
+                    except ConnectionError:
+                        log.error(f"Retrying to connect to {self.url}.")  # noqa: TRY400
                         continue
 
                 elif self._connected and not subscribed:
                     try:
                         self._sub = self.connection.create_subscription(interval * 1000, handler)
                         subscribed = True
-                    except RuntimeError as e:
+                    except RuntimeError:
                         subscribed = False
-                        log.warning(f"Unable to subscribe to server {self.url} - Retrying: {e}.")
+                        log.error(f"Unable to subscribe to server {self.url} - Retrying.")  # noqa: TRY400
                         self._disconnect()
                         continue
 
                     for node in self._subscription_nodes:
                         try:
-                            handler.add_node(node.opc_id, node)  # type: ignore
+                            handler.add_node(node.opc_id, node)  # type: ignore[arg-type]
                             self._subbed_nodes.append(
                                 self._sub.subscribe_data_change(self.connection.get_node(node.opc_id))
                             )
@@ -267,7 +266,7 @@ class OpcuaConnection(Connection[OpcuaNode], protocol="opcua"):
                         f"Connection to OPC UA-Server {self.url} was terminated "
                         "during connection establishment or maintenance."
                     )
-                log.error(f"Handling exception ({e}) for server {self.url}.")
+                log.exception(f"Handling exception for server {self.url}.")
                 if msg:
                     msg += " Trying to reconnect."
                     log.info(msg)
@@ -305,8 +304,10 @@ class OpcuaConnection(Connection[OpcuaNode], protocol="opcua"):
         self._subscription_open = False
         try:
             self._sub.unsubscribe(self._subbed_nodes)
-        except BaseException:
+        except AttributeError:
             pass
+        except Exception:
+            log.exception("Canceling OpcUA subscription failed.")
         finally:
             self._subbed_nodes = []
 
@@ -329,7 +330,8 @@ class OpcuaConnection(Connection[OpcuaNode], protocol="opcua"):
 
     def _connect(self) -> None:
         """Connect to server. This will try to securely connect using Basic256SHA256 method
-        before trying an insecure connection."""
+        before trying an insecure connection.
+        """
         if not hasattr(self, "connection"):
             # Do not reninitialize connection if it already exists
             self.connection = Client(self.url)
@@ -345,12 +347,9 @@ class OpcuaConnection(Connection[OpcuaNode], protocol="opcua"):
             self.connection.aio_obj.uaclient.set_security(self.connection.aio_obj.security_policy)
             self.connection.connect()
 
-        def _connect_secure() -> None:
-            assert self._key_cert is not None
+        def _connect_secure(key_cert: KeyCertPair) -> None:
             try:
-                self.connection.set_security(
-                    SecurityPolicyBasic256Sha256, self._key_cert.cert_path, self._key_cert.key_path
-                )
+                self.connection.set_security(SecurityPolicyBasic256Sha256, key_cert.cert_path, key_cert.key_path)
                 with Suppressor():
                     self.connection.connect()
             except ua.uaerrors.BadSecurityPolicyRejected:
@@ -361,19 +360,19 @@ class OpcuaConnection(Connection[OpcuaNode], protocol="opcua"):
                     self._try_secure_connect = False
                     _connect_insecure()
                 else:
-                    raise e
+                    raise
             except (TimeoutError, ConTimeoutError, asyncio.exceptions.TimeoutError) as e:
                 self._try_secure_connect = False
                 raise ConnectionError("Host timeout during secure connect") from e
 
         try:
             if self._key_cert is not None and self._try_secure_connect:
-                _connect_secure()
+                _connect_secure(key_cert=self._key_cert)
             else:
                 _connect_insecure()
         except (socket.herror, socket.gaierror) as e:
             raise ConnectionError(f"Host not found: {self.url}") from e
-        except (socket.timeout, TimeoutError, ConTimeoutError, asyncio.exceptions.TimeoutError) as e:
+        except (TimeoutError, ConTimeoutError, asyncio.exceptions.TimeoutError) as e:
             raise ConnectionError(f"Host timeout: {self.url}") from e
         except ConCancelledError as e:
             raise ConnectionError(f"Connection cancelled by host: {self.url}") from e
@@ -391,9 +390,9 @@ class OpcuaConnection(Connection[OpcuaNode], protocol="opcua"):
             except AttributeError:
                 self._connected = False
                 log.debug(f"Connection to server {self.url} did not exist - connection check failed.")
-            except BaseException as e:
+            except Exception:
                 self._connected = False
-                log.error(f"Error while checking connection to server {self.url}: {e}.")
+                log.error(f"Error while checking connection to server {self.url}.")  # noqa: TRY400
             else:
                 self._connected = True
 
@@ -451,15 +450,13 @@ class _OPCSubHandler:
         self._sub_nodes[opc_id] = node
 
     def datachange_notification(self, node: OpcuaNode, val: Any, data: Any) -> None:
-        """
-        datachange_notification is called whenever subscribed input data is received via OPC UA. This pushes data
+        """datachange_notification is called whenever subscribed input data is received via OPC UA. This pushes data
         to the actual eta_nexus subscription handler.
 
         :param node: Node Object, which was subscribed to and which has sent an updated value.
         :param val: New value of OPC UA node.
         :param data: Raw data of OPC UA (not used).
         """
-
         _time = self.handler._assert_tz_awareness(datetime.now())
 
         self.handler.push(self._sub_nodes[str(node)], val, _time)

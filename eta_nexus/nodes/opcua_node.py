@@ -85,7 +85,7 @@ class OpcuaNode(Node, protocol="opcua"):
             raise ValueError("Specify opc_id or opc_path_str and ns for OPC UA nodes.")
 
         # Determine the name of the opc node
-        object.__setattr__(self, "opc_name", self.opc_path_str.split(".")[-1])  # type: ignore
+        object.__setattr__(self, "opc_name", self.opc_path_str.split(".")[-1])  # type: ignore[union-attr]
 
     @classmethod
     def _from_dict(cls, dikt: dict[str, Any]) -> Self:

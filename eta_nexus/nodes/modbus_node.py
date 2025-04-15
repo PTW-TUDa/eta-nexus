@@ -1,4 +1,4 @@
-"""This module implements the node class, which is used to parametrize connections"""
+"""This module implements the node class, which is used to parametrize connections."""
 
 from __future__ import annotations
 

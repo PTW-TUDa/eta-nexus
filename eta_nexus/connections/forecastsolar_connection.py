@@ -1,5 +1,4 @@
-"""
-This module provides a read-only REST API connection to the forecast.solar API.
+"""This module provides a read-only REST API connection to the forecast.solar API.
 
 You can obtain an estimate of solar production for a specific location, defined by latitude and longitude,
 and a specific plane orientation, defined by declination and azimuth, based on the installed module power.
@@ -24,7 +23,6 @@ from __future__ import annotations
 
 import concurrent.futures
 import traceback
-from collections.abc import Mapping
 from datetime import datetime, timedelta
 from logging import getLogger
 from typing import TYPE_CHECKING
@@ -35,18 +33,19 @@ import requests
 from requests_cache import DO_NOT_CACHE, CachedSession
 
 from eta_nexus.nodes import ForecastsolarNode
-from eta_nexus.subhandlers import SubscriptionHandler
 from eta_nexus.timeseries import df_interpolate
 from eta_nexus.util import round_timestamp
 
 from .base_classes import SeriesConnection
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Mapping
     from types import TracebackType
-    from typing import Any, Callable, ClassVar
+    from typing import Any, ClassVar
 
     from typing_extensions import Self
 
+    from eta_nexus.subhandlers import SubscriptionHandler
     from eta_nexus.util.type_annotations import Nodes, TimeStep
 
 
@@ -54,9 +53,8 @@ log = getLogger(__name__)
 
 
 class ForecastsolarConnection(SeriesConnection[ForecastsolarNode], protocol="forecast_solar"):
-    """
-    ForecastsolarConnection is a class to download and upload multiple features from and to the Forecast.Solar database
-    as timeseries.
+    """ForecastsolarConnection is a class to download and upload multiple features from and to the
+    ForecastSolar database as timeseries.
 
     :param url: URL of the server with scheme (https://).
     :param usr: Not needed for Forecast.Solar.
@@ -99,7 +97,7 @@ class ForecastsolarConnection(SeriesConnection[ForecastsolarNode], protocol="for
 
     @classmethod
     def _from_node(cls, node: ForecastsolarNode, **kwargs: Any) -> ForecastsolarConnection:
-        """Initialize the connection object from a Forecast.Solar protocol node object
+        """Initialize the connection object from a Forecast.Solar protocol node object.
 
         :param node: Node to initialize from.
         :param kwargs: Keyword arguments for API authentication, where "api_key" is required
@@ -213,7 +211,7 @@ class ForecastsolarConnection(SeriesConnection[ForecastsolarNode], protocol="for
         return self._select_data(values, from_time, to_time)
 
     def read(self, nodes: ForecastsolarNode | Nodes[ForecastsolarNode] | None = None) -> pd.DataFrame:
-        """Return solar forecast for the current time
+        """Return solar forecast for the current time.
 
         :param nodes: Single node or list/set of nodes to read values from.
         :return: Pandas DataFrame containing the data read from the connection.
@@ -229,9 +227,8 @@ class ForecastsolarConnection(SeriesConnection[ForecastsolarNode], protocol="for
         return self._process_watts(values, nodes)
 
     def write(self, values: Mapping[ForecastsolarNode, Any]) -> None:
-        """
-        .. warning::
-            Cannot read single values from the Forecast.Solar API. Use read_series instead
+        """.. warning::
+            Cannot read single values from the Forecast.Solar API. Use read_series instead.
 
         :raises NotImplementedError:
         """
@@ -243,9 +240,8 @@ class ForecastsolarConnection(SeriesConnection[ForecastsolarNode], protocol="for
         nodes: ForecastsolarNode | Nodes[ForecastsolarNode] | None = None,
         interval: TimeStep = 1,
     ) -> None:
-        """
-        .. warning::
-            Cannot read single values from the Forecast.Solar API. Use read_series instead
+        """.. warning::
+            Cannot read single values from the Forecast.Solar API. Use read_series instead.
 
         :raises NotImplementedError:
         """
@@ -275,7 +271,7 @@ class ForecastsolarConnection(SeriesConnection[ForecastsolarNode], protocol="for
 
         nodes = self._validate_nodes(nodes)
         values, _ = self._get_data(nodes, from_time, to_time)
-        values = df_interpolate(values, _interval).loc[from_time:to_time]  # type: ignore # mypy doesn't recognize DatetimeIndex
+        values = df_interpolate(values, _interval).loc[from_time:to_time]  # type: ignore[misc] # mypy doesn't recognize DatetimeIndex
         return self._process_watts(values, nodes)
 
     def subscribe_series(
@@ -288,18 +284,16 @@ class ForecastsolarConnection(SeriesConnection[ForecastsolarNode], protocol="for
         data_interval: TimeStep = 1,
         **kwargs: Any,
     ) -> None:
-        """
-        .. warning::
-            Cannot read single values from the Forecast.Solar  API. Use read_series instead
+        """.. warning::
+            Cannot read single values from the Forecast.Solar  API. Use read_series instead.
 
         :raises NotImplementedError:
         """
         raise NotImplementedError("Subscribe series is not implemented for Forecast.Solar.")
 
     def close_sub(self) -> None:
-        """
-        .. warning::
-            Cannot read single values from the Forecast.Solar  API. Use read_series instead
+        """.. warning::
+            Cannot read single values from the Forecast.Solar  API. Use read_series instead.
 
         :raises NotImplementedError:
         """
@@ -313,9 +307,8 @@ class ForecastsolarConnection(SeriesConnection[ForecastsolarNode], protocol="for
         offset: TimeStep,
         data_interval: TimeStep,
     ) -> None:
-        """
-        .. warning::
-            Cannot read single values from the Forecast.Solar  API. Use read_series instead
+        """.. warning::
+            Cannot read single values from the Forecast.Solar  API. Use read_series instead.
 
         :raises NotImplementedError:
         """
@@ -327,7 +320,6 @@ class ForecastsolarConnection(SeriesConnection[ForecastsolarNode], protocol="for
         :param dt: Datetime object to convert to string.
         :return: Forecast.Solar compatible time string.
         """
-
         return dt.isoformat(sep="T", timespec="seconds").replace(":", "%3A").replace("+", "%2B")
 
     def _raw_request(self, method: str, url: str, **kwargs: Any) -> requests.Response:
@@ -361,7 +353,10 @@ class ForecastsolarConnection(SeriesConnection[ForecastsolarNode], protocol="for
             """Build the URL for a node's route validation."""
             base_url = f"https://api.forecast.solar/check/{node.latitude}/{node.longitude}"
             if isinstance(node.declination, list):
-                return [f"{base_url}/{d}/{a}/{k}" for d, a, k in zip(node.declination, node.azimuth, node.kwp)]  # type: ignore [arg-type]
+                return [
+                    f"{base_url}/{d}/{a}/{k}"
+                    for d, a, k in zip(node.declination, node.azimuth, node.kwp, strict=False)  # type: ignore [arg-type]
+                ]
             return [f"{base_url}/{node.declination}/{node.azimuth}/{node.kwp}"]
 
         def validate_node_routes(node: ForecastsolarNode) -> bool:
@@ -370,8 +365,8 @@ class ForecastsolarConnection(SeriesConnection[ForecastsolarNode], protocol="for
             for url in urls:
                 try:
                     conn._raw_request("GET", url, headers=conn._headers, **kwargs)
-                except requests.exceptions.HTTPError as e:
-                    log.error(f"Route of node: {node.name} could not be verified: {e}")
+                except requests.exceptions.HTTPError:
+                    log.exception(f"Route of node: {node.name} could not be verified")
                     return False
             return True
 
@@ -380,8 +375,7 @@ class ForecastsolarConnection(SeriesConnection[ForecastsolarNode], protocol="for
 
     @staticmethod
     def calculate_watt_hours_period(watt_df: pd.DataFrame) -> pd.DataFrame:
-        """
-        Calculates watt hours for each period based on the average watts between consecutive rows.
+        """Calculates watt hours for each period based on the average watts between consecutive rows.
 
         :param df: DataFrame with indices representing time intervals and columns representing node's watt estimates
         :return: DataFrame with the watt-hour-period estimates for each interval
@@ -400,8 +394,7 @@ class ForecastsolarConnection(SeriesConnection[ForecastsolarNode], protocol="for
 
     @staticmethod
     def cumulative_watt_hours_per_day(watt_hours_df: pd.DataFrame, from_unit: str = "watthours/period") -> pd.DataFrame:
-        """
-        Calculates the cumulative watt-hours throughout each day for each panel.
+        """Calculates the cumulative watt-hours throughout each day for each panel.
 
         :param watt_hours_df: df with indices representing time intervals and columns containing watt-hour estimates.
         :param from_unit: Unit of the input DataFrame. Default is "watthours/period".
@@ -423,8 +416,7 @@ class ForecastsolarConnection(SeriesConnection[ForecastsolarNode], protocol="for
 
     @staticmethod
     def summarize_watt_hours_per_day(watt_hours_df: pd.DataFrame, from_unit: str = "watthours/period") -> pd.DataFrame:
-        """
-        Sums the watt-hours over each day for each panel.
+        """Sums the watt-hours over each day for each panel.
 
         :param watt_hours_df: df with indices representing time intervals and columns containing watt-hour estimates.
         :param from_unit: Unit of the input DataFrame. Default is "watthours/period".
@@ -455,8 +447,8 @@ class ForecastsolarConnection(SeriesConnection[ForecastsolarNode], protocol="for
             return False
         try:
             self._session.close()
-        except Exception as e:
-            log.error(f"Error closing the connection: {e}")
+        except Exception:
+            log.exception("Error closing the connection")
         return True
 
     def __del__(self) -> None:

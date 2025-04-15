@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import concurrent.futures
-from collections.abc import Mapping
 from datetime import datetime, timedelta, timezone
 from logging import getLogger
 from typing import TYPE_CHECKING
@@ -15,12 +14,12 @@ from requests_cache import CachedSession
 from eta_nexus.nodes import EneffcoNode
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
     from typing import Any
 
+    from eta_nexus.subhandlers import SubscriptionHandler
     from eta_nexus.util.type_annotations import Nodes, TimeStep
 
-from eta_nexus.subhandlers import SubscriptionHandler
 
 from .base_classes import SeriesConnection
 
@@ -28,8 +27,7 @@ log = getLogger(__name__)
 
 
 class EneffcoConnection(SeriesConnection[EneffcoNode], protocol="eneffco"):
-    """
-    EneffcoConnection is a class to download and upload multiple features from and to the Eneffco database as
+    """EneffcoConnection is a class to download and upload multiple features from and to the Eneffco database as
     timeseries.
 
     :param url: URL of the server with scheme (https://).
@@ -69,7 +67,7 @@ class EneffcoConnection(SeriesConnection[EneffcoNode], protocol="eneffco"):
     def _from_node(
         cls, node: EneffcoNode, usr: str | None = None, pwd: str | None = None, **kwargs: Any
     ) -> EneffcoConnection:
-        """Initialize the connection object from an Eneffco protocol node object
+        """Initialize the connection object from an Eneffco protocol node object.
 
         :param node: Node to initialize from.
         :param usr: Username to use.
@@ -77,7 +75,6 @@ class EneffcoConnection(SeriesConnection[EneffcoNode], protocol="eneffco"):
         :param kwargs: Keyword arguments for API authentication, where "api_token" is required
         :return: EneffcoConnection object.
         """
-
         api_token = kwargs.get("api_token")
         if api_token is None:
             raise AttributeError("Keyword parameter 'api_token' is missing.")
@@ -86,7 +83,7 @@ class EneffcoConnection(SeriesConnection[EneffcoNode], protocol="eneffco"):
 
     @classmethod
     def from_ids(cls, ids: Sequence[str], url: str, usr: str, pwd: str, api_token: str) -> EneffcoConnection:
-        """Initialize the connection object from an Eneffco protocol through the node IDs
+        """Initialize the connection object from an Eneffco protocol through the node IDs.
 
         :param ids: Identification of the Node.
         :param url: URL for EnEffco connection.
@@ -99,7 +96,7 @@ class EneffcoConnection(SeriesConnection[EneffcoNode], protocol="eneffco"):
         return cls(url=url, usr=usr, pwd=pwd, api_token=api_token, nodes=nodes)
 
     def read(self, nodes: EneffcoNode | Nodes[EneffcoNode] | None = None) -> pd.DataFrame:
-        """Download current value from the Eneffco Database
+        """Download current value from the Eneffco Database.
 
         :param nodes: Single node or list/set of nodes to read values from.
         :return: pandas.DataFrame containing the data read from the connection.
@@ -112,7 +109,7 @@ class EneffcoConnection(SeriesConnection[EneffcoNode], protocol="eneffco"):
     def write(
         self, values: Mapping[EneffcoNode, Any] | pd.Series[datetime, Any], time_interval: timedelta | None = None
     ) -> None:
-        """Writes some values to the Eneffco Database
+        """Writes some values to the Eneffco Database.
 
         :param values: Dictionary of nodes and data to write {node: value}.
         :param time_interval: Interval between datapoints (i.e. between "From" and "To" in Eneffco Upload) (default 1s).
@@ -147,7 +144,6 @@ class EneffcoConnection(SeriesConnection[EneffcoNode], protocol="eneffco"):
 
         :return upload_data: String from dictionary in the format for the upload to Eneffco.
         """
-
         if isinstance(data, (dict, pd.Series)):
             upload_data: dict[str, list[Any]] = {"Values": []}
             for time, val in data.items():
@@ -163,7 +159,7 @@ class EneffcoConnection(SeriesConnection[EneffcoNode], protocol="eneffco"):
                     )
 
         else:
-            raise ValueError("Unrecognized data format for Eneffco upload. Provide dictionary or pandas series.")
+            raise TypeError("Unrecognized data format for Eneffco upload. Provide dictionary or pandas series.")
 
         return str(upload_data)
 
@@ -173,7 +169,6 @@ class EneffcoConnection(SeriesConnection[EneffcoNode], protocol="eneffco"):
         :param nodes: Single node or list/set of nodes values from.
         :return: pandas.DataFrame containing the data read from the connection.
         """
-
         nodes = self._validate_nodes(nodes)
         values = []
 
@@ -207,7 +202,7 @@ class EneffcoConnection(SeriesConnection[EneffcoNode], protocol="eneffco"):
         interval: TimeStep = 1,
         **kwargs: Any,
     ) -> pd.DataFrame:
-        """Download timeseries data from the Eneffco Database
+        """Download timeseries data from the Eneffco Database.
 
         :param nodes: Single node or list/set of nodes to read values from.
         :param from_time: Starting time to begin reading (included in output).
@@ -269,7 +264,6 @@ class EneffcoConnection(SeriesConnection[EneffcoNode], protocol="eneffco"):
         :param nodes: Single node or list/set of nodes to subscribe to.
         :param kwargs: Other, ignored parameters.
         """
-
         nodes = self._validate_nodes(nodes)
 
         interval = interval if isinstance(interval, timedelta) else timedelta(seconds=interval)
@@ -307,9 +301,9 @@ class EneffcoConnection(SeriesConnection[EneffcoNode], protocol="eneffco"):
             raise self.exc
 
         try:
-            self._sub.cancel()  # type: ignore
+            self._sub.cancel()  # type: ignore[union-attr]
         except Exception:
-            pass
+            log.exception("Error while closing EnEffCo subscription.")
 
     async def _subscription_loop(
         self,
@@ -319,7 +313,7 @@ class EneffcoConnection(SeriesConnection[EneffcoNode], protocol="eneffco"):
         offset: TimeStep,
         data_interval: TimeStep,
     ) -> None:
-        """The subscription loop handles requesting data from the server in the specified interval
+        """The subscription loop handles requesting data from the server in the specified interval.
 
         :param handler: Handler object with a push function to receive data.
         :param interval: Interval for requesting data in seconds.
@@ -343,17 +337,15 @@ class EneffcoConnection(SeriesConnection[EneffcoNode], protocol="eneffco"):
                     handler.push(node, values[node.name])
 
                 await asyncio.sleep(interval.total_seconds())
-        except BaseException as e:
+        except Exception as e:
             self.exc = e
 
-    def id_from_code(self, code: str, raw_datapoint: bool = False) -> str:
-        """
-        Function to get the raw Eneffco ID corresponding to a specific (raw) datapoint
+    def id_from_code(self, code: str, *, raw_datapoint: bool = False) -> str:
+        """Function to get the raw Eneffco ID corresponding to a specific (raw) datapoint.
 
         :param code: Exact Eneffco code.
         :param raw_datapoint: Returns raw datapoint ID.
         """
-
         # Only build lists of IDs if they are not available yet
         if self._node_ids is None:
             response = self._raw_request("GET", "/datapoint")
@@ -376,7 +368,6 @@ class EneffcoConnection(SeriesConnection[EneffcoNode], protocol="eneffco"):
         :param dt: Datetime object to convert to string.
         :return: Eneffco compatible time string.
         """
-
         return dt.isoformat(sep="T", timespec="seconds").replace(":", "%3A").replace("+", "%2B")
 
     def _raw_request(self, method: str, endpoint: str, **kwargs: Any) -> requests.Response:
@@ -386,8 +377,10 @@ class EneffcoConnection(SeriesConnection[EneffcoNode], protocol="eneffco"):
         :param endpoint: Endpoint for the request (server URI is added automatically).
         :param kwargs: Additional arguments for the request.
         """
-        assert self.usr is not None, "Make sure to specify a username before performing Eneffco requests."
-        assert self.pwd is not None, "Make sure to specify a password before performing Eneffco requests."
+        if self.usr is None:
+            raise AttributeError("Make sure to specify a username before performing Eneffco requests.")
+        if self.pwd is None:
+            raise AttributeError("Make sure to specify a password before performing Eneffco requests.")
 
         response = self._session.request(
             method, self.url + "/" + str(endpoint), auth=requests.auth.HTTPBasicAuth(self.usr, self.pwd), **kwargs
@@ -396,7 +389,7 @@ class EneffcoConnection(SeriesConnection[EneffcoNode], protocol="eneffco"):
 
         return response
 
-    def _validate_nodes(self, nodes: EneffcoNode | Nodes[EneffcoNode] | None) -> set[EneffcoNode]:  # type: ignore
+    def _validate_nodes(self, nodes: EneffcoNode | Nodes[EneffcoNode] | None) -> set[EneffcoNode]:
         vnodes = super()._validate_nodes(nodes)
         _nodes = set()
         for node in vnodes:

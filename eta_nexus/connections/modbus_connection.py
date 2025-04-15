@@ -1,4 +1,4 @@
-"""Utilities for connecting to modbus servers"""
+"""Utilities for connecting to modbus servers."""
 
 from __future__ import annotations
 
@@ -28,9 +28,9 @@ if TYPE_CHECKING:
     from collections.abc import Generator, Mapping
     from typing import Any
 
+    from eta_nexus.subhandlers import SubscriptionHandler
     from eta_nexus.util.type_annotations import Nodes, TimeStep
 
-from eta_nexus.subhandlers import SubscriptionHandler
 
 from .base_classes import Connection
 
@@ -78,7 +78,6 @@ class ModbusConnection(Connection[ModbusNode], protocol="modbus"):
         :param kwargs: Other arguments are ignored.
         :return: ModbusConnection object.
         """
-
         return super()._from_node(node, usr=usr, pwd=pwd)
 
     def read(self, nodes: ModbusNode | Nodes[ModbusNode] | None = None) -> pd.DataFrame:
@@ -152,14 +151,13 @@ class ModbusConnection(Connection[ModbusNode], protocol="modbus"):
             raise self.exc
 
         try:
-            self._sub.cancel()
+            if self._sub.done() is False:
+                self._sub.cancel()
         except Exception:
-            pass
+            log.exception("Canceling Modbus subscription failed.")
 
-        try:
-            self.connection.close()
-        except Exception:
-            pass
+        if self.connection.is_open:
+            self._disconnect()
 
     async def _subscription_loop(self, handler: SubscriptionHandler, interval: float) -> None:
         """The subscription loop handles requesting data from the server in the specified interval.
@@ -167,7 +165,6 @@ class ModbusConnection(Connection[ModbusNode], protocol="modbus"):
         :param handler: Handler object with a push function to receive data.
         :param interval: Interval for requesting data in seconds.
         """
-
         try:
             while self._subscription_open:
                 try:
@@ -209,7 +206,7 @@ class ModbusConnection(Connection[ModbusNode], protocol="modbus"):
                     else:
                         self._retry_interval_checker.success()
                         await asyncio.sleep(interval)
-        except BaseException as e:
+        except Exception as e:
             self.exc = e
 
     def _read_mb_value(self, node: ModbusNode) -> list[int]:
@@ -263,10 +260,10 @@ class ModbusConnection(Connection[ModbusNode], protocol="modbus"):
             if not self.connection.is_open:
                 self._retry.tried()
                 if not self.connection.open():
-                    raise ConnectionError(f"Could not establish connection to host {self.url}")
+                    raise ConnectionError(f"Could not establish connection to host {self.url}")  # noqa: TRY301
         except (socket.herror, socket.gaierror) as e:
             raise ConnectionError(f"Host not found: {self.url}") from e
-        except socket.timeout as e:
+        except TimeoutError as e:
             raise ConnectionError(f"Host timeout: {self.url}") from e
         except (RuntimeError, ConnectionError) as e:
             raise ConnectionError(f"Connection Error: {self.url}, Error: {e!s}") from e
@@ -280,11 +277,10 @@ class ModbusConnection(Connection[ModbusNode], protocol="modbus"):
         """Disconnect from server."""
         try:
             self.connection.close()
-        except (OSError, RuntimeError) as e:
-            log.error(f"Closing connection to server {self.url} failed")
-            log.info(f"Connection to {self.url} returned error: {e}")
+        except (OSError, RuntimeError):
+            log.exception(f"Closing connection to server {self.url} failed")
         except AttributeError:
-            log.error(f"Connection to server {self.url} already closed.")
+            log.info(f"Connection to server {self.url} already closed.")
 
     @contextmanager
     def _connection(self) -> Generator:
@@ -292,8 +288,6 @@ class ModbusConnection(Connection[ModbusNode], protocol="modbus"):
         try:
             self._connect()
             yield None
-        except ConnectionError as e:
-            raise e
         finally:
             self._disconnect()
 

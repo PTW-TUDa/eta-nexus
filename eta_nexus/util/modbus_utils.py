@@ -11,8 +11,9 @@ if TYPE_CHECKING:
 def decode_modbus_value(
     value: Sequence[int], byteorder: str, type_: Callable | None = None, wordorder: str = "big"
 ) -> Any:
-    r"""Method to decode incoming modbus values. Strings are always decoded as utf-8 values. If you do not
-    want this behaviour specify 'bytes' as the data type.
+    r"""Method to decode incoming modbus values. Strings are always decoded as utf-8 values.
+
+    If you do not want this behaviour specify 'bytes' as the data type.
 
     :param value: Current value to be decoded into float.
     :param byteorder: Byteorder for decoding i.e. 'little' or 'big' endian.
@@ -154,7 +155,7 @@ def bitarray_to_registers(bits: list[int | bool]) -> list[int]:
 
     b_size = (len(_bits) + 15) // 16
     register_list = [0] * b_size
-    for i in range(0, b_size):
+    for i in range(b_size):
         start = i * 16
         register_list[i] = int("".join([str(v) for v in _bits[start : start + 16]]), 2)
 

@@ -232,7 +232,9 @@ async def inference_loop(
             start_time = time.time()
 
             # Normalize and append data and check whether enough historic data is available for inference
-            model_input_list.append([(a - b) / (c - b) for a, b, c in zip(data.data, features_min, features_max)])
+            model_input_list.append(
+                [(a - b) / (c - b) for a, b, c in zip(data.data, features_min, features_max, strict=False)]
+            )
             if len(model_input_list) < maxlen:
                 log.info(f"Not enough input data. Need {maxlen - len(model_input_list)} more lines.")
                 continue

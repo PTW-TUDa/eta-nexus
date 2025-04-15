@@ -27,8 +27,7 @@ log = getLogger(__name__)
 
 
 class WetterdienstNode(Node):
-    """
-    Abstract Base Node for the Wetterdienst API.
+    """Abstract Base Node for the Wetterdienst API.
     This class is not meant to be used directly, but to be subclassed by
     WetterdienstObservationNode and WetterdienstPredictionNode.
     """
@@ -76,9 +75,8 @@ class WetterdienstNode(Node):
 
 
 class WetterdienstObservationNode(WetterdienstNode, protocol="wetterdienst_observation"):
-    """
-    Node for the Wetterdienst API to get weather observations.
-    For more information see: https://wetterdienst.readthedocs.io/en/latest/data/provider/dwd/observation/
+    """Node for the Wetterdienst API to get weather observations.
+    For more information see: https://wetterdienst.readthedocs.io/en/latest/data/provider/dwd/observation/.
     """
 
     #: Redeclare interval attribute, but don't allow it to be optional
@@ -96,9 +94,9 @@ class WetterdienstObservationNode(WetterdienstNode, protocol="wetterdienst_obser
         if self.parameter not in available_params:
             available_resolutions = []
             for resolution in DwdObservationResolution:
-                params = DwdObservationParameter[resolution.name]  # type: ignore
+                params = DwdObservationParameter[resolution.name]  # type: ignore[attr-defined]
                 if self.parameter in [param.name for param in params if type(param) is not enum.EnumMeta]:
-                    available_resolutions.append(resolution.name)  # type: ignore
+                    available_resolutions.append(resolution.name)  # type: ignore[attr-defined]
             if len(available_resolutions) == 0:
                 raise ValueError(f"Parameter {self.parameter} is not a valid observation parameter.")
             raise ValueError(
@@ -140,9 +138,8 @@ class WetterdienstObservationNode(WetterdienstNode, protocol="wetterdienst_obser
 
 
 class WetterdienstPredictionNode(WetterdienstNode, protocol="wetterdienst_prediction"):
-    """
-    Node for the Wetterdienst API to get weather predictions.
-    For more information see: https://wetterdienst.readthedocs.io/en/latest/data/provider/dwd/mosmix/
+    """Node for the Wetterdienst API to get weather predictions.
+    For more information see: https://wetterdienst.readthedocs.io/en/latest/data/provider/dwd/mosmix/.
     """
 
     #: Type of the MOSMIX prediction. Either 'SMALL' or 'LARGE'

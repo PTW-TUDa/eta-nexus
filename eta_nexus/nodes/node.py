@@ -1,4 +1,4 @@
-"""This module implements the node class, which is used to parametrize connections"""
+"""This module implements the node class, which is used to parametrize connections."""
 
 from __future__ import annotations
 
@@ -122,35 +122,35 @@ class Node(metaclass=MetaNode):
         :param kwargs: Keyword arguments to change.
         :return: New instance of the node.
         """
-        return attrs.evolve(self, **kwargs)  # type: ignore
+        return attrs.evolve(self, **kwargs)  # type: ignore[misc]
 
-    def as_dict(self, filter_none: bool = False, **kwargs: Any) -> dict[str, Any]:
+    def as_dict(self, *, filter_none: bool = False, **kwargs: Any) -> dict[str, Any]:
         """Return the attrs attribute values of node instance as a dict.
 
         :param filter_none: Filter none values, defaults to False
         :return: dict of attribute values
         """
         filter_func = self.__class__._filter_none(self) if filter_none else None
-        return attrs.asdict(self, filter=filter_func, **kwargs)  # type: ignore
+        return attrs.asdict(self, filter=filter_func, **kwargs)  # type: ignore[arg-type]
 
-    def as_tuple(self, filter_none: bool = False, **kwargs: Any) -> tuple[Any, ...]:
+    def as_tuple(self, *, filter_none: bool = False, **kwargs: Any) -> tuple[Any, ...]:
         """Return the attrs attribute values of inst as a tuple.
 
         :param filter_none: Filter none values, defaults to False
         :return: tuple of attribute values
         """
         filter_func = self.__class__._filter_none(self) if filter_none else None
-        return attrs.astuple(self, filter=filter_func, **kwargs)  # type: ignore
+        return attrs.astuple(self, filter=filter_func, **kwargs)  # type: ignore[arg-type]
 
     @staticmethod
     def _filter_none(node: Node) -> Callable[[attrs.Attribute[Any], Any], bool]:
         """Return callable to filter none values, to be passed to attrs.asdict or attrs.astuple."""
-        attributes = attrs.asdict(node)  # type: ignore
+        attributes = attrs.asdict(node)  # type: ignore[arg-type]
         non_values = {key: value for key, value in attributes.items() if value is None}
         return attrs.filters.exclude(*non_values.keys())
 
     @classmethod
-    def from_dict(cls, dikt: Sequence[Mapping] | Mapping[str, Any], fail: bool = True) -> list[Self]:
+    def from_dict(cls, dikt: Sequence[Mapping] | Mapping[str, Any], *, fail: bool = True) -> list[Self]:
         """Create nodes from a dictionary of node configurations. The configuration must specify the following
         fields for each node:
 
@@ -178,7 +178,6 @@ class Node(metaclass=MetaNode):
         :param fail: Set this to false, if you would like to log errors instead of raising them.
         :return: List of Node objects.
         """
-
         nodes = []
 
         iter_ = [dikt] if isinstance(dikt, Mapping) else dikt
@@ -186,12 +185,12 @@ class Node(metaclass=MetaNode):
             node = {k.strip().lower(): v for k, v in lnode.items()}
 
             try:
-                protocol = cls._read_dict_protocol(node)
+                protocol = str(dict_get_any(node, "protocol"))
             except KeyError as e:
                 text = f"Error reading node protocol in row {idx + 1}: {e}."
                 if fail:
                     raise KeyError(text) from e
-                log.error(text)
+                log.exception(text)
                 continue
 
             try:
@@ -200,7 +199,7 @@ class Node(metaclass=MetaNode):
                 text = f"Specified an unsupported protocol in row {idx + 1}: {protocol}."
                 if fail:
                     raise ValueError(text) from e
-                log.error(text)
+                log.exception(text)
                 continue
 
             try:
@@ -209,7 +208,7 @@ class Node(metaclass=MetaNode):
                 text = f"Error while reading the configuration data for node in row {idx + 1}: {e}."
                 if fail:
                     raise TypeError(text) from e
-                log.error(text)
+                log.exception(text)
         return nodes
 
     @staticmethod
@@ -222,10 +221,10 @@ class Node(metaclass=MetaNode):
         # Read name first
         try:
             name = str(dict_get_any(node, "code", "name"))
-            if name == "nan" or name is None:
-                raise KeyError
         except KeyError as e:
             raise KeyError("Name or Code must be specified for all nodes in the dictionary.") from e
+        if name in ("None", "nan", ""):
+            raise ValueError("Names for Nodes can't be None.")
         # Find URL or IP and port
         if "url" in node and node["url"] is not None and str(node["url"]) not in {"nan", ""}:
             url = node["url"].strip()
@@ -241,17 +240,6 @@ class Node(metaclass=MetaNode):
         return name, pwd, url, usr, interval
 
     @staticmethod
-    def _read_dict_protocol(node: dict[str, Any]) -> str:
-        try:
-            protocol = str(dict_get_any(node, "protocol"))
-            if protocol == "nan" or protocol is None:
-                raise KeyError
-        except KeyError as e:
-            raise KeyError("Protocol must be specified for all nodes in the dictionary.") from e
-
-        return protocol
-
-    @staticmethod
     def _try_dict_get_any(dikt: dict[str, Any], *names: str) -> Any:
         """Get any of the specified items from the node, if any are available. The function will return
         the first value it finds, even if there are multiple matches.
@@ -264,20 +252,15 @@ class Node(metaclass=MetaNode):
         """
         try:
             value = dict_get_any(dikt, *names, fail=True)
-        except KeyError as e:
-            log.error(f"For the node, the field '{names[0]}' must be specified or check the correct spelling.")
-            raise KeyError(
-                "The required parameter for the node configuration was not found (see log). "
-                "Could not load config "
-                "file. "
-            ) from e
+        except KeyError:
+            log.exception(f"Could not get values {names} for node.")
+            raise
 
         return value
 
     @classmethod
-    def from_excel(cls, path: Path, sheet_name: str, fail: bool = True) -> list[Self]:
-        """
-        Method to read out nodes from an Excel document. The document must specify the following fields:
+    def from_excel(cls, path: Path, sheet_name: str, *, fail: bool = True) -> list[Self]:
+        """Method to read out nodes from an Excel document. The document must specify the following fields:
 
             * Code, IP, Port, Protocol (modbus or opcua or eneffco).
 
@@ -298,8 +281,6 @@ class Node(metaclass=MetaNode):
         :param fail: Set this to false, if you would like to log errors instead of raising them.
         :return: List of Node objects.
         """
-
         file = path if isinstance(path, pathlib.Path) else pathlib.Path(path)
         input_ = pd.read_excel(file, sheet_name=sheet_name, dtype=str)
-
-        return cls.from_dict(list(input_.to_dict("index").values()), fail)
+        return cls.from_dict(list(input_.to_dict("index").values()), fail=fail)

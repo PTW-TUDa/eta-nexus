@@ -8,8 +8,7 @@ from eta_nexus.connections import OpcuaConnection
 from eta_nexus.nodes import Node
 from eta_nexus.servers import OpcuaServer
 from eta_nexus.subhandlers import DFSubHandler
-
-from ..conftest import stop_execution
+from test.conftest import stop_execution
 
 init_tests = (
     (("opc.tcp://someurl:48050", None, None), {}, {"url": "opc.tcp://someurl:48050"}),
@@ -349,10 +348,10 @@ class TestConnectionSubscriptions:
             for value in values:
                 try:
                     assert value in data[node].array
-                except AssertionError as exception:
+                except AssertionError:
                     max_missing_values -= 1
                     if max_missing_values < 0:
-                        raise exception
+                        raise
 
         connection.close_sub()
 
@@ -400,7 +399,7 @@ class TestConnectionSubscriptions:
         # Check if connection was actually interrupted during the test.
         messages_found = 0
         for message in caplog.messages:
-            if "Error while checking connection" in message or "Retrying connection to opc" in message:
+            if "Error while checking connection" in message or "Retrying to connect to opc" in message:
                 messages_found += 1
 
         assert messages_found >= 2, "Error while interrupting the connection, test could not be executed reliably."

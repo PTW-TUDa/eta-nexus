@@ -7,13 +7,13 @@ from typing import TYPE_CHECKING
 import pandas as pd
 from dateutil import tz
 
-from eta_nexus.nodes import Node
 from eta_nexus.util import ensure_timezone, round_timestamp
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
     from typing import Any
 
+    from eta_nexus.nodes import Node
     from eta_nexus.util.type_annotations import TimeStep
 
 
@@ -47,7 +47,6 @@ class SubscriptionHandler(ABC):
                           timestamp can be None.
         :return: pandas.Series with corresponding DatetimeIndex.
         """
-
         # Check timestamp first
         # timestamp as datetime-index:
         if isinstance(timestamp, pd.DatetimeIndex):
@@ -70,7 +69,7 @@ class SubscriptionHandler(ABC):
         # timestamp None:
         elif timestamp is None and isinstance(value, pd.Series):
             if not isinstance(value.index, pd.DatetimeIndex):
-                raise ValueError("If timestamp is None, value must have a pd.DatetimeIndex")
+                raise TypeError("If timestamp is None, value must have a pd.DatetimeIndex")
             timestamp = value.index
         else:
             raise TypeError(
@@ -99,4 +98,3 @@ class SubscriptionHandler(ABC):
         :param value: Value of the data.
         :param timestamp: Timestamp of receiving the data.
         """
-        pass

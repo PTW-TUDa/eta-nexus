@@ -197,8 +197,8 @@ class LiveConnect(AbstractContextManager):
         if self._observe_vals and not set(self._observe_vals).issubset(self._nodes):
             missing_nodes = set(self._observe_vals) - set(self._nodes.keys())
             log.error(
-                "Not all observed nodes of the object are configured as nodes. Missing nodes: "
-                + ", ".join(missing_nodes)
+                "Not all observed nodes of the object are configured as nodes. Missing nodes: %s",
+                ", ".join(missing_nodes),
             )
             errors = True
 
@@ -216,12 +216,12 @@ class LiveConnect(AbstractContextManager):
         elif not nds.issubset(self._nodes):
             missing_nodes = nds - set(self._nodes.keys())
             log.error(
-                "Not all nodes required for setting control values are configured as nodes. Missing nodes: "
-                + ", ".join(missing_nodes)
+                "Not all observed nodes of the object are configured as nodes. Missing nodes: %s",
+                ", ".join(missing_nodes),
             )
             errors = True
         else:
-            for _, set_value in self._set_values.items():
+            for set_value in self._set_values.values():
                 set_value.setdefault("node", set_value["name"])
                 set_value.setdefault("threshold", 0)
                 set_value.setdefault("mult", 1)
@@ -241,7 +241,7 @@ class LiveConnect(AbstractContextManager):
             raise KeyError("Not all required nodes are configured.")
 
     def _read_value_mapping(
-        self, values: Mapping[str, Any] | None, flatten: bool = True, *, context_description: str
+        self, values: Mapping[str, Any] | None, *, flatten: bool = True, context_description: str
     ) -> tuple[dict[str, Any] | None, bool]:
         """Read a list of values and deserialize it to a mapping.
 
@@ -250,30 +250,29 @@ class LiveConnect(AbstractContextManager):
         :param context_description: Description to log if mapping fails.
         :return: Tuple of deserialized values and bool indicating an error if true.
         """
-        missing_keys = set()
-        _vals: dict[str, Any] = {}
+        vals: dict[str, Any] = {}
 
         if values is not None:
             for key, sys_val in values.items():
                 if isinstance(sys_val, Mapping) and flatten:
-                    for k, v in sys_val.items():
-                        _vals[k] = v
+                    vals.update(sys_val)
                 elif sys_val is not None:
-                    _vals[key] = sys_val
+                    vals[key] = sys_val
 
-        if not _vals:
-            vals = None
-        else:
-            vals = _vals
+        if not vals:
+            return None, False
 
+        missing_keys = set()
+
+        for key, sys_val in vals.items():
+            if not sys_val:
+                continue
             if flatten:
-                for key, sys_val in vals.items():
-                    if sys_val and key not in self._nodes:
-                        missing_keys.add(key)
-            else:
-                for sys_val in vals.values():
-                    if sys_val and not sys_val.keys() <= self._nodes.keys():
-                        missing_keys.update(sys_val.keys())
+                if key not in self._nodes:
+                    missing_keys.add(key)
+            elif not sys_val.keys() <= self._nodes.keys():
+                missing_keys.update(sys_val.keys())
+
         if missing_keys:
             log.error(
                 f"Nodes {', '.join(missing_keys)} required for {context_description} are missing from the node list."
@@ -308,7 +307,7 @@ class LiveConnect(AbstractContextManager):
             file = pathlib.Path(file_path)
             config = load_config(file)
             if not isinstance(config, dict):
-                raise ValueError("Config file must define a dictionary of options.")
+                raise TypeError("Config file must define a dictionary of options.")
             if "system" in config:
                 main_config["system"].extend(config["system"])
             else:
@@ -337,7 +336,6 @@ class LiveConnect(AbstractContextManager):
         :param config: Configuration dictionary.
         :return: LiveConnect instance as specified by the JSON file.
         """
-
         cls._check_config(config)
 
         # Initialize the connection objects
@@ -422,8 +420,8 @@ class LiveConnect(AbstractContextManager):
             # Rename set_value
             if "set_value" in system and system["set_value"] is not None:
                 _set_values[system["name"]] = system["set_value"].copy()
-                _set_values[system["name"]]["name"] = f"{system['name']}.{system['set_value']['name']}"  # type: ignore
-                _set_values[system["name"]]["node"] = (  # type: ignore
+                _set_values[system["name"]]["name"] = f"{system['name']}.{system['set_value']['name']}"  # type: ignore[index]
+                _set_values[system["name"]]["node"] = (  # type: ignore[index]
                     f"{system['name']}.{system['set_value'].get('node', system['set_value']['name'])}"
                 )
             else:
@@ -522,7 +520,7 @@ class LiveConnect(AbstractContextManager):
         try:
             time.sleep((self.steps_counter * self.step_size) - time.time() + self.start_time)
         except Exception:
-            log.error("Step_size between write and read function is too small")
+            log.exception("Step_size between write and read function is too small")
 
         if self._observe_vals is not None:
             return self.read(*self._observe_vals)
@@ -546,7 +544,7 @@ class LiveConnect(AbstractContextManager):
                 f"'nodes': {len(nodes)}, 'values': {len(values)}"
             )
         if not isinstance(nodes, Mapping) and values is not None:
-            _nodes = dict(zip(nodes, values))
+            _nodes = dict(zip(nodes, values, strict=False))
         elif isinstance(nodes, Mapping):
             _nodes = dict(nodes)
 
@@ -562,10 +560,10 @@ class LiveConnect(AbstractContextManager):
                 if writes[connection]:
                     self._connections[connection].write(writes[connection])
                     self.error_count[idx] = 0
-            except (ConnectionError, ConTimeoutError) as e:
+            except (ConnectionError, ConTimeoutError):
                 if self.error_count[idx] < self.max_error_count:
                     self.error_count[idx] += 1
-                    log.error(e)
+                    log.exception(f"Connection failed (attempt {self.error_count[idx]}:{self.max_error_count})")
                 else:
                     raise
 
@@ -580,12 +578,11 @@ class LiveConnect(AbstractContextManager):
         _error = False
         for name in nodes:
             n = f"{self.name}.{name}" if "." not in name and self.name is not None else name
-            try:
-                node_readings[self._connection_map[n]].append(self._nodes[n])
-            except KeyError as e:
-                new_e = KeyError(f"{e.args[0]} not found in node list.")
-                log.error(new_e)
+            if n not in self._nodes:
+                log.error(f"Node {n} not found in node list")
                 _error = True
+            else:
+                node_readings[self._connection_map[n]].append(self._nodes[n])
         if _error:
             raise KeyError("Check log. One or more nodes not found in node list.")
         # Read from all selected nodes for each connection
@@ -595,11 +592,11 @@ class LiveConnect(AbstractContextManager):
                 if node_readings[connection]:
                     result.update(self._connections[connection].read(node_readings[connection]).iloc[0].to_dict())
                     self.error_count[idx] = 0
-            except (ConnectionError, ConTimeoutError) as e:
+            except (ConnectionError, ConTimeoutError):
                 if self.error_count[idx] < self.max_error_count:
                     self.error_count[idx] += 1
                     result.update({name.name: np.nan for name in node_readings[connection]})
-                    log.error(e)
+                    log.exception(f"Connection failed (attempt {self.error_count[idx]}:{self.max_error_count})")
                 else:
                     raise
 

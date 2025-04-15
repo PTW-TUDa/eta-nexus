@@ -9,12 +9,11 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pandas as pd
 
-from eta_nexus.nodes import Node
-
 if TYPE_CHECKING:
     from collections.abc import Sequence
     from typing import Any
 
+    from eta_nexus.nodes import Node
     from eta_nexus.util.type_annotations import TimeStep
 
 from eta_nexus.subhandlers.subhandler import SubscriptionHandler
@@ -31,7 +30,7 @@ class DFSubHandler(SubscriptionHandler):
                         df.ffill() each time self.data is called.
     """
 
-    def __init__(self, write_interval: TimeStep = 1, size_limit: int = 100, auto_fillna: bool = True) -> None:
+    def __init__(self, write_interval: TimeStep = 1, size_limit: int = 100, *, auto_fillna: bool = True) -> None:
         super().__init__(write_interval=write_interval)
         self._data: pd.DataFrame = pd.DataFrame()
         self._data_lock: threading.Lock = Lock()
@@ -124,4 +123,3 @@ class DFSubHandler(SubscriptionHandler):
 
     def close(self) -> None:
         """This is just here to satisfy the interface, not needed in this case."""
-        pass

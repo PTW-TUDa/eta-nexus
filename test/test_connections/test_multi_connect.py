@@ -8,10 +8,9 @@ from eta_nexus.connections.base_classes import Connection
 from eta_nexus.nodes import Node
 from eta_nexus.servers import OpcuaServer
 from eta_nexus.subhandlers import CsvSubHandler
-
-from ..conftest import stop_execution
-from ..utilities.pyModbusTCP.client import ModbusClient as MockModbusClient
-from ..utilities.requests.eneffco_request import request
+from test.conftest import stop_execution
+from test.utilities.pyModbusTCP.client import ModbusClient as MockModbusClient
+from test.utilities.requests.eneffco_request import request
 
 node = Node(
     "Pu3.425.Mech_n",

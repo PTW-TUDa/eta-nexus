@@ -72,7 +72,6 @@ class OpcuaServer:
 
         :param values: Dictionary of data to write {node.name: value}.
         """
-
         nodes = self._validate_nodes(set(values.keys()))
 
         for node in nodes:
@@ -84,8 +83,7 @@ class OpcuaServer:
             var.write_value(ua.Variant(values[node], opc_type))
 
     def read(self, nodes: OpcuaNode | Nodes[OpcuaNode] | None = None) -> pd.DataFrame:
-        """
-        Read some manually selected values directly from the OPC UA server.
+        """Read some manually selected values directly from the OPC UA server.
 
         :param nodes: Single node or list/set of nodes to read from.
         :return: pandas.DataFrame containing current values of the OPC UA-variables.
@@ -125,10 +123,10 @@ class OpcuaServer:
 
         for node in _nodes:
             try:
-                split_path = node.opc_path_str.split(".")  # type: ignore
+                split_path = node.opc_path_str.split(".")  # type: ignore[union-attr]
                 # If the path starts with a dot, the dot belongs to the root node and is not a separator
-                if node.opc_path_str.startswith("."):  # type: ignore
-                    split_path = node.opc_path_str.rsplit(".", maxsplit=len(split_path) - 2)  # type: ignore
+                if node.opc_path_str.startswith("."):  # type: ignore[union-attr]
+                    split_path = node.opc_path_str.rsplit(".", maxsplit=len(split_path) - 2)  # type: ignore[union-attr]
 
                 # Create SyncNode from asyncNode
                 last_obj = asyncua.sync._to_sync(self._server.tloop, self._server.aio_obj.get_objects_node())
@@ -199,7 +197,7 @@ class OpcuaServer:
     def active(self) -> bool:
         return self._server.aio_obj.bserver._server._serving
 
-    def allow_remote_admin(self, allow: bool) -> None:
+    def allow_remote_admin(self, *, allow: bool) -> None:
         """Allow remote administration of the server.
 
         :param allow: Set to true to enable remote administration of the server.

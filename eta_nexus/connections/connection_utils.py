@@ -5,15 +5,15 @@ from datetime import datetime
 from time import sleep
 from typing import TYPE_CHECKING
 
-import pandas as pd
-
-from eta_nexus.nodes import Node
 from eta_nexus.util import ensure_timezone
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
     from typing import Any, Final
 
+    import pandas as pd
+
+    from eta_nexus.nodes import Node
     from eta_nexus.util.type_annotations import TimeStep
 
 
@@ -72,7 +72,6 @@ class IntervalChecker:
         :param value: Value from the subscription.
         :param timestamp: Time of the incoming value of the node.
         """
-
         if node in self.node_latest_values:
             if value != self.node_latest_values[node][0]:
                 self.node_latest_values[node] = [value, timestamp]
@@ -84,7 +83,6 @@ class IntervalChecker:
 
         :return: Boolean for the interval check.
         """
-
         # Get the current time to compare the interval
         time = self._assert_tz_awareness(datetime.now())
 
@@ -96,7 +94,7 @@ class IntervalChecker:
                     else None
                 )
                 if node in self.node_latest_values and _time_since_last_check is not None:
-                    if _time_since_last_check <= float(node.interval):  # type: ignore
+                    if _time_since_last_check <= float(node.interval):  # type: ignore[arg-type]
                         _changed_within_interval = True
                     else:
                         _changed_within_interval = False
