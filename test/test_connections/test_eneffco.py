@@ -8,8 +8,7 @@ import requests_cache
 from eta_nexus.connections import EneffcoConnection
 from eta_nexus.nodes import Node
 from eta_nexus.subhandlers import DFSubHandler
-
-from ..utilities.requests.eneffco_request import request
+from test.utilities.requests.eneffco_request import request
 
 # Results used for local tests
 sample_series = pd.Series(

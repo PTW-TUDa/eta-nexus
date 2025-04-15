@@ -13,14 +13,13 @@ from typing import TYPE_CHECKING
 
 from dateutil import tz
 
-from eta_nexus.nodes import Node
-
 if TYPE_CHECKING:
     from types import TracebackType
     from typing import Any, TextIO
 
     from typing_extensions import Self
 
+    from eta_nexus.nodes import Node
     from eta_nexus.util.type_annotations import Number, Path, TimeStep
 
 from eta_nexus.subhandlers.subhandler import SubscriptionHandler
@@ -106,7 +105,7 @@ class CsvSubHandler(SubscriptionHandler):
 
                     f.write(timestamp, node.name, value)
                     self._queue.task_done()
-            except BaseException as e:
+            except Exception as e:
                 self.exc = e
 
     def close(self) -> None:
@@ -138,12 +137,11 @@ class _CSVFileDB(AbstractContextManager):
         file: Path,
         file_size_limit: int = 1024,
         dialect: type[csv.Dialect] = csv.excel,
-    ):
+    ) -> None:
         #: Path to the file that is being written to.
         self.filepath: pathlib.Path = file if isinstance(file, pathlib.Path) else pathlib.Path(file)
         #: File descriptor.
-        self._file: TextIO | None = None
-
+        self._file: TextIO
         #: Size limit for written files in bytes.
         self.file_size_limit: int = file_size_limit * 1024 * 1024
         #: CSV dialect to be used for reading and writing data.
@@ -163,33 +161,29 @@ class _CSVFileDB(AbstractContextManager):
         #: Length of the line terminator in bytes (for finding file positions).
         self._len_lineterminator: int = len(bytes(self.dialect.lineterminator, "UTF-8"))
 
-        self.check_file(exclusive_creation=False)
-
-        self.check_valid_csv()
+        self._file = self._check_file(filepath=self.filepath, exclusive_creation=False)
+        self._check_valid_csv()
 
     def __enter__(self) -> Self:
         """Enter the context managed file database."""
         self._open_file()
         return self
 
-    def _open_file(self, exclusive_creation: bool = False) -> None:
+    def _open_file(self, *, exclusive_creation: bool = False) -> None:
         """Open a new file and check whether it is writable. If the file exists, try to figure out the dialect and
         header of the existing file.
 
         :param exclusive_creation: Set to True, to request exclusive creation of a new file. If set to False, an
             existing file may be updated.
         """
-        self.check_file(exclusive_creation)
-        self.check_valid_csv()
+        self._file = self._check_file(filepath=self.filepath, exclusive_creation=exclusive_creation)
+        self._check_valid_csv()
 
-        assert self._file is not None
         # Go to the end to get ready for updating/extending the file.
         self._file.seek(0, 2)
 
-    def check_valid_csv(self) -> None:
+    def _check_valid_csv(self) -> None:
         """Check whether the file is a valid csv file."""
-        assert self._file is not None, "Open a file before calling check_valid_csv."
-
         # If the file is not empty, go to the beginning and try to figure out, whether existing data could be extended.
         if self._file.readline() in "":
             valid = True
@@ -226,24 +220,27 @@ class _CSVFileDB(AbstractContextManager):
         if not valid:
             raise ValueError(f"Output file for writing to '.csv' is not a valid '.csv' file: {self.filepath}.")
 
-    def check_file(self, exclusive_creation: bool = False) -> None:
+    @staticmethod
+    def _check_file(filepath: pathlib.Path, *, exclusive_creation: bool = False) -> TextIO:
         # Try opening or creating the specified file.
         try:
             if exclusive_creation:
-                raise FileNotFoundError
+                raise FileNotFoundError  # noqa: TRY301
 
-            self._file = self.filepath.open("r+t", newline="", encoding="UTF-8")
-            log.debug(f"Opened existing '.csv' file for updating: {self.filepath}.")
+            file = filepath.open("r+t", newline="", encoding="UTF-8")
         except FileNotFoundError:
             try:
-                self._file = self.filepath.open("x+t", newline="", encoding="UTF-8")
-                log.debug(f"Created a new '.csv' file: {self.filepath}.")
+                file = filepath.open("x+t", newline="", encoding="UTF-8")
+                log.debug(f"Created a new '.csv' file: {filepath}.")
             except OSError as e:
-                raise OSError(f"Unable to read or write the requested '.csv' file: {self.filepath}.") from e
+                raise OSError(f"Unable to read or write the requested '.csv' file: {filepath}.") from e
+        else:
+            log.debug(f"Opened existing '.csv' file for updating: {filepath}.")
         # Check whether the file is accessible in the required ways.
-        if self._file is None or not self._file.readable() or not self._file.seekable() or not self._file.writable():
+        if file is None or not file.readable() or not file.seekable() or not file.writable():
             raise ValueError("Output file for writing to '.csv' is not readable or writable.")
         log.debug("Successfully verified full '.csv' file access")
+        return file
 
     def _write_file(self, field_list: list[str], insert_pos: int | None = None) -> int:
         """Write data to the file.
@@ -300,6 +297,7 @@ class _CSVFileDB(AbstractContextManager):
         timestamp: datetime | None = None,
         name: str | None = None,
         value: Number | None = None,
+        *,
         flush: bool = False,
         _len_buffer: int = 20,
     ) -> None:
@@ -381,7 +379,6 @@ class _CSVFileDB(AbstractContextManager):
         if size_limit_exceeded and buffer_target <= _len_buffer:
             log.info(f"CSV File size limit exceeded. Closing current file {self.filepath}.")
             self._file.close()
-            self._file = None
             self.filepath = self.filepath.with_name(f"{self.filepath.stem}_{datetime.now().strftime('%y%m%d%H%M')}.csv")
 
             self._open_file(exclusive_creation=True)
@@ -396,7 +393,7 @@ class _CSVFileDB(AbstractContextManager):
         traceback: TracebackType | None,
         /,
     ) -> None:
-        """Exit the context manager
+        """Exit the context manager.
 
         :param exc_details: Execution details
         """

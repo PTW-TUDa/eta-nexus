@@ -42,7 +42,7 @@ class ModbusServer:
          endian encoding instead, set this to False.
     """
 
-    def __init__(self, ip: str | None = None, port: int = 502, big_endian: bool = True) -> None:
+    def __init__(self, ip: str | None = None, port: int = 502, *, big_endian: bool = True) -> None:
         #: URL of the Modbus Server.
         self.url: str
         if ip is None:
@@ -87,8 +87,7 @@ class ModbusServer:
                 self._server.data_hdl.write_h_regs(node.mb_channel, bits, srv_info)
 
     def read(self, nodes: ModbusNode | Nodes[ModbusNode] | None = None) -> pd.DataFrame:
-        """
-        Read some manually selected values directly from the Modbusserver.
+        """Read some manually selected values directly from the Modbusserver.
 
         :param nodes: Single node or list/set of nodes to read from.
         :return: pandas.DataFrame containing current values of the Modbus-variables.
@@ -129,16 +128,11 @@ class ModbusServer:
 
     def start(self) -> None:
         """Restart the server after it was stopped."""
-        if not self._server.is_run:
-            self._server.start()
+        self._server.start()
 
     def stop(self) -> None:
         """This should always be called, when the server is not needed anymore. It stops the server."""
-        try:
-            self._server.stop()
-        except AttributeError:
-            # Occurs only if server did not exist and can be ignored.
-            pass
+        self._server.stop()
 
     @property
     def active(self) -> bool:

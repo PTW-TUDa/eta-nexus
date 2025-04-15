@@ -5,13 +5,13 @@ does not have the ability to write data.
 from __future__ import annotations
 
 import concurrent.futures
+from contextlib import suppress
 from datetime import datetime, timedelta, timezone
 from logging import getLogger
 from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
-import requests
 from lxml import etree
 from lxml.builder import E
 from requests_cache import DO_NOT_CACHE, CachedSession
@@ -24,9 +24,11 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
     from typing import Any, Final
 
+    import requests
+
+    from eta_nexus.subhandlers import SubscriptionHandler
     from eta_nexus.util.type_annotations import Nodes, TimeStep
 
-from eta_nexus.subhandlers import SubscriptionHandler
 
 from .base_classes import SeriesConnection
 
@@ -34,9 +36,9 @@ log = getLogger(__name__)
 
 
 class EntsoeConnection(SeriesConnection[EntsoeNode], protocol="entsoe"):
-    """
-    ENTSOEConnection is a class to download and upload multiple features from and to the ENTSO-E transparency platform
-    database as timeseries. The platform contains data about the european electricity markets.
+    """ENTSOEConnection is a class to download and upload multiple features from and to the
+    ENTSO-E transparency platform database as timeseries.
+    The platform contains data about the european electricity markets.
 
     :param url: Url of the server with scheme (https://web-api.tp.entsoe.eu/)
     :param usr: Username for login to the platform (usually not required - default: None)
@@ -72,13 +74,12 @@ class EntsoeConnection(SeriesConnection[EntsoeNode], protocol="entsoe"):
 
     @classmethod
     def _from_node(cls, node: EntsoeNode, **kwargs: Any) -> EntsoeConnection:
-        """Initialize the connection object from an entso-e protocol node object
+        """Initialize the connection object from an entso-e protocol node object.
 
         :param node: Node to initialize from
         :param kwargs: Keyword arguments for API authentication, where "api_token" is required
         :return: ENTSOEConnection object
         """
-
         if "api_token" not in kwargs:
             raise AttributeError("Missing required function parameter api_token.")
         api_token = kwargs["api_token"]
@@ -86,9 +87,8 @@ class EntsoeConnection(SeriesConnection[EntsoeNode], protocol="entsoe"):
         return super()._from_node(node, api_token=api_token)
 
     def read(self, nodes: EntsoeNode | Nodes[EntsoeNode] | None = None) -> pd.DataFrame:
-        """
-        .. warning::
-            Cannot read single values from ENTSO-E transparency platform. Use read_series instead
+        """.. warning::
+            Cannot read single values from ENTSO-E transparency platform. Use read_series instead.
 
         :param nodes: Single node or list/set of nodes to read values from
         :return: Pandas DataFrame containing the data read from the connection
@@ -100,9 +100,8 @@ class EntsoeConnection(SeriesConnection[EntsoeNode], protocol="entsoe"):
     def write(
         self, values: Mapping[EntsoeNode, Mapping[datetime, Any]], time_interval: timedelta | None = None
     ) -> None:
-        """
-        .. warning::
-            Cannot write to ENTSO-E transparency platform.
+        """.. warning::
+        Cannot write to ENTSO-E transparency platform.
         """
         raise NotImplementedError("Cannot write to ENTSO-E transparency platform.")
 
@@ -192,7 +191,7 @@ class EntsoeConnection(SeriesConnection[EntsoeNode], protocol="entsoe"):
         interval: TimeStep = 1,
         **kwargs: Any,
     ) -> pd.DataFrame:
-        """Download timeseries data from the ENTSO-E Database
+        """Download timeseries data from the ENTSO-E Database.
 
         :param nodes: Single node or list/set of nodes to read values from
         :param from_time: Starting time to begin reading (included in output)
@@ -248,8 +247,7 @@ class EntsoeConnection(SeriesConnection[EntsoeNode], protocol="entsoe"):
         data_interval: TimeStep = 1,
         **kwargs: Any,
     ) -> None:
-        """
-        .. warning::
+        """.. warning::
             Not implemented: Cannot subscribe to data from the ENTSO-E transparency platform.
 
         :param handler: SubscriptionHandler object with a push method that accepts node, value pairs
@@ -264,9 +262,8 @@ class EntsoeConnection(SeriesConnection[EntsoeNode], protocol="entsoe"):
         raise NotImplementedError("Cannot subscribe to data from the ENTSO-E transparency platform.")
 
     def close_sub(self) -> None:
-        """
-        .. warning::
-            Not implemented: Cannot subscribe to data from the ENTSO-E transparency platform.
+        """.. warning::
+        Not implemented: Cannot subscribe to data from the ENTSO-E transparency platform.
         """
         raise NotImplementedError("Cannot subscribe to data from the ENTSO-E transparency platform.")
 
@@ -277,7 +274,6 @@ class EntsoeConnection(SeriesConnection[EntsoeNode], protocol="entsoe"):
         :param kwargs: Additional arguments for the request.
         :return: request response
         """
-
         # Prepare the basic request for usage in the requests.
         headers = {"Content-Type": "application/xml", "SECURITY_TOKEN": self._api_token}
 
@@ -288,7 +284,7 @@ class EntsoeConnection(SeriesConnection[EntsoeNode], protocol="entsoe"):
         response = self._session.post(self.url, data=etree.tostring(xml), headers=headers, **kwargs)
 
         if response.status_code == 400:
-            try:
+            with suppress(Exception):
                 parser = etree.XMLParser(load_dtd=False, ns_clean=True, remove_pis=True)
 
                 e_msg = etree.XML(response.content, parser)
@@ -296,8 +292,6 @@ class EntsoeConnection(SeriesConnection[EntsoeNode], protocol="entsoe"):
                 e_code = e_msg.find(".//Reason", namespaces=ns).find("code", namespaces=ns).text
                 e_text = e_msg.find(".//Reason", namespaces=ns).find("text", namespaces=ns).text
                 response.reason = f"ENTSO-E Error {response.status_code} ({e_code}: {e_text})"
-            except Exception:
-                pass
 
         response.raise_for_status()
 
@@ -545,7 +539,7 @@ class _ConnectionConfiguration:
 
     def create_params(self, node: EntsoeNode, from_time: datetime, to_time: datetime) -> dict[str, str]:
         """Create request parameters object according to API specifications
-        Handle configuration parameters for each type of connection
+        Handle configuration parameters for each type of connection.
 
         :param node: ENTSO-E Node
         :param from_time: Starting time

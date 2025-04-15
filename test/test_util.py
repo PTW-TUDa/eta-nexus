@@ -65,7 +65,7 @@ def test_log_file_handler_no_path(caplog):
 def test_round_timestamp(datetime_str, interval, expected):
     dt = datetime.strptime(datetime_str, "%Y-%m-%dT%H:%M:%S")
 
-    result = round_timestamp(dt, interval, False).isoformat(sep="T", timespec="seconds")
+    result = round_timestamp(dt, interval, ensure_tz=False).isoformat(sep="T", timespec="seconds")
 
     assert result == expected
 

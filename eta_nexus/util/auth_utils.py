@@ -5,6 +5,7 @@ import socket
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from datetime import datetime, timedelta
+from logging import getLogger
 from tempfile import NamedTemporaryFile
 from typing import TYPE_CHECKING
 
@@ -21,12 +22,16 @@ if TYPE_CHECKING:
     from eta_nexus.util.type_annotations import Path, PrivateKey
 
 
+log = getLogger(__name__)
+
+
 class KeyCertPair(ABC):
     """KeyCertPair is a wrapper for an RSA private key file and a corresponding x509 certificate. Implementations
     provide a contextmanager "tempfiles", which provides access to the certificate files and the
-    properties key and cert, which contain the RSA key and certificate information."""
+    properties key and cert, which contain the RSA key and certificate information.
+    """
 
-    def __init__(self, key: PrivateKey, cert: x509.Certificate):
+    def __init__(self, key: PrivateKey, cert: x509.Certificate) -> None:
         self._key = key
         self._cert = cert
 
@@ -103,7 +108,6 @@ class SelfsignedKeyCertPair(KeyCertPair):
         :param organization: Name of the certificate owner's organization. "OPC UA Client" by default.
         :return: Tuple of RSA private key and x509 certificate.
         """
-
         # Determine certificate subject and issuer from input values.
         subject_attributes = []
 
@@ -175,24 +179,17 @@ class SelfsignedKeyCertPair(KeyCertPair):
         """Accessor for temporary certificate files."""
         try:
             self.store_tempfile()
-            assert self._key_tempfile is not None
-            assert self._cert_tempfile is not None
-
-            self._key_tempfile.close()
-            self._cert_tempfile.close()
             yield self
         finally:
             try:
-                assert self._key_tempfile is not None
-                pathlib.Path(self._key_tempfile.name).unlink()
-            except BaseException:
-                pass
+                pathlib.Path(self.key_path).unlink()
+            except Exception:
+                log.exception("Failed to delete temporary key file.")
 
             try:
-                assert self._cert_tempfile is not None
-                pathlib.Path(self._cert_tempfile.name).unlink()
-            except BaseException:
-                pass
+                pathlib.Path(self.cert_path).unlink()
+            except Exception:
+                log.exception("Failed to delete temporary certificate file.")
 
     @property
     def key_path(self) -> str:

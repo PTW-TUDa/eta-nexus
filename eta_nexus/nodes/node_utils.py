@@ -74,7 +74,7 @@ def _dtype_converter(value: str) -> Callable | None:
     }
 
     try:
-        if value.startswith("list") or value.startswith("tuple") or value.startswith("dict"):
+        if value.startswith(("list", "tuple", "dict")):
             value = value.split("[")[0]
         dtype = _dtypes[_lower_str(value)]
     except KeyError:

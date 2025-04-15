@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import io
 import logging
 import pathlib
 import sys
@@ -10,6 +9,7 @@ from typing import TYPE_CHECKING
 from dateutil import tz
 
 if TYPE_CHECKING:
+    import io
     from typing import Any
 
     from eta_nexus.util.type_annotations import Path

@@ -27,6 +27,7 @@ def find_time_slice(
     time_end: datetime | None = None,
     total_time: TimeStep | None = None,
     round_to_interval: TimeStep | None = None,
+    *,
     random: bool | np.random.Generator = False,
 ) -> tuple[datetime, datetime]:
     """Return a (potentially random) slicing interval that can be used to slice a data frame.
@@ -87,6 +88,7 @@ def df_time_slice(
     time_end: datetime | None = None,
     total_time: TimeStep | None = None,
     round_to_interval: TimeStep | None = None,
+    *,
     random: bool | np.random.Generator = False,
 ) -> pd.DataFrame:
     """Return a data frame which has been sliced starting at time_begin and ending at time_end, from df.
@@ -102,9 +104,8 @@ def df_time_slice(
                    random slice of length total_time in the interval between time_begin and time_end.
     :return: Sliced data frame.
     """
-
-    slice_begin, slice_end = find_time_slice(time_begin, time_end, total_time, round_to_interval, random)
-    return df[slice_begin:slice_end].copy()  # type: ignore
+    slice_begin, slice_end = find_time_slice(time_begin, time_end, total_time, round_to_interval, random=random)
+    return df[slice_begin:slice_end].copy()  # type: ignore[misc]
 
 
 def df_resample(

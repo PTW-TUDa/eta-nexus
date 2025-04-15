@@ -55,8 +55,7 @@ class EmonioConstants:
 
 
 class EmonioNode(Node, protocol="emonio"):
-    """
-    Node for the emonio. The parameter to read is specified by the name of the node.
+    """Node for the emonio. The parameter to read is specified by the name of the node.
     Available parameters are defined in the parameter_map class attribute.
     Additionally, the phase of the parameter can be specified, with 'a', 'b', 'c' or 'abc'.
 
@@ -75,7 +74,6 @@ class EmonioNode(Node, protocol="emonio"):
         if self.address == -1:
             address = self._translate_name()
             object.__setattr__(self, "address", address)
-        assert self.address != -1
 
         _parameter = self.address % 100
         _phase = self.address // 100 * 100

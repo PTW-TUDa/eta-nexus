@@ -1,34 +1,34 @@
-"""Connection base classes (Connection, SeriesConnection, StateConnection)"""
+"""Connection base classes (Connection, SeriesConnection, StateConnection)."""
 
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
-from datetime import datetime
 from typing import TYPE_CHECKING, Generic
 
-import pandas as pd
 from attr import field
 from dateutil import tz
 
 from eta_nexus import url_parse
 from eta_nexus.nodes.node import Node
-from eta_nexus.subhandlers import SubscriptionHandler
 from eta_nexus.util import ensure_timezone, round_timestamp
 from eta_nexus.util.type_annotations import N
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
+    from datetime import datetime
     from typing import Any, ClassVar
     from urllib.parse import ParseResult
 
+    import pandas as pd
     from typing_extensions import Self
 
+    from eta_nexus.subhandlers import SubscriptionHandler
     from eta_nexus.util.type_annotations import Nodes, TimeStep
 
 
 class Connection(Generic[N], ABC):
-    """Common connection interface class
+    """Common connection interface class.
 
     The URL (netloc) may contain the username and password. (schema://username:password@hostname:port/path)
     In this case, the parameters usr and pwd are not required. BUT the keyword parameters of the function will
@@ -98,9 +98,10 @@ class Connection(Generic[N], ABC):
         cls, node: Nodes[Node] | Node, usr: str | None = None, pwd: str | None = None, **kwargs: Any
     ) -> Connection:
         """Will return a single connection for an enumerable of nodes with the same url netloc.
-          Initialize the connection object from a node object. When a list of Node objects is provided,
-          from_node checks if all nodes match the same connection; it throws an error if they don't.
-          A node matches a connection if it has the same url netloc.
+
+        Initialize the connection object from a node object. When a list of Node objects is provided,
+        from_node checks if all nodes match the same connection; it throws an error if they don't.
+        A node matches a connection if it has the same url netloc.
 
         :param node: Node to initialize from.
         :param kwargs: Other arguments are ignored.
@@ -128,10 +129,11 @@ class Connection(Generic[N], ABC):
     @classmethod
     def from_nodes(cls, nodes: Nodes[Node], **kwargs: Any) -> dict[str, Connection[Node]]:
         """Returns a dictionary of connections for nodes with the same url netloc.
-          This method handles different Connections, unlike from_node().
-          The keys of the dictionary are the netlocs of the nodes and
-          each connection contains the nodes with the same netloc.
-          (Uses from_node to initialize connections from nodes.)
+
+        This method handles different Connections, unlike from_node().
+        The keys of the dictionary are the netlocs of the nodes and
+        each connection contains the nodes with the same netloc.
+        (Uses from_node to initialize connections from nodes.).
 
         :param nodes: List of nodes to initialize from.
         :param kwargs: Other arguments are ignored.
@@ -154,7 +156,7 @@ class Connection(Generic[N], ABC):
     @classmethod
     @abstractmethod
     def _from_node(cls, node: N, **kwargs: Any) -> Self:
-        """Initialize the object from a node with corresponding protocol
+        """Initialize the object from a node with corresponding protocol.
 
         :return: Initialized connection object.
         """
@@ -169,21 +171,18 @@ class Connection(Generic[N], ABC):
 
     @abstractmethod
     def read(self, nodes: N | Nodes[N] | None = None) -> pd.DataFrame:
-        """Read data from nodes
+        """Read data from nodes.
 
         :param nodes: Single node or list/set of nodes to read from.
         :return: Pandas DataFrame with resulting values.
         """
 
-        pass
-
     @abstractmethod
     def write(self, values: Mapping[N, Any]) -> None:
-        """Write data to a list of nodes
+        """Write data to a list of nodes.
 
         :param values: Dictionary of nodes and data to write {node: value}.
         """
-        pass
 
     @abstractmethod
     def subscribe(
@@ -195,12 +194,10 @@ class Connection(Generic[N], ABC):
         :param handler: Function to be called upon receiving new values, must accept attributes: node, val.
         :param interval: Interval for receiving new data. Interpreted as seconds when given as integer.
         """
-        pass
 
     @abstractmethod
     def close_sub(self) -> None:
         """Close an open subscription. This should gracefully handle non-existent subscriptions."""
-        pass
 
     @property
     def url(self) -> str:
@@ -261,7 +258,6 @@ class SeriesConnection(Connection[N], ABC):
         :param kwargs: additional argument list, to be defined by subclasses.
         :return: pandas.DataFrame containing the data read from the connection.
         """
-        pass
 
     def subscribe_series(
         self,
@@ -286,4 +282,3 @@ class SeriesConnection(Connection[N], ABC):
         :param nodes: Single node or list/set of nodes to subscribe to.
         :param kwargs: Any additional arguments required by subclasses.
         """
-        pass

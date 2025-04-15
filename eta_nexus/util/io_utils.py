@@ -43,7 +43,7 @@ def json_import(path: Path) -> list[Any] | dict[str, Any]:
         result = json.loads(file)
         log.info(f"JSON file {path} loaded successfully.")
     except OSError as e:
-        log.error(f"JSON file couldn't be loaded: {e.strerror}. Filename: {e.filename}")
+        log.exception(f"JSON file couldn't be loaded: {e.strerror}. Filename: {e.filename}")
         raise
     return result
 
@@ -61,7 +61,7 @@ def toml_import(path: Path) -> dict[str, Any]:
             result = toml.load(f)
         log.info(f"TOML file {path} loaded successfully.")
     except OSError as e:
-        log.error(f"TOML file couldn't be loaded: {e.strerror}. Filename: {e.filename}")
+        log.exception(f"TOML file couldn't be loaded: {e.strerror}. Filename: {e.filename}")
         raise
 
     return result
@@ -80,7 +80,7 @@ def yaml_import(path: Path) -> dict[str, Any]:
             result = yaml.safe_load(f)
         log.info(f"YAML file {path} loaded successfully.")
     except OSError as e:
-        log.error(f"YAML file couldn't be loaded: {e.strerror}. Filename: {e.filename}")
+        log.exception(f"YAML file couldn't be loaded: {e.strerror}. Filename: {e.filename}")
         raise
 
     return result

@@ -18,9 +18,7 @@ from eta_nexus.nodes.node import Node, _dtype_converter
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-    from typing import Any
-
-    from typing_extensions import TypeAlias
+    from typing import Any, TypeAlias
 
 
 log = getLogger(__name__)
@@ -47,8 +45,8 @@ def _convert_list(_type: TypeAlias) -> Callable:
     return converter
 
 
-def _check_api_key(instance, attribute, value):  # type: ignore[no-untyped-def]
-    """attrs validator to check if the API key is set."""
+def _check_api_key(instance, attribute, value) -> None:  # type: ignore[no-untyped-def]
+    """Attrs validator to check if the API key is set."""
     if re.match(r"[A-Za-z0-9]{16}", value) is None:
         raise ValueError("'api_key' must be a 16 character long alphanumeric string.")
 
@@ -62,11 +60,11 @@ def _check_plane(_type: TypeAlias, lower: int, upper: int) -> Callable:
     :param upper: upper bound
     """
 
-    def validator(instance, attribute, value):  # type: ignore[no-untyped-def]
+    def validator(instance, attribute, value) -> None:  # type: ignore[no-untyped-def]
         value = value if isinstance(value, list) else [value]
         for val in value:
             if not isinstance(val, _type):
-                raise ValueError(f"'{attribute.name}' must be of type {_type} ({(val, type(val))}).")
+                raise TypeError(f"'{attribute.name}' must be of type {_type} ({(val, type(val))}).")
             if val < lower:
                 raise ValueError(f"'{attribute.name}' must be >= {lower}: {val}.")
             if val > upper:
@@ -75,8 +73,8 @@ def _check_plane(_type: TypeAlias, lower: int, upper: int) -> Callable:
     return validator
 
 
-def _check_horizon(instance, attribute, value):  # type: ignore[no-untyped-def]
-    """attrs validator to check if horizon attribute corresponds to the API requirements."""
+def _check_horizon(instance, attribute, value) -> None:  # type: ignore[no-untyped-def]
+    """Attrs validator to check if horizon attribute corresponds to the API requirements."""
     if not isinstance(value, list) and value != 0:
         raise ValueError("'horizon' must be a list, 0 (To suppress horizon usage *at all*) or None")
     if len(value) < 4:
@@ -104,11 +102,11 @@ def _forecast_solar_transform(cls: attrs.AttrsInstance, fields: list[attrs.Attri
         types = tuple(map(_dtype_converter, _field.type.split(" | ")))  # type: ignore[union-attr]
 
         # Create and append type validator to existing validators
-        _vlds = [vld.instance_of(tuple(filter(lambda x: x is not None, types)))]  # type: ignore
+        _vlds = [vld.instance_of(tuple(filter(lambda x: x is not None, types)))]  # type: ignore[var-annotated, arg-type]
         if _field.validator:
             # If the field has a vld.and() validator, unpack it and append to the list
             _vlds.extend(
-                [*_field.validator._validators]  # type: ignore
+                [*_field.validator._validators]  # type: ignore[attr-defined]
                 if isinstance(_field.validator, type(vld.and_()))
                 else [_field.validator]
             )
@@ -234,7 +232,7 @@ class ForecastsolarNode(Node, protocol="forecast_solar", attrs_args=attrs_args):
                 if self.api_key is None:
                     raise ValueError("Valid API key is needed for multiple planes")
             else:
-                raise ValueError(
+                raise TypeError(
                     "'declination', 'azimuth' and 'kwp' must be passed either as lists or as single values."
                 )
 
@@ -280,7 +278,8 @@ class ForecastsolarNode(Node, protocol="forecast_solar", attrs_args=attrs_args):
         # Unpack plane parameters and add them to the URL
         if isinstance(url_params["declination"], list):
             url += "".join(
-                f"/{d}/{a}/{k}" for d, a, k in zip(url_params["declination"], url_params["azimuth"], url_params["kwp"])
+                f"/{d}/{a}/{k}"
+                for d, a, k in zip(url_params["declination"], url_params["azimuth"], url_params["kwp"], strict=False)
             )
         else:
             url += f"/{url_params['declination']}/{url_params['azimuth']}/{url_params['kwp']}"

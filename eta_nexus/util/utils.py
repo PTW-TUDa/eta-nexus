@@ -40,8 +40,9 @@ def url_parse(url: str | None, scheme: str = "") -> tuple[ParseResult, str | Non
 
 
 def dict_get_any(dikt: dict[str, Any], *names: str, fail: bool = True, default: Any = None) -> Any:
-    """Get any of the specified items from dictionary, if any are available. The function will return
-    the first value it finds, even if there are multiple matches.
+    """Get any of the specified items from dictionary, if any are available.
+
+    The function will return the first value it finds, even if there are multiple matches.
 
     :param dikt: Dictionary to get values from.
     :param names: Item names to look for.
@@ -64,7 +65,9 @@ def dict_get_any(dikt: dict[str, Any], *names: str, fail: bool = True, default: 
 
 
 def dict_pop_any(dikt: dict[str, Any], *names: str, fail: bool = True, default: Any = None) -> Any:
-    """Pop any of the specified items from dictionary, if any are available. The function will return
+    """Pop any of the specified items from dictionary, if any are available.
+
+    The function will return
     the first value it finds, even if there are multiple matches. This function removes the found values from the
     dictionary!
 
@@ -89,6 +92,7 @@ def dict_pop_any(dikt: dict[str, Any], *names: str, fail: bool = True, default: 
 
 def dict_search(dikt: dict[str, str], val: str) -> str:
     """Function to get key of _psr_types dictionary, given value.
+
     Raise ValueError in case of value not specified in data.
 
     :param val: value to search

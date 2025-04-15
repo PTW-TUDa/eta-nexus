@@ -26,7 +26,7 @@ def nodes_from_config(config_live_connect, config_host_ip):
 def setup_live_connect(config_live_connect, nodes_from_config, config_host_ip):
     server = OpcuaServer(6)
     server.create_nodes(nodes_from_config)
-    server.allow_remote_admin(True)
+    server.allow_remote_admin(allow=True)
 
     config = json_import(config_live_connect["file"])
     config["system"][0]["servers"]["glt"]["url"] = f"{config_host_ip}:4840"

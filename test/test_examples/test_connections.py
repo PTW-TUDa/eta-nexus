@@ -21,10 +21,9 @@ from examples.connections.read_series_forecastsolar import (
 from examples.connections.read_series_wetterdienst import (
     read_series as ex_read_wetterdienst,
 )
-
-from ..utilities.pyModbusTCP.client import ModbusClient as MockModbusClient
-from ..utilities.requests.eneffco_request import request as request_eneffco
-from ..utilities.requests.forecast_solar_request import request as request_forecast_solar
+from test.utilities.pyModbusTCP.client import ModbusClient as MockModbusClient
+from test.utilities.requests.eneffco_request import request as request_eneffco
+from test.utilities.requests.forecast_solar_request import request as request_forecast_solar
 
 
 @pytest.fixture

@@ -57,7 +57,6 @@ lxml = "^5.0.0"
 requests = "^2.31.0"
 pymodbustcp = "~0.3.0"
 cryptography = "^44.0.2"
-fmpy = "^0.3.5"
 wetterdienst = "~0.97.0"  # breaking changes expected
 requests-cache = "^1.2.0"
 pyyaml = "^6.0.2"
@@ -79,7 +78,7 @@ sphinx-copybutton = "^0.5.2"
 esbonio = "^0.16.5"
 # linting / formatting
 pre-commit = "^4.2.0"
-ruff = "~0.11.0"
+ruff = "~0.11.2"
 codespell = "^2.3.0"
 # typing
 mypy = "~1.15"
@@ -158,50 +157,38 @@ exclude_lines = [
 ]
 
 [tool.ruff]
-
 line-length = 120
 indent-width = 4
-
-required-version = ">=0.4.0"
-target-version= "py39"
-
+required-version = ">=0.11.2"
+target-version= "py310"
+output-format = "concise"
 # Only fix with $ruff check --fix
 fix = false
 
-output-format = "concise"
-
 [tool.ruff.lint]
-select = [
-    "F",       # Pyflakes
-    "E", "W",  # Pycodestyle, Error and Warning
-    "I",       # Isort
-    "N",       # Pep8-naming conventions
-    "UP",      # Pyupgrade
-    "PL",      # Pylint
-    "ERA",     # Eradicate
-    "PD",      # Pandas-vet
-    "NPY",     # NumPy-specific
-    "RUF",     # Ruff
-
-    # Flake8:
-    # 2020, asyncio, bugbear, builtins, commas, comprehensions, future-annotations, implicit-str-concat
-    "YTT", "ASYNC", "B", "A", "COM", "C4", "FA", "ISC",
-    # logging, no-pep420, print, pyi, pytest-style, return, simplify, use-pathlib, todo
-    "LOG", "INP", "T20", "PYI", "PT", "RET", "SIM", "PTH", "TD",
-    ]
-
+select = ["ALL"]
 ignore = [
+    "ANN401", "ANN001",  # Don't use `Any` as type annotation
+    "ARG",      # Unused method arguments
+    "BLE001",   # Catch blind exception
+    "C901",     # Complex logic
+    "D",        # Docstrings
+    "DTZ",      # Datetime timezone
+    "EM10",     # Strings in exception messages
+    "G004",     # Logging statement uses f-string
+    "PERF203",  # try - except performance overhead in loop
     "PLR2004",  # Pylint: magic values
-    "SIM105",   # Don't forcce contextlib.suppress
-    "TD002",    # Ignore TODO authors
+    "SLF",      # Private member accessed
+    "TD002", "FIX",  # Ignore TODO authors
+    "TRY003",   # Avoid specifying long messages outside the exception class
     # Recommended to ignore as they conflict with the formatter
     "W191", "E111", "E114", "E117", "D206", "D300", "COM812", "COM819", "ISC001",
 ]
 
-
 [tool.ruff.lint.extend-per-file-ignores]
 "__init__.py" = ["PLC0414"]
-"test/*" = ["RUF012"]
+"test/*" = ["RUF012", "S", "ANN", "D", "SIM"]
+"examples/*" = ["S106", "D"]
 
 [tool.ruff.lint.isort]
 combine-as-imports = true
@@ -212,6 +199,9 @@ max-args = 15
 max-branches = 21
 max-statements = 62
 max-returns = 6
+
+[tool.ruff.lint.pydocstyle]
+convention = "pep257"
 
 [tool.codespell]
 skip = "*.js, *.html, *.lock, */Manifest.toml, ./docs/_build"

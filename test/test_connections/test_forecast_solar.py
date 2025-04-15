@@ -11,8 +11,7 @@ from attrs import validators
 
 from eta_nexus.connections import ForecastsolarConnection
 from eta_nexus.nodes import ForecastsolarNode, Node
-
-from ..utilities.requests.forecast_solar_request import request
+from test.utilities.requests.forecast_solar_request import request
 
 
 # Sample node
@@ -77,27 +76,29 @@ def connection():
 
 def test_node_from_dict():
     nodes = ForecastsolarNode.from_dict(
-        {
-            "name": "node_forecast_solar1",
-            "ip": "",
-            "protocol": "forecast_solar",
-            "endpoint": "estimate",
-            "latitude": 51.15,
-            "longitude": 10.45,
-            "declination": 20,
-            "azimuth": 0,
-            "kwp": 12.34,
-        },
-        {
-            "name": "node_forecast_solar2",
-            "ip": "",
-            "protocol": "forecast_solar",
-            "latitude": 51.15,
-            "longitude": 10.45,
-            "declination": 20,
-            "azimuth": 0,
-            "kwp": 12.34,
-        },
+        [
+            {
+                "name": "node_forecast_solar1",
+                "ip": "",
+                "protocol": "forecast_solar",
+                "endpoint": "estimate",
+                "latitude": 51.15,
+                "longitude": 10.45,
+                "declination": 20,
+                "azimuth": 0,
+                "kwp": 12.34,
+            },
+            {
+                "name": "node_forecast_solar2",
+                "ip": "",
+                "protocol": "forecast_solar",
+                "latitude": 51.15,
+                "longitude": 10.45,
+                "declination": 20,
+                "azimuth": 0,
+                "kwp": 12.34,
+            },
+        ]
     )
 
     for node in nodes:

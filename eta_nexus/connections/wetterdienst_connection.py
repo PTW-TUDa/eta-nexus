@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 
     from wetterdienst.core.timeseries.result import StationsResult
 
+    from eta_nexus.subhandlers import SubscriptionHandler
     from eta_nexus.util.type_annotations import Nodes, TimeStep
 
 from datetime import datetime, timedelta
@@ -24,7 +25,6 @@ from eta_nexus.nodes import (
     WetterdienstObservationNode,
     WetterdienstPredictionNode,
 )
-from eta_nexus.subhandlers import SubscriptionHandler
 
 from .base_classes import SeriesConnection
 
@@ -34,8 +34,7 @@ NW = TypeVar("NW", bound=WetterdienstNode)
 
 
 class WetterdienstConnection(Generic[NW], SeriesConnection[NW], ABC):
-    """
-    The WetterdienstConnection class is a connection to the Wetterdienst API for retrieving weather data.
+    """The WetterdienstConnection class is a connection to the Wetterdienst API for retrieving weather data.
     This class is an abstract base class and should not be used directly. Instead, use the subclasses
     :class:`WetterdienstObservationConnection` and :class:`WetterdienstPredictionConnection`.
 
@@ -59,7 +58,7 @@ class WetterdienstConnection(Generic[NW], SeriesConnection[NW], ABC):
 
     @classmethod
     def _from_node(cls, node: NW, **kwargs: Any) -> WetterdienstConnection:
-        """Initialize the connection object from an wetterdienst protocol node object
+        """Initialize the connection object from an wetterdienst protocol node object.
 
         :param node: Node to initialize from
         :param kwargs: Extra keyword arguments
@@ -93,9 +92,8 @@ class WetterdienstConnection(Generic[NW], SeriesConnection[NW], ABC):
             )
 
     def read(self, nodes: NW | Nodes[NW] | None = None) -> pd.DataFrame:
-        """
-        .. warning::
-            Cannot read single values from the Wetterdienst API. Use read_series instead
+        """.. warning::
+            Cannot read single values from the Wetterdienst API. Use read_series instead.
 
         :param nodes: Single node or list/set of nodes to read values from
         :return: Pandas DataFrame containing the data read from the connection
@@ -103,8 +101,7 @@ class WetterdienstConnection(Generic[NW], SeriesConnection[NW], ABC):
         raise NotImplementedError("Cannot read single values from the Wetterdienst API. Use read_series instead")
 
     def write(self, values: Mapping[NW, Any], time_interval: timedelta | None = None) -> None:
-        """
-        .. warning::
+        """.. warning::
             Cannot write to the Wetterdienst API.
 
         :param values: Dictionary of nodes and data to write. {node: value}
@@ -134,8 +131,7 @@ class WetterdienstConnection(Generic[NW], SeriesConnection[NW], ABC):
         data_interval: TimeStep = 1,
         **kwargs: Any,
     ) -> None:
-        """
-        .. warning::
+        """.. warning::
             Not implemented: Cannot subscribe to data from the Wetterdienst API.
 
         :param handler: SubscriptionHandler object with a push method that accepts node, value pairs
@@ -150,16 +146,14 @@ class WetterdienstConnection(Generic[NW], SeriesConnection[NW], ABC):
         raise NotImplementedError("Cannot subscribe to data from the Wetterdienst API.")
 
     def close_sub(self) -> None:
-        """
-        .. warning::
-            Not implemented: Cannot subscribe to data from the the Wetterdienst API.
+        """.. warning::
+        Not implemented: Cannot subscribe to data from the the Wetterdienst API.
         """
         raise NotImplementedError("Cannot subscribe to data from the the Wetterdienst API.")
 
     def retrieve_stations(self, node: WetterdienstNode, request: DwdObservationRequest) -> pd.DataFrame:
-        """
-        Retrieve stations from the Wetterdienst API and return the values as a pandas DataFrame
-        Stations are filtered by the node's station_id or latlon and number_of_stations
+        """Retrieve stations from the Wetterdienst API and return the values as a pandas DataFrame
+        Stations are filtered by the node's station_id or latlon and number_of_stations.
 
         :param node: Node to retrieve stations for
         :param request: Wetterdienst request object, containing the station data
@@ -184,8 +178,7 @@ class WetterdienstConnection(Generic[NW], SeriesConnection[NW], ABC):
 class WetterdienstObservationConnection(
     WetterdienstConnection[WetterdienstObservationNode], protocol="wetterdienst_observation"
 ):
-    """
-    The WetterdienstObservationConnection class is a connection to the Wetterdienst API
+    """The WetterdienstObservationConnection class is a connection to the Wetterdienst API
     for retrieving weather observation data. Data can only be read with
     :func:`~wetterdienst.WetterdienstObservationConnection.read_series`.
     """
@@ -198,8 +191,7 @@ class WetterdienstObservationConnection(
         interval: TimeStep = 60,
         **kwargs: Any,
     ) -> pd.DataFrame:
-        """
-        Read weather observation data from the Wetterdienst API for the given nodes and time interval
+        """Read weather observation data from the Wetterdienst API for the given nodes and time interval.
 
         :param from_time: Start time for the data retrieval
         :param to_time: End time for the data retrieval
@@ -207,7 +199,6 @@ class WetterdienstObservationConnection(
         :param interval: Time interval between data points in seconds
         :return: Pandas DataFrame containing the data read from the connection
         """
-
         super().read_series(from_time, to_time, nodes, interval)
         nodes = self._validate_nodes(nodes)
         interval = interval if isinstance(interval, timedelta) else timedelta(seconds=interval)
@@ -227,10 +218,7 @@ class WetterdienstObservationConnection(
 
         # We can't use a ThreadPoolExecutor here, as the Wetterdienst library uses asyncio.
         # As a result, we have to call the _read_node method directly, which causes type errors.
-        results = []
-        for node in nodes:
-            results.append(_read_node(node))
-        result = pd.concat(results, axis=1, sort=False)
+        result = pd.concat([_read_node(node) for node in nodes], axis=1, sort=False)
 
         # Convert the data to the requested interval
         return result.asfreq(interval, method="ffill").ffill()
@@ -239,8 +227,7 @@ class WetterdienstObservationConnection(
 class WetterdienstPredictionConnection(
     WetterdienstConnection[WetterdienstPredictionNode], protocol="wetterdienst_prediction"
 ):
-    """
-    The WetterdienstPredictionConnection class is a connection to the Wetterdienst API
+    """The WetterdienstPredictionConnection class is a connection to the Wetterdienst API
     for retrieving weather prediction data (MOSMIX). Data can only be read with
     :func:`~wetterdienst.WetterdienstPredictionConnection.read_series`.
     """
@@ -253,8 +240,7 @@ class WetterdienstPredictionConnection(
         interval: TimeStep = 0,
         **kwargs: Any,
     ) -> pd.DataFrame:
-        """
-        Read weather prediction data from the Wetterdienst API for the given nodes.
+        """Read weather prediction data from the Wetterdienst API for the given nodes.
         The interval parameter is not used for prediction data, as predictions are always given hourly.
 
         :param from_time: Start time for the data retrieval
@@ -263,7 +249,6 @@ class WetterdienstPredictionConnection(
         :param interval: - Not used for prediction data
         :return: Pandas DataFrame containing the data read from the connection
         """
-
         super().read_series(from_time, to_time, nodes, interval)
         nodes = self._validate_nodes(nodes)
 
@@ -279,7 +264,4 @@ class WetterdienstPredictionConnection(
 
         # We can't use a ThreadPoolExecutor here, as the Wetterdienst library uses asyncio.
         # As a result, we have to call the _read_node method directly, which causes type errors.
-        results = []
-        for node in nodes:
-            results.append(_read_node(node))
-        return pd.concat(results, axis=1, sort=False)
+        return pd.concat([_read_node(node) for node in nodes], axis=1, sort=False)

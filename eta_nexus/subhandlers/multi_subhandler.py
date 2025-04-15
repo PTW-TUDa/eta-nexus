@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from datetime import datetime
 from logging import getLogger
 from typing import TYPE_CHECKING
 
-from eta_nexus.nodes import Node
-
 if TYPE_CHECKING:
+    from datetime import datetime
     from typing import Any
+
+    from eta_nexus.nodes import Node
 
 
 from eta_nexus.subhandlers.subhandler import SubscriptionHandler
@@ -52,4 +52,4 @@ class MultiSubHandler(SubscriptionHandler):
             try:
                 handler.close()
             except Exception:
-                pass
+                log.exception(f"Failed to close subscription handler {handler}.")

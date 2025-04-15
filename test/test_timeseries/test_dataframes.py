@@ -39,7 +39,7 @@ class TestResample:
         diffs = [(uneven_index[i] - uneven_index[i - 1]).total_seconds() for i in range(1, len(uneven_index))]
         diffs[3] += 30  # hardcoded fix for 0
         ref_values = []
-        for diff, value in zip(diffs, uneven_data):
+        for diff, value in zip(diffs, uneven_data, strict=False):
             ref_values.extend([float(value)] * round(diff / 60))
         assert values[1:] == ref_values
 
