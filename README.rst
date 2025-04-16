@@ -1,13 +1,13 @@
 ETA Nexus
-#############
+#########
 
 *ETA Nexus* is a Python package designed to manage and facilitate inbound as well as outbound connections to various endpoints, including PLC controllers, field devices, and API services. The package aims to provide standardized connectivity through one unified notation across multiple communication protocols, currently supporting OPC UA, Modbus TCP, and REST.
 
 If you want to record timeseries continuously, you can also use the `Datarecorder Application <https://git.ptw.maschinenbau.tu-darmstadt.de/eta-fabrik/public/eta-datarecorder>`_ which uses the *eta_nexus* package. Currently, only StatusConnectionType-Connections are supported by the Datarecorder.
 
 Docs
-*******
-`Full documentation can be found here: eta-nexus.readthedocs.io (TODO: Make this a link as soon as first docs version is released.)
+****
+Full documentation can be found here: eta-nexus.readthedocs.io (TODO: Make this a link as soon as first docs version is released.)
 
 .. warning::
 
@@ -61,12 +61,12 @@ While ``StatusConnectionType`` implements ``read()`` and ``write()``, to handle 
 Contributing
 =============
 
-Please read the :doc:`development guide <guide/development>` before starting development on *eta_nexus*
+Please read the `development guide <https://eta-utility.readthedocs.io/en/main/guide/development.html>`_ before starting development on *eta_nexus*
 
 Citing this Project / Authors
 ================================
 
-See :doc:`AUTHORS <authors>` for a full list of contributors.
+See `AUTHORS.rst` for a full list of contributors.
 
 Please cite this repository as:
 
