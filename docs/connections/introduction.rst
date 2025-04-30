@@ -18,7 +18,7 @@ The *connections* module also provides subscription handlers which take data rea
 intervals and for example store it in files or in memory for later access. These subscription handlers can handle
 multiple different connections (with different protocols) at the same time.
 
-The *LiveConnect* class is specifically designed to combine the functionality from the *eta_x* and *connections*
+The *ConnectionManager* class is specifically designed to combine the functionality from the *eta_x* and *connections*
 modules. It can establish connections and provides an interface equivalent to the classes in the *simulators*
 module. This allows easy substitution of simulation models with actual connections to real machines (or the other
 way). When trying to deploy a model into operation this substitution can be very useful.

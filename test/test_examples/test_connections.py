@@ -7,9 +7,9 @@ from eta_nexus.connections.emonio_connection import ModbusNodeFactory
 from eta_nexus.nodes import Node
 from eta_nexus.servers import OpcuaServer
 from eta_nexus.servers.modbus_server import ModbusServer
-from examples.connections.read_emonio_live import (
+from examples.connections.read_emonio import (
+    connection_manager_from_dict,
     emonio_manual,
-    live_from_dict,
     modbus_manual,
 )
 from examples.connections.read_series_eneffco import (
@@ -98,8 +98,8 @@ class TestEmonio:
 
     values = (230, 1)
 
-    def test_live(self, server, url):
-        result = live_from_dict(url)
+    def test_connection_manager(self, server, url):
+        result = connection_manager_from_dict(url)
         assert result["emonio.V_RMS"] // 1 == self.values[0]
         assert result["emonio.I_RMS"] // 1 == self.values[1]
 

@@ -1,4 +1,5 @@
-from .util import (
+from eta_nexus.connection_manager import ConnectionManager as ConnectionManager
+from eta_nexus.util import (
     LOG_DEBUG as LOG_DEBUG,
     LOG_ERROR as LOG_ERROR,
     LOG_INFO as LOG_INFO,

@@ -3,11 +3,11 @@ import pandas as pd
 from eta_nexus.nodes import EmonioNode
 
 
-def live_from_dict(url: str) -> dict[str, float]:
-    # --live--
-    from eta_nexus.connections.live_connect import LiveConnect
+def connection_manager_from_dict(url: str) -> dict[str, float]:
+    # --connection_manager--
+    from eta_nexus import ConnectionManager
 
-    live = {
+    config = {
         "system": [
             {
                 "name": "emonio",
@@ -20,11 +20,11 @@ def live_from_dict(url: str) -> dict[str, float]:
         ]
     }
     # Create the connection object with classmethod from_dict
-    connection = LiveConnect.from_dict(None, None, 1, 10, **live)
+    connection = ConnectionManager.from_dict(1, 10, **config)
 
     # Read the values of the nodes we defined in the dictionary
     return connection.read("V_RMS", "I_RMS")
-    # --live--
+    # --connection_manager--
 
 
 def emonio_manual(url: str) -> pd.DataFrame:
