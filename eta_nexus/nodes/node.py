@@ -15,8 +15,8 @@ from attrs import (
     field,
 )
 
-from eta_nexus import dict_get_any, url_parse
 from eta_nexus.nodes.node_utils import _dtype_converter, _strip_str
+from eta_nexus.util import dict_get_any, url_parse
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence

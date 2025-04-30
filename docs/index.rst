@@ -36,7 +36,7 @@ Please read the development guide before starting development on *eta_nexus*: :r
     /connections/forecastsolar
     /connections/wetterdienst
     /connections/sub_handlers
-    /connections/live_connect
+    /connections/connection_manager
 
 .. toctree::
     :maxdepth: 1

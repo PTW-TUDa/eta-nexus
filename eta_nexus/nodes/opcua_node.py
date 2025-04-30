@@ -9,9 +9,9 @@ from attrs import (
     validators as vld,
 )
 
-from eta_nexus import dict_get_any
 from eta_nexus.nodes.node import Node
 from eta_nexus.nodes.node_utils import _lower_str, _strip_str
+from eta_nexus.util import dict_get_any
 
 if TYPE_CHECKING:
     from typing import Any

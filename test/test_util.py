@@ -14,8 +14,8 @@ from eta_nexus.util import (
 )
 
 
-def test_from_config(config_live_connect):
-    file = pathlib.Path(config_live_connect["file"])
+def test_from_config(config_connection_manager):
+    file = pathlib.Path(config_connection_manager["file"])
 
     config_json = load_config(file.with_suffix(".json"))
     config_toml = load_config(file.with_suffix(".toml"))

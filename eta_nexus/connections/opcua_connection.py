@@ -29,9 +29,9 @@ from asyncua.crypto.security_policies import SecurityPolicyBasic256Sha256
 from asyncua.sync import Client, Subscription
 from asyncua.ua import SecurityPolicy, uaerrors
 
-from eta_nexus import KeyCertPair, Suppressor
 from eta_nexus.connections.connection_utils import IntervalChecker, RetryWaiter
 from eta_nexus.nodes import OpcuaNode
+from eta_nexus.util import KeyCertPair, Suppressor
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Mapping, Sequence

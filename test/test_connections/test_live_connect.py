@@ -1,14 +1,14 @@
 import pytest
 
 from eta_nexus import json_import
-from eta_nexus.connections import LiveConnect
+from eta_nexus.connection_manager import ConnectionManager
 from eta_nexus.nodes import Node
 from eta_nexus.servers import OpcuaServer
 
 
 @pytest.fixture
-def nodes_from_config(config_live_connect, config_host_ip):
-    config = json_import(config_live_connect["file"])
+def nodes_from_config(config_connection_manager, config_host_ip):
+    config = json_import(config_connection_manager["file"])
 
     # Combine config for nodes with server config
     for n in config["system"][0]["nodes"]:
@@ -23,15 +23,15 @@ def nodes_from_config(config_live_connect, config_host_ip):
 
 
 @pytest.fixture
-def setup_live_connect(config_live_connect, nodes_from_config, config_host_ip):
+def setup_connection_manager(config_connection_manager, nodes_from_config, config_host_ip):
     server = OpcuaServer(6)
     server.create_nodes(nodes_from_config)
     server.allow_remote_admin(allow=True)
 
-    config = json_import(config_live_connect["file"])
+    config = json_import(config_connection_manager["file"])
     config["system"][0]["servers"]["glt"]["url"] = f"{config_host_ip}:4840"
 
-    connection = LiveConnect.from_dict(**config)
+    connection = ConnectionManager.from_dict(**config)
 
     connection.step({"CHP.u": 0})
     connection.deactivate()
@@ -50,8 +50,8 @@ read_values = (
 
 
 @pytest.mark.parametrize(("values"), read_values)
-def test_read(setup_live_connect, values):
-    connection = setup_live_connect
+def test_read(setup_connection_manager, values):
+    connection = setup_connection_manager
     result = connection.read(*values.keys())
 
     assert result == values
@@ -82,8 +82,8 @@ read_write_values = (
 
 
 @pytest.mark.parametrize(("values"), read_write_values)
-def test_read_write(setup_live_connect, values):
-    connection = setup_live_connect
+def test_read_write(setup_connection_manager, values):
+    connection = setup_connection_manager
     connection.write(values)
 
     result = connection.read(*values.keys())
@@ -91,8 +91,8 @@ def test_read_write(setup_live_connect, values):
     assert result == values
 
 
-def test_set_activate_and_deactivate(setup_live_connect):
-    connection = setup_live_connect
+def test_set_activate_and_deactivate(setup_connection_manager):
+    connection = setup_connection_manager
 
     result = connection.step({"u": 0.7})
     assert result == {"CHP.power_elek": 0, "CHP.operation": False, "CHP.control_value_opti": 70}
@@ -107,8 +107,8 @@ def test_set_activate_and_deactivate(setup_live_connect):
     assert result == {"CHP.op_request": False}
 
 
-def test_close(setup_live_connect):
-    connection = setup_live_connect
+def test_close(setup_connection_manager):
+    connection = setup_connection_manager
 
     connection.write(read_write_values[0])
 

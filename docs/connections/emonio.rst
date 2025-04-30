@@ -78,20 +78,20 @@ EmonioNode
 
 Example Usage
 --------------------------------------
-This example demonstrates how to create a :class:`~eta_nexus.connections.live_connect.LiveConnect` from a dictionary to read data from an Emonio device.
-Alternatively, the LiveConnection can be created from a JSON file, with the JSON having the same structure as the dictionary.
+This example demonstrates how to create a :class:`~eta_nexus.connection_manager.ConnectionManager` from a dictionary to read data from an Emonio device.
+Alternatively, the Connection Manager can be created from a JSON file, with the JSON having the same structure as the dictionary.
 
 ``url`` has to be replaced with the IP address and port of the Emonio device, e.g. ``"192.168.178.123:502"``.
 
-.. literalinclude:: ../../examples/connections/read_emonio_live.py
-    :start-after: --live--
-    :end-before: --live--
+.. literalinclude:: ../../examples/connections/read_emonio.py
+    :start-after: --connection_manager--
+    :end-before: --connection_manager--
     :dedent:
 
 Here we create the Emonio nodes manually and read them with the
 :class:`~eta_nexus.connections.EmonioConnection` class.
 
-.. literalinclude:: ../../examples/connections/read_emonio_live.py
+.. literalinclude:: ../../examples/connections/read_emonio.py
     :start-after: --emonio--
     :end-before: --emonio--
     :dedent:
@@ -99,7 +99,7 @@ Here we create the Emonio nodes manually and read them with the
 The :class:`~eta_nexus.connections.emonio_connection.ModbusNodeFactory` can be used to create modbus nodes directly.
 But this is not recommended, as the :class:`~eta_nexus.connections.EmonioConnection` class is more convenient and has extra error checking.
 
-.. literalinclude:: ../../examples/connections/read_emonio_live.py
+.. literalinclude:: ../../examples/connections/read_emonio.py
     :start-after: --modbus--
     :end-before: --modbus--
     :dedent:

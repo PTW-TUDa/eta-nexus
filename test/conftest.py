@@ -86,6 +86,6 @@ def config_nodes_file():
 
 
 @pytest.fixture(scope="session")
-def config_live_connect():
-    """Test configuration for live connect."""
-    return {"file": pathlib.Path(__file__).parent / "resources/live_connect/config.json"}
+def config_connection_manager():
+    """Test configuration for connection manager."""
+    return {"file": pathlib.Path(__file__).parent / "resources/connection_manager/config.json"}

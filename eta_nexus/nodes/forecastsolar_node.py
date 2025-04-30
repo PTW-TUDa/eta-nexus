@@ -13,8 +13,8 @@ from attrs import (
     validators as vld,
 )
 
-from eta_nexus import dict_get_any
 from eta_nexus.nodes.node import Node, _dtype_converter
+from eta_nexus.util import dict_get_any
 
 if TYPE_CHECKING:
     from collections.abc import Callable

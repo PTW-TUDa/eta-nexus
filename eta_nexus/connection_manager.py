@@ -1,4 +1,4 @@
-"""Initiate live connections that automate certain tasks associated with the creation of such connections."""
+"""Initiate connections that automate certain tasks associated with the creation of such connections."""
 
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 log = getLogger(__name__)
 
 
-class LiveConnect(AbstractContextManager):
+class ConnectionManager(AbstractContextManager):
     """Connect to a system/resource and enable system activation, deactivation and configuring controller setpoints.
 
     The class can be initialized directly by supplying all required arguments or from a JSON configuration file.
@@ -104,7 +104,7 @@ class LiveConnect(AbstractContextManager):
 
     :param name: Name to uniquely identify the system. The name is also used as the default system prefix.
     :param nodes: Sequence/List of Nodes, which should be used for the actions and for initializing connections.
-    :param step_size: Step size (time) for the live connection in time increments.
+    :param step_size: Step size (time) for the connection in time increments.
     :param init: Nodes for initializing the system (see above).
     :param activate: Nodes for activating the system (see above).
     :param deactivate: Nodes for deactivating the system (see above).
@@ -147,13 +147,13 @@ class LiveConnect(AbstractContextManager):
                 raise ValueError(f"Node without netloc supplied: {node.name}")
         #: Start time of initialisation.
         self.start_time = time.time()
-        #: Step size (time) for the live connection in time increments.
+        #: Step size (time) for the connection in time increments.
         self.step_size = int(step_size) if not isinstance(step_size, timedelta) else int(step_size.total_seconds())
-        #: Current step of the live connection (number of completed steps).
+        #: Current step of the connection (number of completed steps).
         self.steps_counter: int = 0
         #: Maximum error count when connections in read/write function are aborted.
         self.max_error_count: int = max_error_count
-        #: Counts the number of errors when Live Connection logs errors.
+        #: Counts the number of errors when Connection Manager logs errors.
         self.error_count: list[int] = [0] * len(self._connections)
 
         self._init_config_nodes(activate, activation_indicators, close, deactivate, init, observe, set_values)
@@ -284,11 +284,9 @@ class LiveConnect(AbstractContextManager):
     def from_config(
         cls,
         files: Path | Sequence[Path],
-        usr: str | None = None,
-        pwd: str | None = None,
         step_size: TimeStep = 1,
         max_error_count: int = 10,
-    ) -> LiveConnect:
+    ) -> ConnectionManager:
         """Initialize the connection directly from JSON configuration files. The file should contain parameters
         as described above. A list of file names can be supplied to enable the creation of larger, combined systems.
 
@@ -296,10 +294,8 @@ class LiveConnect(AbstractContextManager):
         the config file.
 
         :param files: Configuration file paths. Accepts a single file or a list of files.
-        :param usr: Username for authentication with the resource.
-        :param pwd: Password for authentication with the resource.
-        :param step_size: Step size (time) for the live connection in time increments.
-        :return: LiveConnect instance as specified by the JSON file.
+        :param step_size: Step size (time) for the connection in time increments.
+        :return: ConnectionManager instance as specified by the JSON file.
         """
         files = [files] if not isinstance(files, Sequence) else files
         main_config: dict[str, list[Any]] = {"system": []}
@@ -313,33 +309,29 @@ class LiveConnect(AbstractContextManager):
             else:
                 main_config["system"].append(config)
 
-        return cls.from_dict(**main_config, usr=usr, pwd=pwd, step_size=step_size, max_error_count=max_error_count)
+        return cls.from_dict(**main_config, step_size=step_size, max_error_count=max_error_count)
 
     @classmethod
     def from_dict(
         cls,
-        usr: str | None = None,
-        pwd: str | None = None,
         step_size: TimeStep = 1,
         max_error_count: int = 10,
         **config: Any,
-    ) -> LiveConnect:
+    ) -> ConnectionManager:
         """Initialize the connection directly from a config dictionary. The dictionary should contain parameters
         as described above.
 
         Username and password supplied as keyword arguments will take precedence over information given in
         the config file.
 
-        :param usr: Username for authentication with the resource.
-        :param pwd: Password for authentication with the resource.
-        :param step_size: Step size (time) for the live connection in time increments.
+        :param step_size: Step size (time) for the connection in time increments.
         :param config: Configuration dictionary.
-        :return: LiveConnect instance as specified by the JSON file.
+        :return: ConnectionManager instance as specified by the JSON file.
         """
         cls._check_config(config)
 
         # Initialize the connection objects
-        _act_indicators, _actions, nodes, _observe, _set_values = cls._read_config(config, pwd, usr)
+        _act_indicators, _actions, nodes, _observe, _set_values = cls._read_config(config)
         name = config["system"][0]["name"] if len(config["system"]) == 1 else None
 
         return cls(
@@ -381,7 +373,7 @@ class LiveConnect(AbstractContextManager):
 
     @classmethod
     def _read_config(
-        cls, config: Mapping[str, Any], pwd: str | None, usr: str | None
+        cls, config: Mapping[str, Any]
     ) -> tuple[
         dict[str, dict[str, Any] | None],
         dict[str, dict[str, Any]],
@@ -400,9 +392,6 @@ class LiveConnect(AbstractContextManager):
             for _node in system["nodes"]:
                 n = _node.copy()
                 server = system["servers"][n.pop("server")]
-                if "usr" in server and "pwd" in server:
-                    usr = server["usr"]
-                    pwd = server["pwd"]
 
                 _nodes.extend(
                     Node.from_dict(
@@ -410,8 +399,8 @@ class LiveConnect(AbstractContextManager):
                             "name": f"{system['name']}.{n.pop('name')}",
                             "url": server["url"],
                             "protocol": server["protocol"],
-                            "usr": usr,
-                            "pwd": pwd,
+                            "usr": server.get("usr"),
+                            "pwd": server.get("pwd"),
                             **n,
                         }
                     )
