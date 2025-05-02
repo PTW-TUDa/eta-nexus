@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pathlib
 import sys
 import time
 from collections.abc import Mapping, Sequence
@@ -283,7 +282,7 @@ class ConnectionManager(AbstractContextManager):
     @classmethod
     def from_config(
         cls,
-        files: Path | Sequence[Path],
+        *files: Path,
         step_size: TimeStep = 1,
         max_error_count: int = 10,
     ) -> ConnectionManager:
@@ -293,15 +292,13 @@ class ConnectionManager(AbstractContextManager):
         Username and password supplied as keyword arguments will take precedence over information given in
         the config file.
 
-        :param files: Configuration file paths. Accepts a single file or a list of files.
+        :param files: Configuration file paths. Accepts one or multiple files.
         :param step_size: Step size (time) for the connection in time increments.
         :return: ConnectionManager instance as specified by the JSON file.
         """
-        files = [files] if not isinstance(files, Sequence) else files
         main_config: dict[str, list[Any]] = {"system": []}
         for file_path in files:
-            file = pathlib.Path(file_path)
-            config = load_config(file)
+            config = load_config(file_path)
             if not isinstance(config, dict):
                 raise TypeError("Config file must define a dictionary of options.")
             if "system" in config:

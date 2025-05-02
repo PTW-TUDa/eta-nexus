@@ -6,7 +6,7 @@ from eta_nexus.nodes import Node
 from eta_nexus.servers import OpcuaServer
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def nodes_from_config(config_connection_manager, config_host_ip):
     config = json_import(config_connection_manager["file"])
 
@@ -22,7 +22,7 @@ def nodes_from_config(config_connection_manager, config_host_ip):
     return Node.from_dict(config["system"][0]["nodes"])
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def setup_connection_manager(config_connection_manager, nodes_from_config, config_host_ip):
     server = OpcuaServer(6)
     server.create_nodes(nodes_from_config)
@@ -37,6 +37,11 @@ def setup_connection_manager(config_connection_manager, nodes_from_config, confi
     connection.deactivate()
     yield connection
     server.stop()
+
+
+def test_from_string_config(config_connection_manager):
+    path = config_connection_manager["file"]
+    ConnectionManager.from_config(str(path))
 
 
 read_values = (
