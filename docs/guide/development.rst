@@ -69,7 +69,7 @@ For more information, see the `Poetry documentation <https://python-poetry.org/d
 Installation of eta_nexus
 -------------------------------------
 First, clone the repository to a directory of your choosing. You can use a git GUI for this or
-execute the following command. See also :ref:`install_git`.
+execute the following command.
 
 .. code-block:: console
 

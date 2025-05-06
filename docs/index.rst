@@ -16,7 +16,6 @@ Please read the development guide before starting development on *eta_nexus*: :r
     :hidden:
     :caption: Guide
 
-    /guide/python_install
     /guide/install
     /guide/development
     /guide/faq
