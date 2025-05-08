@@ -9,12 +9,7 @@ import pandas as pd
 from pyModbusTCP.server import ModbusServer as BaseModbusServer
 
 from eta_nexus import ensure_timezone, url_parse
-from eta_nexus.nodes import ModbusNode
-from eta_nexus.util.modbus_utils import (
-    bitarray_to_registers,
-    decode_modbus_value,
-    encode_bits,
-)
+from eta_nexus.nodes.modbus_node import ModbusNode, bitarray_to_registers
 
 if TYPE_CHECKING:
     import types
@@ -38,11 +33,9 @@ class ModbusServer:
 
     :param ip: IP Address to listen on (default: None).
     :param port: Port to listen on (default: 502).
-    :param big_endian: The server will encode values as big endian by default. If you would like to have little
-         endian encoding instead, set this to False.
     """
 
-    def __init__(self, ip: str | None = None, port: int = 502, *, big_endian: bool = True) -> None:
+    def __init__(self, ip: str | None = None, port: int = 502) -> None:
         #: URL of the Modbus Server.
         self.url: str
         if ip is None:
@@ -56,7 +49,6 @@ class ModbusServer:
         log.info(f"Server Address is {self.url}")
 
         self._url, _, _ = url_parse(self.url)
-        self._big_endian = big_endian
 
         self._server: BaseModbusServer = BaseModbusServer(self._url.hostname, self._url.port, no_block=True)
         self.start()
@@ -71,11 +63,7 @@ class ModbusServer:
         srv_info = BaseModbusServer.ServerInfo()
 
         for node in nodes:
-            byteorder = "big" if self._big_endian else "little"
-            if not isinstance(values[node], list):
-                bits = encode_bits(values[node], byteorder, node.mb_bit_length, node.dtype)
-            else:
-                bits = values[node]
+            bits = node.encode_bits(values[node]) if not isinstance(values[node], list) else values[node]
 
             if node.mb_register == "coils":
                 self._server.data_hdl.write_coils(node.mb_channel, bits, srv_info)
@@ -111,8 +99,7 @@ class ModbusServer:
                 raise ValueError(f"The specified register type is not supported: {node.mb_register}")
 
             if val.ok and (node.mb_register in ("holding", "input")):
-                byteorder = "big" if self._big_endian else "little"
-                results[node.name] = decode_modbus_value(val.data, byteorder, node.dtype, node.mb_wordorder)
+                results[node.name] = node.decode_modbus_value(val.data)
             elif val.ok and isinstance(val.data, list):
                 if len(val.data) > 1:
                     for idx, value in enumerate(val.data):

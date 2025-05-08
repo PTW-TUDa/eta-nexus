@@ -1,8 +1,8 @@
 import pytest
 
 from eta_nexus.nodes import Node
+from eta_nexus.nodes.modbus_node import ModbusNode, bitarray_to_registers
 from eta_nexus.servers import ModbusServer
-from eta_nexus.util.modbus_utils import bitarray_to_registers, encode_bits
 
 nodes = (
     {
@@ -91,7 +91,7 @@ class TestServerOperations:
         assert server.active is True
 
     def test_write_data_holding(self, server, local_nodes, config_modbus_port):
-        node = Node(
+        node: ModbusNode = Node(
             "Serv.NodeName",
             url=local_nodes[0].url,
             protocol="modbus",
@@ -104,11 +104,11 @@ class TestServerOperations:
         server.write({node: value})
 
         result = server._server.data_bank._h_regs[node.mb_channel : node.mb_channel + node.mb_bit_length // 16]
-        expected = bitarray_to_registers(encode_bits(value, node.mb_byteorder, node.mb_bit_length))
+        expected = bitarray_to_registers(node.encode_bits(value))
         assert result == expected
 
     def test_write_data_coils(self, server, local_nodes):
-        node = Node(
+        node: ModbusNode = Node(
             "Serv.NodeName",
             url=local_nodes[0].url,
             protocol="modbus",
@@ -121,14 +121,14 @@ class TestServerOperations:
         server.write({node: value})
 
         result = server._server.data_bank._coils[node.mb_channel : node.mb_channel + node.mb_bit_length]
-        expected = encode_bits(value, node.mb_byteorder, node.mb_bit_length)
+        expected = node.encode_bits(value)
         assert result == expected
 
     values = ((0, 0), (1, 1.5), (2, "someelse"), (3, [True]), (4, [False, True, True, False]))
 
     @pytest.mark.parametrize(("index", "value"), values)
     def test_write(self, server, local_nodes, index, value):
-        node = local_nodes[index]
+        node: ModbusNode = local_nodes[index]
         server.write({node: value})
 
         if node.mb_register == "holding":
@@ -136,7 +136,7 @@ class TestServerOperations:
                 int(x)
                 for x in server._server.data_bank._h_regs[node.mb_channel : node.mb_channel + node.mb_bit_length // 16]
             ]
-            expected = bitarray_to_registers(encode_bits(value, node.mb_byteorder, node.mb_bit_length))
+            expected = bitarray_to_registers(node.encode_bits(value))
         else:
             result = [
                 int(x) for x in server._server.data_bank._coils[node.mb_channel : node.mb_channel + node.mb_bit_length]

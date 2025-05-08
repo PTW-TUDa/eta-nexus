@@ -17,12 +17,7 @@ from eta_nexus.connections.connection_utils import (
     IntervalChecker,
     RetryWaiter,
 )
-from eta_nexus.nodes import ModbusNode
-from eta_nexus.util.modbus_utils import (
-    bitarray_to_registers,
-    decode_modbus_value,
-    encode_bits,
-)
+from eta_nexus.nodes.modbus_node import ModbusNode, bitarray_to_registers
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Mapping
@@ -94,7 +89,7 @@ class ModbusConnection(Connection[ModbusNode], protocol="modbus"):
             results = {node: self._read_mb_value(node) for node in _nodes}
 
         for node, result in results.items():
-            value = decode_modbus_value(result, node.mb_byteorder, node.dtype, node.mb_wordorder)
+            value = node.decode_modbus_value(result)
             values[node.name] = value
 
         return pd.DataFrame(values, index=[self._assert_tz_awareness(datetime.now())])
@@ -111,10 +106,7 @@ class ModbusConnection(Connection[ModbusNode], protocol="modbus"):
 
         with self._connection():
             for node in nodes:
-                if not isinstance(values[node], list):
-                    bits = encode_bits(values[node], node.mb_byteorder, node.mb_bit_length, node.dtype)
-                else:
-                    bits = values[node]
+                bits = node.encode_bits(values[node]) if not isinstance(values[node], list) else values[node]
 
                 self._write_mb_value(node, bits)
 
@@ -185,7 +177,7 @@ class ModbusConnection(Connection[ModbusNode], protocol="modbus"):
                         continue
 
                     if result is not None:
-                        _result = decode_modbus_value(result, node.mb_byteorder, node.dtype, node.mb_wordorder)
+                        _result = node.decode_modbus_value(result)
 
                         time = self._assert_tz_awareness(datetime.now())
 
@@ -226,8 +218,6 @@ class ModbusConnection(Connection[ModbusNode], protocol="modbus"):
             result = self.connection.read_discrete_inputs(node.mb_channel, node.mb_bit_length)
         elif node.mb_register == "input":
             result = self.connection.read_input_registers(node.mb_channel, node.mb_bit_length // 16)
-        else:
-            raise ValueError(f"The specified register type for '{node.name}' is not supported: {node.mb_register}")
 
         if result is None:
             self._handle_mb_error()

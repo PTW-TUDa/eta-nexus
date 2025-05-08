@@ -3,8 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
     from eta_nexus.util.type_annotations import N, Nodes
 
 from logging import getLogger
@@ -48,13 +46,16 @@ def _lower_str(value: str) -> str:
     return value.strip().lower()
 
 
-def _dtype_converter(value: str) -> Callable | None:
+def _dtype_converter(value: str | type) -> type | None:
     """Specify data type conversion functions (i.e. to convert modbus types to python).
 
     :param value: Data type string to convert to callable datatype converter.
     :return: Python datatype (callable).
     """
-    _dtypes = {
+    if isinstance(value, type):
+        return value
+
+    _dtypes: dict[str, type | None] = {
         "boolean": bool,
         "bool": bool,
         "int": int,

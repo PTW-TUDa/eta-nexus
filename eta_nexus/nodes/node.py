@@ -113,7 +113,7 @@ class Node(metaclass=MetaNode):
         object.__setattr__(self, "url", url.geturl())
         object.__setattr__(self, "url_parsed", url)
 
-    def evolve(self, **kwargs: Any) -> Node:
+    def evolve(self, **kwargs: Any) -> Self:
         """Returns a new node instance
         by copying the current node and changing only specified keyword arguments.
 

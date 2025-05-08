@@ -128,7 +128,7 @@ class OpcuaNode(Node, protocol="opcua"):
                     f"and 'opc_path' must be specified."
                 ) from e
 
-    def evolve(self, **kwargs: Any) -> Node:
+    def evolve(self, **kwargs: Any) -> Self:
         """Returns a new node instance
         by copying the current node and changing only specified keyword arguments.
 
