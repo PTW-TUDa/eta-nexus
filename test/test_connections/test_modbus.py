@@ -269,7 +269,7 @@ class TestConnectionOperationsLittleEndian:
 
     @pytest.fixture(scope="class", autouse=True)
     def server(self, config_modbus_port, config_host_ip):
-        with ModbusServer(ip=config_host_ip, big_endian=False, port=config_modbus_port) as server:
+        with ModbusServer(ip=config_host_ip, port=config_modbus_port) as server:
             yield server
 
     @pytest.fixture(scope="class")
