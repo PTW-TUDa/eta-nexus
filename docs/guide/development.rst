@@ -144,11 +144,17 @@ You can change the Python version Poetry uses with:
 
     $ poetry env use <full python path>
 
-To list all available Python versions on Windows, run:
+Windows users can list available Python versions with:
 
 .. code-block:: console
 
     $ py -0p
+
+For *pyenv* users: ensure `python` points to your desired version, then:
+
+.. code-block:: console
+
+    $ poetry env use python
 
 
 For more information, see the `Poetry docs <https://python-poetry.org/docs/managing-environments>`_.
