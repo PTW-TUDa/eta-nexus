@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 import pandas as pd
 import toml
 import yaml
+from dotenv import find_dotenv, load_dotenv
 
 if TYPE_CHECKING:
     import types
@@ -173,6 +174,12 @@ def csv_export(
         _data.to_csv(path_or_buf=str(_path), sep=sep, decimal=decimal)
 
     log.info(f"Exported CSV data to {_path}.")
+
+
+def autoload_env() -> None:
+    """Load a .env file from the user's working directory by walking upward from there."""
+    dotenv_path = find_dotenv(usecwd=True)
+    load_dotenv(dotenv_path, override=False)
 
 
 class Suppressor(io.TextIOBase):

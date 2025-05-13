@@ -5,6 +5,7 @@ does not have the ability to write data.
 from __future__ import annotations
 
 import concurrent.futures
+import os
 from contextlib import suppress
 from datetime import datetime, timedelta, timezone
 from logging import getLogger
@@ -43,7 +44,6 @@ class EntsoeConnection(SeriesConnection[EntsoeNode], protocol="entsoe"):
     :param url: Url of the server with scheme (https://web-api.tp.entsoe.eu/)
     :param usr: Username for login to the platform (usually not required - default: None)
     :param pwd: Password for login to the platform (usually not required - default: None)
-    :param api_token: Token for API authentication
     :param nodes: Nodes to select in connection
     """
 
@@ -53,12 +53,15 @@ class EntsoeConnection(SeriesConnection[EntsoeNode], protocol="entsoe"):
         self,
         url: str = "https://web-api.tp.entsoe.eu/",
         *,
-        api_token: str,
         nodes: Nodes[EntsoeNode] | None = None,
     ) -> None:
         url = url + self.API_PATH
-        self._api_token: str = api_token
         super().__init__(url, None, None, nodes=nodes)
+
+        _api_token: str | None = os.getenv("ENTSOE_API_TOKEN")
+        if _api_token is None:
+            raise ValueError("ENTSOE_API_TOKEN environment variable is not set.")
+        self._api_token: str = _api_token
 
         self._node_ids: str | None = None
         self.config = _ConnectionConfiguration()
@@ -77,14 +80,10 @@ class EntsoeConnection(SeriesConnection[EntsoeNode], protocol="entsoe"):
         """Initialize the connection object from an entso-e protocol node object.
 
         :param node: Node to initialize from
-        :param kwargs: Keyword arguments for API authentication, where "api_token" is required
         :return: ENTSOEConnection object
         """
-        if "api_token" not in kwargs:
-            raise AttributeError("Missing required function parameter api_token.")
-        api_token = kwargs["api_token"]
 
-        return super()._from_node(node, api_token=api_token)
+        return super()._from_node(node)
 
     def read(self, nodes: EntsoeNode | Nodes[EntsoeNode] | None = None) -> pd.DataFrame:
         """.. warning::

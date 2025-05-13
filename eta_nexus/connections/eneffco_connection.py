@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import concurrent.futures
+import os
 from datetime import datetime, timedelta, timezone
 from logging import getLogger
 from typing import TYPE_CHECKING
@@ -33,24 +34,23 @@ class EneffcoConnection(SeriesConnection[EneffcoNode], protocol="eneffco"):
     :param url: URL of the server with scheme (https://).
     :param usr: Username in EnEffco for login.
     :param pwd: Password in EnEffco for login.
-    :param api_token: Token for API authentication.
     :param nodes: Nodes to select in connection.
     """
 
     API_PATH: str = "/API/v1.0"
 
-    def __init__(
-        self, url: str, usr: str | None, pwd: str | None, *, api_token: str, nodes: Nodes[EneffcoNode] | None = None
-    ) -> None:
+    def __init__(self, url: str, usr: str | None, pwd: str | None, *, nodes: Nodes[EneffcoNode] | None = None) -> None:
         url = url + self.API_PATH
-        self._api_token: str = api_token
+        _api_token: str | None = os.getenv("ENEFFCO_API_TOKEN")
         super().__init__(url, usr, pwd, nodes=nodes)
 
         if self.usr is None:
             raise ValueError("Username must be provided for the Eneffco connection.")
         if self.pwd is None:
             raise ValueError("Password must be provided for the Eneffco connection.")
-
+        if _api_token is None:
+            raise ValueError("ENEFFCO_API_TOKEN environment variable is not set.")
+        self._api_token: str = _api_token
         self._node_ids: pd.DataFrame | None = None
         self._node_ids_raw: pd.DataFrame | None = None
 
@@ -72,28 +72,22 @@ class EneffcoConnection(SeriesConnection[EneffcoNode], protocol="eneffco"):
         :param node: Node to initialize from.
         :param usr: Username to use.
         :param pwd: Password to use.
-        :param kwargs: Keyword arguments for API authentication, where "api_token" is required
         :return: EneffcoConnection object.
         """
-        api_token = kwargs.get("api_token")
-        if api_token is None:
-            raise AttributeError("Keyword parameter 'api_token' is missing.")
-
-        return super()._from_node(node, usr=usr, pwd=pwd, api_token=api_token)
+        return super()._from_node(node, usr=usr, pwd=pwd)
 
     @classmethod
-    def from_ids(cls, ids: Sequence[str], url: str, usr: str, pwd: str, api_token: str) -> EneffcoConnection:
+    def from_ids(cls, ids: Sequence[str], url: str, usr: str, pwd: str) -> EneffcoConnection:
         """Initialize the connection object from an Eneffco protocol through the node IDs.
 
         :param ids: Identification of the Node.
         :param url: URL for EnEffco connection.
         :param usr: Username for Eneffco login.
         :param pwd: Password for Eneffco login.
-        :param api_token: Token for API authentication.
         :return: EneffcoConnection object.
         """
         nodes = [EneffcoNode(name=name, url=url, protocol="eneffco", eneffco_code=name) for name in ids]
-        return cls(url=url, usr=usr, pwd=pwd, api_token=api_token, nodes=nodes)
+        return cls(url=url, usr=usr, pwd=pwd, nodes=nodes)
 
     def read(self, nodes: EneffcoNode | Nodes[EneffcoNode] | None = None) -> pd.DataFrame:
         """Download current value from the Eneffco Database.

@@ -18,6 +18,7 @@ Please read the development guide before starting development on *eta_nexus*: :r
 
     /guide/install
     /guide/development
+    /guide/secret_management
     /guide/faq
     /examples/examples
 

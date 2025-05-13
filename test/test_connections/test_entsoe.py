@@ -1,3 +1,4 @@
+import os
 import pathlib
 from datetime import datetime, timedelta, timezone
 
@@ -11,7 +12,7 @@ from eta_nexus.connections.entsoe_connection import _ConnectionConfiguration
 from eta_nexus.nodes import Node
 from eta_nexus.util import dict_search, round_timestamp
 
-ENTSOE_TOKEN = ""
+USE_API_TOKEN = False
 
 
 def create_node(endpoint: str, name: str = "Node1") -> Node:
@@ -26,8 +27,10 @@ def create_node(endpoint: str, name: str = "Node1") -> Node:
 
 @pytest.fixture(autouse=True)
 def _local_requests(monkeypatch, config_entsoe):
-    if ENTSOE_TOKEN == "":
-        monkeypatch.setattr(requests_cache.CachedSession, "post", Postable(config_entsoe["path"]))
+    if USE_API_TOKEN:
+        return
+    monkeypatch.setattr(requests_cache.CachedSession, "post", Postable(config_entsoe["path"]))
+    os.environ["ENTSOE_API_TOKEN"] = ""
 
 
 multiple_nodes_expected = [
@@ -39,7 +42,7 @@ multiple_nodes_expected = [
 def test_entsoe_price_ahead():
     node = create_node("Price")
 
-    server = EntsoeConnection.from_node(node, api_token=ENTSOE_TOKEN)
+    server = EntsoeConnection.from_node(node)
 
     from_datetime = datetime.strptime("2022-02-15T13:18:12", "%Y-%m-%dT%H:%M:%S")
     to_datetime = datetime.strptime("2022-02-15T14:15:31", "%Y-%m-%dT%H:%M:%S")
@@ -54,7 +57,7 @@ def test_entsoe_price_ahead():
 def test_entsoe_actual_generation_per_type():
     node = create_node("ActualGenerationPerType")
 
-    server = EntsoeConnection.from_node(node, api_token=ENTSOE_TOKEN)
+    server = EntsoeConnection.from_node(node)
 
     from_datetime = datetime.strptime("2022-02-15T13:18:12", "%Y-%m-%dT%H:%M:%S")
     to_datetime = datetime.strptime("2022-02-15T14:00:00", "%Y-%m-%dT%H:%M:%S")
@@ -69,7 +72,7 @@ def test_entsoe_actual_generation_per_type():
 def test_entsoe_timezone():
     node = create_node("Price", "Node1")
 
-    server = EntsoeConnection.from_node(node, api_token=ENTSOE_TOKEN)
+    server = EntsoeConnection.from_node(node)
 
     from_datetime = datetime(2022, 2, 15, 13, 18, 12, tzinfo=timezone.utc)
     to_datetime = datetime(2022, 2, 15, 14, 15, 31, tzinfo=timezone.utc)
@@ -97,7 +100,7 @@ def test_multiple_nodes(nodes, number_of_columns_per_node):
     from_datetime = datetime.strptime("2022-02-15T13:18:12", "%Y-%m-%dT%H:%M:%S")
     to_datetime = datetime.strptime("2022-02-15T14:15:31", "%Y-%m-%dT%H:%M:%S")
 
-    server = EntsoeConnection.from_node(nodes, api_token=ENTSOE_TOKEN)
+    server = EntsoeConnection.from_node(nodes)
     res = server.read_series(from_time=from_datetime, to_time=to_datetime)
 
     assert isinstance(res, pd.DataFrame)
@@ -113,7 +116,7 @@ def test_interval(interval):
     """
     node = create_node("Price")
 
-    server = EntsoeConnection.from_node(node, api_token=ENTSOE_TOKEN)
+    server = EntsoeConnection.from_node(node)
 
     from_datetime = datetime.strptime("2022-02-15T13:18:12", "%Y-%m-%dT%H:%M:%S")
     to_datetime = datetime.strptime("2022-02-15T14:15:31", "%Y-%m-%dT%H:%M:%S")
@@ -135,7 +138,7 @@ def test_multiple_days(end_time):
     interval = 900
     node = create_node("Price")
 
-    server = EntsoeConnection.from_node(node, api_token=ENTSOE_TOKEN)
+    server = EntsoeConnection.from_node(node)
 
     from_datetime = datetime.strptime("2022-02-15T13:18:12", "%Y-%m-%dT%H:%M:%S")
     to_datetime = datetime.strptime(end_time, "%Y-%m-%dT%H:%M:%S")

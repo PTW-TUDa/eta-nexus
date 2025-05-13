@@ -61,6 +61,7 @@ wetterdienst = "~0.97.0"  # breaking changes expected
 requests-cache = "^1.2.0"
 pyyaml = "^6.0.2"
 toml = "^0.10.2"
+python-dotenv = "^1.0.1"
 
 [tool.poetry.group.examples.dependencies]
 onnxruntime = ">=1.21.0"
