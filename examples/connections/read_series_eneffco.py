@@ -16,12 +16,12 @@ def main() -> None:
 def read_series() -> pd.DataFrame:
     # --main--
     # Create the connection object
+    # API Token must be provided by a .env file
     connection = EneffcoConnection.from_ids(
         ["CH1.Elek_U.L1-N", "Pu3.425.ThHy_Q"],
         url="https://someurl.com/",
         usr="username",
         pwd="password",
-        api_token="your_server_auth_token",
     )
 
     # Read series data within a specified time interval

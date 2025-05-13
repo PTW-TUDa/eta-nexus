@@ -1,4 +1,5 @@
 import asyncio
+import os
 from datetime import datetime, timedelta
 
 import pandas as pd
@@ -38,6 +39,7 @@ async def stop_execution(sleep_time):
 @pytest.fixture(autouse=True)
 def _local_requests(monkeypatch):
     monkeypatch.setattr(requests_cache.CachedSession, "request", request)
+    os.environ["ENEFFCO_API_TOKEN"] = ""
 
 
 def test_eneffco_read(config_eneffco):
@@ -52,9 +54,7 @@ def test_eneffco_read(config_eneffco):
     node2 = Node("Pu3.425.ThHy_Q", config_eneffco["url"], "eneffco", eneffco_code="Pu3.425.ThHy_Q")
 
     # Test reading a single node
-    server = EneffcoConnection(
-        node.url, config_eneffco["user"], config_eneffco["pw"], api_token=config_eneffco["postman_token"]
-    )
+    server = EneffcoConnection(node.url, config_eneffco["user"], config_eneffco["pw"])
     # The interval is arbitrary here. range int[1,10]
     res = server.read_series(
         datetime.now() - timedelta(seconds=10),
@@ -78,7 +78,6 @@ def test_eneffco_read_info(config_eneffco, eneffco_nodes):
         eneffco_nodes["node"].url,
         config_eneffco["user"],
         config_eneffco["pw"],
-        api_token=config_eneffco["postman_token"],
     )
 
     res = server.read_info([eneffco_nodes["node"], eneffco_nodes["node2"]])
@@ -93,7 +92,6 @@ def test_eneffco_write(config_eneffco, eneffco_nodes):
         eneffco_nodes["node_write"].url,
         config_eneffco["user"],
         config_eneffco["pw"],
-        api_token=config_eneffco["postman_token"],
     )
 
     server.write({eneffco_nodes["node"]: sample_series})
@@ -107,7 +105,6 @@ def test_eneffco_subscribe_multi(config_eneffco, eneffco_nodes):
         eneffco_nodes["node"].url,
         config_eneffco["user"],
         config_eneffco["pw"],
-        api_token=config_eneffco["postman_token"],
     )
     # changed write_interval from 10 to 1
     handler = DFSubHandler(write_interval=1)
@@ -132,7 +129,6 @@ def test_connection_from_node_ids(config_eneffco):
         url=config_eneffco["url"],
         usr=config_eneffco["user"],
         pwd=config_eneffco["pw"],
-        api_token=config_eneffco["postman_token"],
     )
     res = server.read_series(
         from_time=datetime.now() - timedelta(seconds=10),

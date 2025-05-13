@@ -12,8 +12,7 @@ def main() -> None:
 
 def read_series() -> pd.DataFrame:
     # --begin_entsoe_doc_example--
-    # Define your ENTSO-E Token
-    entsoe_token = ""
+    # Define your ENTSO-E Token in a .env file
 
     # Check out EntsoeNode documentation for endpoint and bidding zone information
     node = EntsoeNode(
@@ -25,7 +24,7 @@ def read_series() -> pd.DataFrame:
     )
 
     # start connection from one or multiple nodes
-    server = EntsoeConnection.from_node(node, api_token=entsoe_token)
+    server = EntsoeConnection.from_node(node)
 
     # Define time interval as datetime values
     from_datetime = datetime.strptime("2022-02-15T13:18:12", "%Y-%m-%dT%H:%M:%S")

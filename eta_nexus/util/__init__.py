@@ -5,6 +5,7 @@ from eta_nexus.util.auth_utils import (
 )
 from eta_nexus.util.io_utils import (
     Suppressor as Suppressor,
+    autoload_env as autoload_env,
     json_import as json_import,
     load_config as load_config,
     toml_import as toml_import,

@@ -167,7 +167,7 @@ def test_read_series(forecast_solar_nodes: dict[str, ForecastsolarNode], connect
 
     assert isinstance(res, pd.DataFrame)
     assert res.shape == (385, 2), "The result has the wrong size of data"
-    assert connection._api_key == "None", "The api_key is not set correctly"
+    assert connection._api_token == "None", "The api_key is not set correctly"
 
 
 @pytest.mark.usefixtures("_local_requests")

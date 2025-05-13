@@ -53,6 +53,7 @@ repos:
          - types-pytz==2025.2.0.20250326
          - attrs==25.3.0
          - cryptography==44.0.2
+         - python-dotenv==1.0.1
   - repo: https://github.com/python-poetry/poetry
     rev: 2.1.2
     hooks:

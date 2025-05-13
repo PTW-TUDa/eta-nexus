@@ -38,9 +38,7 @@ def _mock_client(monkeypatch):
 def test_multi_connect(config_nodes_file, config_eneffco, temp_dir):
     nodes = Node.from_excel(config_nodes_file["file"], config_nodes_file["sheet"])
 
-    connections = Connection.from_nodes(
-        nodes, usr=config_eneffco["user"], pwd=config_eneffco["pw"], api_token=config_eneffco["postman_token"]
-    )
+    connections = Connection.from_nodes(nodes, usr=config_eneffco["user"], pwd=config_eneffco["pw"])
 
     subscription_handler = CsvSubHandler(temp_dir / "multi_connect_test_output.csv")
     loop = asyncio.get_event_loop()
