@@ -4,9 +4,11 @@ import pandas as pd
 
 from eta_nexus.connections import EntsoeConnection
 from eta_nexus.nodes import EntsoeNode
+from eta_nexus.util.io_utils import autoload_env
 
 
 def main() -> None:
+    autoload_env()
     read_series()
 
 
@@ -37,7 +39,6 @@ def read_series() -> pd.DataFrame:
     else:
         raise TypeError("The connection must be an ENTSOEConnection, to be able to call read_series.")
     # --end_entsoe_doc_example--
-
     return result
 
 
