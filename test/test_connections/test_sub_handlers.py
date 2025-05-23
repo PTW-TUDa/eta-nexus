@@ -1,6 +1,7 @@
 import asyncio
 import pathlib
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timedelta, timezone
 
 import numpy as np
 import pandas as pd
@@ -24,12 +25,12 @@ sample_series_nan = pd.Series(
 
 @pytest.fixture(scope="module")
 def test_node():
-    return Node(name="FirstNode", url="", protocol="local")
+    return Node(name="FirstNode", url="", protocol="local", dtype="float")
 
 
 @pytest.fixture(scope="module")
 def test_node2():
-    return Node(name="SecondNode", url="", protocol="local")
+    return Node(name="SecondNode", url="", protocol="local", dtype="float")
 
 
 async def push_values(handler: SubscriptionHandler, test_node, test_node2):
@@ -111,3 +112,39 @@ class TestDFSubHandler:
         asyncio.get_event_loop().run_until_complete(push_values(handler, test_node, test_node2))
 
         assert handler.data.isna().any().any()
+
+    def test_multiple_types(self):
+        str_node = Node(name="StrNode", url="", protocol="local")
+        int_node = Node(name="IntNode", url="", protocol="local")
+        float_node = Node(name="FloatNode", url="", protocol="local")
+        bool_node = Node(name="BoolNode", url="", protocol="local")
+        bytes_node = Node(name="BytesNode", url="", protocol="local")
+        nodes = [str_node, int_node, float_node, bool_node, bytes_node]
+
+        values = [["a", "b"], [5, 6], [12.3, 23.4], [True, False], [b"hello", b"world"]]
+
+        handler = DFSubHandler(write_interval=1)
+
+        for i in range(2 * len(nodes)):
+            ts = datetime(2025, 1, 1, 0, i, 0).astimezone(tz=timezone.utc)
+            index = i % len(nodes)
+            handler.push(nodes[index], values[index][i // len(nodes)], ts)
+
+        ts0 = datetime(2025, 1, 1, 0, 2, 0).astimezone(tz=timezone.utc)
+        handler.push(int_node, float("nan"), ts0)
+
+        ts01 = datetime(2025, 1, 1, 0, 5, 0).astimezone(tz=timezone.utc)
+        handler.push(bytes_node, float("nan"), ts01)
+
+        data = handler.data
+        for vals, node in zip(values, nodes, strict=False):
+            assert set(vals) == set(data[node.name].dropna().to_list())
+
+        assert data.loc[ts0 : ts0 + timedelta(minutes=3), "IntNode"].isna().all()
+        assert data.loc[ts01 : ts01 + timedelta(minutes=3), "BytesNode"].isna().all()
+
+        assert data["IntNode"].dtype == pd.Int64Dtype()
+        assert data["StrNode"].dtype == pd.StringDtype()
+        assert data["FloatNode"].dtype == pd.Float64Dtype()
+        assert data["BoolNode"].dtype == pd.BooleanDtype()
+        assert data["BytesNode"].dtype == object  # Bytes are stored as object dtype in pandas DataFrame

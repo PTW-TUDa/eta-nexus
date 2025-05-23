@@ -377,15 +377,16 @@ class TestConnectionSubscriptions:
         loop = asyncio.get_event_loop()
         loop.run_until_complete(stop_execution(25))
         connection.close_sub()
-
+        data = handler.data
         for node, values in self.values.items():
             # Check whether Dataframe contains NaN
-            assert pd.isna(handler.data[node]).any()
+            assert pd.isna(data[node]).any()
 
-            # Don't check floating point values in this case because it is hard to deal with precision problems here.
-            if handler.data[node].dtype == "float":
-                continue
-            assert set(handler.data[node].dropna()) <= set(values)
+            # Round values for float types
+            if data[node].dtype.kind == "f":
+                data[node] = data[node].round(3)
+
+            assert set(data[node].dropna()) <= set(values)
 
         # Check if connection was actually interrupted during the test.
         messages_found = 0
