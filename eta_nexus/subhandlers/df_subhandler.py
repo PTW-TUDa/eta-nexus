@@ -53,73 +53,62 @@ class DFSubHandler(SubscriptionHandler):
                           pd.Series and has a pd.DatetimeIndex, timestamp is ignored.
         """
         # Check if node.name is in _data.columns
-        self._data_lock.acquire()
-        if node.name not in self._data.columns:
-            self._data[node.name] = np.nan
-        self._data_lock.release()
+        with self._data_lock:
+            if node.name not in self._data.columns:
+                self._data[node.name] = pd.Series(dtype="object")
+
+        def set_value(val: Any, ts: datetime, column: str) -> None:
+            with self._data_lock:
+                # Replace NaN with -inf to distinguish between the 'real' NaN and the 'fill' NaN
+                if pd.isna(val):
+                    val = -np.inf
+                self._data.loc[ts, column] = val
 
         # Multiple values
-        if not isinstance(value, str) and hasattr(value, "__len__"):
-            value = self._convert_series(value, timestamp)
+        if not isinstance(value, (str, bytes)) and hasattr(value, "__len__"):
+            series = self._convert_series(value, timestamp)
             # Push Series
             # Values are rounded to self.write_interval in _convert_series
-            for _timestamp, _value in value.items():
+            for _timestamp, _value in series.items():
                 _timestamp = self._assert_tz_awareness(_timestamp)
-                self._data_lock.acquire()
-
-                # Replace NaN with -inf to distinguish between the 'real' NaN and the 'fill' NaN
-                if pd.isna(_value):
-                    _value = -np.inf
-                self._data.loc[_timestamp, node.name] = _value
-                self._data_lock.release()
+                set_value(val=_value, ts=_timestamp, column=node.name)
 
         # Single value
         else:
             if not isinstance(timestamp, datetime) and timestamp is not None:
                 raise ValueError("Timestamp must be a datetime object or None.")
             timestamp = self._round_timestamp(timestamp if timestamp is not None else datetime.now())
-            self._data_lock.acquire()
-
-            # Replace NaN with -inf to distinguish between the 'real' NaN and the 'fill' NaN
-            if pd.isna(value):
-                value = -np.inf
-            self._data.loc[timestamp, node.name] = value
-            self._data_lock.release()
+            set_value(val=value, ts=timestamp, column=node.name)
 
         # Housekeeping (Keep internal data short)
         self._housekeeping()
 
     def get_latest(self) -> pd.DataFrame | None:
         """Return a copy of the dataframe, this ensures they can be worked on freely. Returns None if data is empty."""
-        self._data_lock.acquire()
-        if len(self._data.index) == 0:
-            self._data_lock.release()
-            return None  # If no data in self._data, return None
-        self._data_lock.release()
+        with self._data_lock:
+            if len(self._data.index) == 0:
+                return None  # If no data in self._data, return None
         return self.data.iloc[[-1]]
 
     @property
     def data(self) -> pd.DataFrame:
         """This contains the interval dataframe and will return a copy of that."""
-        self._data_lock.acquire()
-        if self.auto_fillna:
-            self._data = self._data.ffill()
-        data = self._data.replace(-np.inf, np.nan, inplace=False)
-        self._data_lock.release()
-        return data
+        with self._data_lock, pd.option_context("future.no_silent_downcasting", True):  # noqa: FBT003
+            if self.auto_fillna:
+                self._data = self._data.ffill(inplace=False)
+            _data = self._data.replace(-np.inf, np.nan, inplace=False)
+        return _data.convert_dtypes()
 
     def reset(self) -> None:
         """Reset the internal data and restart collection."""
-        self._data_lock.acquire()
-        self._data = pd.DataFrame()
-        self._data_lock.release()
+        with self._data_lock:
+            self._data = pd.DataFrame()
         log.info(f"Subscribed DataFrame {hash(self._data)} was reset successfully.")
 
     def _housekeeping(self) -> None:
         """Keep internal data short by only keeping last rows as specified in self.keep_data_rows."""
-        self._data_lock.acquire()
-        self._data = self._data.drop(index=self._data.index[: -self.keep_data_rows])
-        self._data_lock.release()
+        with self._data_lock:
+            self._data = self._data.drop(index=self._data.index[: -self.keep_data_rows])
 
     def close(self) -> None:
         """This is just here to satisfy the interface, not needed in this case."""
