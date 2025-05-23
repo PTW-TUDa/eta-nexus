@@ -58,6 +58,9 @@ class EntsoeNode(Node, protocol="entsoe"):
 
     def __attrs_post_init__(self) -> None:
         """Ensure username and password are processed correctly."""
+        defined_endpoints = {"Price", "ActualGenerationPerType"}
+        if self.endpoint not in defined_endpoints:
+            raise ValueError(f"Defined endpoint ({self.endpoint}) is not available for entso-e")
         super().__attrs_post_init__()
 
     @classmethod
