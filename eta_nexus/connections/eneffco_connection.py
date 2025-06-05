@@ -126,7 +126,7 @@ class EneffcoConnection(SeriesConnection[EneffcoNode], protocol="eneffco"):
                 },
                 params={"comment": ""},
             )
-            log.info(response.text)
+            log.info(response.text if response else "No response.")
 
     def _prepare_raw_data(
         self, data: Mapping[datetime, Any] | pd.Series[datetime, Any], time_interval: timedelta
@@ -169,9 +169,25 @@ class EneffcoConnection(SeriesConnection[EneffcoNode], protocol="eneffco"):
         for node in nodes:
             request_url = f"datapoint/{self.id_from_code(node.eneffco_code)}"
             response = self._raw_request("GET", request_url)
-            values.append(pd.Series(response.json(), name=node.name))
+            json_data = self._safe_json_dict(response)
+
+            if json_data is None:
+                log.warning(f"[Eneffco] Skipping node {node.eneffco_code} — upstream request failed or returned empty")
+                continue
+
+            values.append(pd.Series(json_data, name=node.name))
 
         return pd.concat(values, axis=1)
+
+    def _safe_json_dict(self, response: requests.Response | None) -> dict | None:
+        if response is None:
+            log.warning("[Eneffco] No HTTP response received")
+            return None
+        try:
+            return response.json()
+        except ValueError:
+            log.exception("[Eneffco] Failed to parse JSON as dict — invalid content or upstream error")
+            return None
 
     def subscribe(
         self,
@@ -217,18 +233,49 @@ class EneffcoConnection(SeriesConnection[EneffcoNode], protocol="eneffco"):
                 f"timeInterval={int(_interval.total_seconds())!s}&"
                 "includeNanValues=True"
             )
-            response = self._raw_request("GET", request_url).json()
 
-            data = pd.DataFrame(
-                data=(r["Value"] for r in response),
-                index=pd.to_datetime([r["From"] for r in response], utc=True, format="%Y-%m-%dT%H:%M:%SZ").tz_convert(
-                    self._local_tz
-                ),
-                columns=[node.name],
-                dtype="float64",
-            )
-            data.index.name = "Time (with timezone)"
-            return data
+            response = self._raw_request("GET", request_url)
+            if response is None:
+                log.warning(f"[Eneffco] No response from {request_url} — possible connection or timeout issue")
+                return pd.DataFrame(columns=[node.name])  # Empty DataFrame
+
+            try:
+                json_data = response.json()
+            except ValueError:
+                log.exception(
+                    f"[Eneffco] Failed to parse JSON from {request_url} — upstream HTTP or token error likely"
+                )
+                return pd.DataFrame(columns=[node.name])
+
+            if not json_data:  # Empty or None response
+                log.warning(
+                    f"[Eneffco] Empty JSON returned from {request_url} — check API response or token access rights"
+                )
+                return pd.DataFrame(columns=[node.name])
+
+            try:
+                data = pd.DataFrame(
+                    data=(r["Value"] for r in json_data),
+                    index=(
+                        pd.to_datetime(
+                            [r["From"] for r in json_data],
+                            utc=True,
+                            format="%Y-%m-%dT%H:%M:%SZ",
+                        ).tz_convert(self._local_tz)
+                    ),
+                    columns=[node.name],
+                    dtype="float64",
+                )
+                data.index.name = "Time (with timezone)"
+
+            except (KeyError, ValueError, TypeError):
+                log.exception(
+                    f"[Eneffco] Failed to construct DataFrame for {node.eneffco_code} — "
+                    f"invalid or incomplete response structure"
+                )
+                return pd.DataFrame(columns=[node.name])
+            else:
+                return data
 
         with concurrent.futures.ThreadPoolExecutor() as executor:
             results = executor.map(read_node, nodes)
@@ -342,12 +389,18 @@ class EneffcoConnection(SeriesConnection[EneffcoNode], protocol="eneffco"):
         """
         # Only build lists of IDs if they are not available yet
         if self._node_ids is None:
-            response = self._raw_request("GET", "/datapoint")
-            self._node_ids = pd.DataFrame(data=response.json())
+            self._node_ids = self._safe_json_df(self._raw_request("GET", "/datapoint"))
+            if self._node_ids is None:
+                log.error("[Eneffco] Failed to load /datapoint — upstream request returned empty or malformed response")
+                return ""
 
         if self._node_ids_raw is None:
-            response = self._raw_request("GET", "/rawdatapoint")
-            self._node_ids_raw = pd.DataFrame(data=response.json())
+            self._node_ids_raw = self._safe_json_df(self._raw_request("GET", "/rawdatapoint"))
+            if self._node_ids_raw is None:
+                log.error(
+                    "[Eneffco] Failed to load /rawdatapoint - upstream request returned empty or malformed response"
+                )
+                return ""
 
         def find_id(node_ids: pd.DataFrame) -> str:
             if len(node_ids.loc[node_ids["Code"] == code, "Id"]) <= 0:
@@ -355,6 +408,15 @@ class EneffcoConnection(SeriesConnection[EneffcoNode], protocol="eneffco"):
             return node_ids.loc[node_ids["Code"] == code, "Id"].to_numpy().item()
 
         return find_id(self._node_ids_raw) if raw_datapoint else find_id(self._node_ids)
+
+    def _safe_json_df(self, response: requests.Response | None) -> pd.DataFrame | None:
+        if response is None:
+            return None
+        try:
+            return pd.DataFrame(data=response.json())
+        except ValueError:
+            log.exception("[Eneffco] JSON parse failed — check HTTP status or token/connection issues")
+            return None
 
     def timestr_from_datetime(self, dt: datetime) -> str:
         """Create an Eneffco compatible time string.
@@ -364,7 +426,7 @@ class EneffcoConnection(SeriesConnection[EneffcoNode], protocol="eneffco"):
         """
         return dt.isoformat(sep="T", timespec="seconds").replace(":", "%3A").replace("+", "%2B")
 
-    def _raw_request(self, method: str, endpoint: str, **kwargs: Any) -> requests.Response:
+    def _raw_request(self, method: str, endpoint: str, **kwargs: Any) -> requests.Response | None:
         """Perform Eneffco request and handle possibly resulting errors.
 
         :param method: HTTP request method.
@@ -376,12 +438,21 @@ class EneffcoConnection(SeriesConnection[EneffcoNode], protocol="eneffco"):
         if self.pwd is None:
             raise AttributeError("Make sure to specify a password before performing Eneffco requests.")
 
-        response = self._session.request(
-            method, self.url + "/" + str(endpoint), auth=requests.auth.HTTPBasicAuth(self.usr, self.pwd), **kwargs
-        )
-        response.raise_for_status()
+        try:
+            response = self._session.request(
+                method, self.url + "/" + str(endpoint), auth=requests.auth.HTTPBasicAuth(self.usr, self.pwd), **kwargs
+            )
+            response.raise_for_status()
 
-        return response
+        except requests.exceptions.HTTPError as e:
+            log.warning(f"[Eneffco] HTTP error at {self.url}: {e}")
+            return None
+
+        except requests.exceptions.RequestException:
+            log.exception(f"[Eneffco] Request failed at {self.url}")
+            return None
+        else:
+            return response
 
     def _validate_nodes(self, nodes: EneffcoNode | Nodes[EneffcoNode] | None) -> set[EneffcoNode]:
         vnodes = super()._validate_nodes(nodes)
