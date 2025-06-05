@@ -31,6 +31,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pandas as pd
 import requests
+from requests import Response
 from requests_cache import DO_NOT_CACHE, CachedSession
 
 from eta_nexus.nodes import ForecastsolarNode
@@ -113,20 +114,29 @@ class ForecastsolarConnection(SeriesConnection[ForecastsolarNode], protocol="for
         query_params["time"] = "utc"
 
         raw_response = self._raw_request("GET", url, params=query_params, headers=self._headers, **kwargs)
-        response = raw_response.json()
 
-        timestamps = pd.to_datetime(list(response["result"].keys()))
-        watts = response["result"].values()
+        if raw_response is None:
+            log.warning(f"[Forecast.Solar] Failed to fetch data for node: {node.name}")
+            return pd.DataFrame({node.name: [float("nan")]}, index=pd.DatetimeIndex([], name="Time (with timezone)"))
 
-        data = pd.DataFrame(
-            data=watts,
-            index=timestamps.tz_convert(self._local_tz),
-            dtype="float64",
-        )
-        data.index.name = "Time (with timezone)"
-        data.columns = [node.name]
+        try:
+            response = raw_response.json()
+            timestamps = pd.to_datetime(list(response["result"].keys()))
+            watts = response["result"].values()
 
-        return data
+            data = pd.DataFrame(
+                data=watts,
+                index=timestamps.tz_convert(self._local_tz),
+                dtype="float64",
+            )
+            data.index.name = "Time (with timezone)"
+            data.columns = [node.name]
+
+        except (KeyError, ValueError, AttributeError, TypeError):
+            log.exception(f"[Forecast.Solar] Failed to parse response for node {node.name}")
+            return pd.DataFrame({node.name: [float("nan")]}, index=pd.DatetimeIndex([], name="Time (with timezone)"))
+        else:
+            return data
 
     def _select_data(
         self, results: pd.DataFrame, from_time: pd.Timestamp | None = None, to_time: pd.Timestamp | None = None
@@ -201,6 +211,16 @@ class ForecastsolarConnection(SeriesConnection[ForecastsolarNode], protocol="for
 
         # Filter out empty or all-NA DataFrames
         filtered_results = [df for df in results if not df.empty and not df.isna().all().all()]
+
+        if not filtered_results:
+            log.warning("[Forecast.Solar] No valid forecast data retrieved from any node.")
+            col_names = [node.name for node in nodes]
+            if not col_names:
+                col_names = ["__placeholder__"]
+
+            empty_df = pd.DataFrame(columns=col_names)
+            now = pd.Timestamp.now(tz=self._local_tz)
+            return self._select_data(empty_df, from_time, to_time or now)
 
         # Concatenate the filtered DataFrames
         values = pd.concat(filtered_results, axis=1, sort=False)
@@ -318,7 +338,7 @@ class ForecastsolarConnection(SeriesConnection[ForecastsolarNode], protocol="for
         """
         return dt.isoformat(sep="T", timespec="seconds").replace(":", "%3A").replace("+", "%2B")
 
-    def _raw_request(self, method: str, url: str, **kwargs: Any) -> requests.Response:
+    def _raw_request(self, method: str, url: str, **kwargs: Any) -> Response | None:
         """Perform Forecast.Solar request and handle possibly resulting errors.
 
         :param method: HTTP request method.
@@ -329,11 +349,17 @@ class ForecastsolarConnection(SeriesConnection[ForecastsolarNode], protocol="for
             log.info("The api_key is None and only the public functions are available of the forecastsolar.api.")
 
         kwargs.setdefault("timeout", 10)
-        response = self._session.request(method, url, **kwargs)
-        # Check for request errors
-        response.raise_for_status()
-
-        return response
+        try:
+            response = self._session.request(method, url, **kwargs)
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            log.warning(f"[Forecast.Solar] HTTP error for {url}: {e}")
+            return None  # Request failed, return None
+        except requests.exceptions.RequestException:
+            log.exception("[Forecast.Solar] Request failed")
+            return None
+        else:
+            return response
 
     @classmethod
     def route_valid(cls, nodes: Nodes, **kwargs: Any) -> bool:

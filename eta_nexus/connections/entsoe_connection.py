@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
+import requests
 from lxml import etree
 from requests_cache import DO_NOT_CACHE, CachedSession
 
@@ -23,8 +24,6 @@ from eta_nexus.util import dict_search, round_timestamp
 if TYPE_CHECKING:
     from collections.abc import Mapping
     from typing import Any, Final
-
-    import requests
 
     from eta_nexus.subhandlers import SubscriptionHandler
     from eta_nexus.util.type_annotations import Nodes, TimeStep
@@ -208,11 +207,22 @@ class EntsoeConnection(SeriesConnection[EntsoeNode], protocol="entsoe"):
                 f"Timezone of from_time and to_time are different. Using from_time timezone: {from_time.tzinfo}"
             )
 
-        def read_node(node: EntsoeNode) -> pd.DataFrame:
+        def read_node(node: EntsoeNode) -> pd.DataFrame | None:
             params = self.config.create_params(node, from_time, to_time)
 
             result = self._raw_request(params)
-            data = self._handle_xml(result.content)
+            if result is None:
+                log.warning(f"[ENTSO-E] Skipping node {node.name} due to failed HTTP request.")
+                return None
+            try:
+                data = self._handle_xml(result.content)
+            except Exception as e:
+                log.warning(
+                    f"[ENTSO-E] Failed to parse XML for node {node.name}: {e}"
+                    f"Response status code: {result.status_code}. "
+                    f"This may be due to a preceding HTTP error or an unexpected response format."
+                )
+                return None
 
             df_dict = {}
             # All resolutions are resampled separately and concatenated to one dataframe in the end
@@ -226,12 +236,20 @@ class EntsoeConnection(SeriesConnection[EntsoeNode], protocol="entsoe"):
                 df_resolution = df_resample(df_resolution, interval, missing_data="ffill")
                 df_resolution = df_time_slice(df_resolution, from_time, to_time)
                 df_dict[resolution] = df_resolution
-
+            if not df_dict:
+                log.warning(f"[ENTSO-E] No valid data for node {node.name}")
+                return None
             value_df = pd.concat(df_dict.values(), axis=1, keys=df_dict.keys())
             return value_df.swaplevel(axis=1)
 
         with concurrent.futures.ThreadPoolExecutor() as executor:
-            results = executor.map(read_node, nodes)
+            raw_results = executor.map(read_node, nodes)
+
+            results = [r for r in raw_results if r is not None]
+
+            if not results:
+                log.error("[ENTSO-E] No valid data retrieved from any node. All requests failed or returned empty.")
+                return pd.DataFrame()
 
         return pd.concat(results, axis=1, sort=False)
 
@@ -265,29 +283,40 @@ class EntsoeConnection(SeriesConnection[EntsoeNode], protocol="entsoe"):
         """
         raise NotImplementedError("Cannot subscribe to data from the ENTSO-E transparency platform.")
 
-    def _raw_request(self, params: Mapping[str, str], **kwargs: Mapping[str, Any]) -> requests.Response:
+    def _raw_request(self, params: Mapping[str, str], **kwargs: Mapping[str, Any]) -> requests.Response | None:
         """Perform ENTSO-E request and handle possibly resulting errors.
 
         :param params: Parameters to identify the endpoint
         :param kwargs: Additional arguments for the request.
         :return: request response
         """
+        # Prepare the basic request for usage in the requests.
         params = dict(params)
         params["securityToken"] = self._api_token  # API token added as a query parameter
-        response = self._session.get(self.url, params=params, **kwargs)  # Send GET request
 
-        if response.status_code == 400:
-            with suppress(Exception):
-                parser = etree.XMLParser(load_dtd=False, ns_clean=True, remove_pis=True)
+        try:
+            response = self._session.get(self.url, params=params, **kwargs)  # Send GET request
+            if response.status_code == 400:
+                with suppress(Exception):
+                    parser = etree.XMLParser(load_dtd=False, ns_clean=True, remove_pis=True)
 
-                e_msg = etree.XML(response.content, parser)
-                ns = e_msg.nsmap
-                e_code = e_msg.find(".//Reason", namespaces=ns).find("code", namespaces=ns).text
-                e_text = e_msg.find(".//Reason", namespaces=ns).find("text", namespaces=ns).text
-                response.reason = f"ENTSO-E Error {response.status_code} ({e_code}: {e_text})"
+                    e_msg = etree.XML(response.content, parser)
+                    ns = e_msg.nsmap
+                    e_code = e_msg.find(".//Reason", namespaces=ns).find("code", namespaces=ns).text
+                    e_text = e_msg.find(".//Reason", namespaces=ns).find("text", namespaces=ns).text
+                    response.reason = f"ENTSO-E Error {response.status_code} ({e_code}: {e_text})"
 
-        response.raise_for_status()
-        return response
+            response.raise_for_status()
+
+        except requests.exceptions.HTTPError:
+            log.exception(f"[ENTSO-E] HTTPError for params {params}")
+            return None
+
+        except requests.exceptions.RequestException:
+            log.exception(f"[ENTSO-E] Request failed for params {params}")
+            return None
+        else:
+            return response
 
 
 class _ConnectionConfiguration:

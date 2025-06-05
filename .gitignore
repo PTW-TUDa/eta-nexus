@@ -20,6 +20,9 @@ tmp*/
 .vscode/
 *.code-workspace
 
+# macOS
+.DS_Store
+
 # Local History for Visual Studio Code
 .history/
 
