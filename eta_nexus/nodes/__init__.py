@@ -7,8 +7,4 @@ from eta_nexus.nodes.modbus_node import ModbusNode as ModbusNode
 from eta_nexus.nodes.node import Node as Node
 from eta_nexus.nodes.node_utils import name_map_from_node_sequence as name_map_from_node_sequence
 from eta_nexus.nodes.opcua_node import OpcuaNode as OpcuaNode
-from eta_nexus.nodes.wetterdienst_node import (
-    WetterdienstNode as WetterdienstNode,
-    WetterdienstObservationNode as WetterdienstObservationNode,
-    WetterdienstPredictionNode as WetterdienstPredictionNode,
-)
+from eta_nexus.nodes.wetterdienst_node import WetterdienstNode as WetterdienstNode

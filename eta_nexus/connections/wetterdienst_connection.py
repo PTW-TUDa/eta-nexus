@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
 from datetime import datetime, timedelta
 
-from eta_nexus.nodes import (
+from eta_nexus.nodes.wetterdienst_node import (
     WetterdienstNode,
     WetterdienstObservationNode,
     WetterdienstPredictionNode,
