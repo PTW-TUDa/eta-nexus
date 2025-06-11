@@ -138,3 +138,28 @@ def test_connection_from_node_ids(config_eneffco):
 
     assert isinstance(res, pd.DataFrame)
     assert set(res.columns) == {"CH1.Elek_U.L1-N", "Pu3.425.ThHy_Q"}
+
+
+def test_eneffco_validate_nodes_inheritance(config_eneffco, eneffco_nodes):
+    server = EneffcoConnection(
+        eneffco_nodes["node"].url,
+        config_eneffco["user"],
+        config_eneffco["pw"],
+        nodes=[eneffco_nodes["node"], eneffco_nodes["node2"]],
+    )
+
+    result = server._validate_nodes(eneffco_nodes["node"])
+    assert isinstance(result, set)
+    assert len(result) == 1
+    assert eneffco_nodes["node"] in result
+    assert all(hasattr(node, "eneffco_code") for node in result)
+
+    result = server._validate_nodes([eneffco_nodes["node"], eneffco_nodes["node2"]])
+    assert isinstance(result, set)
+    assert len(result) == 2
+    assert all(node in result for node in [eneffco_nodes["node"], eneffco_nodes["node2"]])
+
+    result = server._validate_nodes(None)
+    assert isinstance(result, set)
+    assert len(result) > 0
+    assert all(hasattr(node, "eneffco_code") for node in result)

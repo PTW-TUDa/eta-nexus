@@ -309,6 +309,23 @@ class TestConnectionOperations:
         with pytest.raises(ConnectionError, match=".*BadUserAccessDenied.*"):
             connection.read(n)
 
+    def test_validate_nodes_inheritance(self, connection: OpcuaConnection, local_nodes):
+        result = connection._validate_nodes(local_nodes[0])
+        assert isinstance(result, set)
+        assert len(result) == 1
+        assert local_nodes[0] in result
+        assert all(hasattr(node, "opc_id") for node in result)
+
+        result = connection._validate_nodes(local_nodes[:2])
+        assert isinstance(result, set)
+        assert len(result) == 2
+        assert all(node in result for node in local_nodes[:2])
+
+        result = connection._validate_nodes(None)
+        assert isinstance(result, set)
+        assert len(result) > 0
+        assert all(hasattr(node, "opc_id") for node in result)
+
 
 class TestConnectionSubscriptions:
     values = {

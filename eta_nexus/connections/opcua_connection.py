@@ -423,15 +423,6 @@ class OpcuaConnection(Connection[OpcuaNode], protocol="opcua"):
         finally:
             self._disconnect()
 
-    def _validate_nodes(self, nodes: OpcuaNode | Nodes[OpcuaNode] | None) -> set[OpcuaNode]:
-        vnodes = super()._validate_nodes(nodes)
-        _nodes = set()
-        for node in vnodes:
-            if isinstance(node, OpcuaNode):
-                _nodes.add(node)
-
-        return _nodes
-
 
 class _OPCSubHandler:
     """Wrapper for the OPC UA subscription. Enables the subscription to use the standardized eta_nexus subscription

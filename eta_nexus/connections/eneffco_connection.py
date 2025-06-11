@@ -453,12 +453,3 @@ class EneffcoConnection(SeriesConnection[EneffcoNode], protocol="eneffco"):
             return None
         else:
             return response
-
-    def _validate_nodes(self, nodes: EneffcoNode | Nodes[EneffcoNode] | None) -> set[EneffcoNode]:
-        vnodes = super()._validate_nodes(nodes)
-        _nodes = set()
-        for node in vnodes:
-            if isinstance(node, EneffcoNode):
-                _nodes.add(node)
-
-        return _nodes
