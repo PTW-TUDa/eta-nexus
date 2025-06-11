@@ -291,12 +291,3 @@ class ModbusConnection(Connection[ModbusNode], protocol="modbus"):
             raise ConnectionError(f"ModbusError {exception} at {self.url}: {self.connection.last_except_as_txt}")
 
         raise ConnectionError(f"Unknown ModbusError at {self.url}")
-
-    def _validate_nodes(self, nodes: ModbusNode | Nodes[ModbusNode] | None) -> set[ModbusNode]:
-        vnodes = super()._validate_nodes(nodes)
-        _nodes = set()
-        for node in vnodes:
-            if isinstance(node, ModbusNode):
-                _nodes.add(node)
-
-        return _nodes

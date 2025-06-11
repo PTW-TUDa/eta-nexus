@@ -492,3 +492,15 @@ class TestConnectionSubscriptionsIntervalChecker:
                 messages_found += 1
 
         assert messages_found >= 3, "Error while testing the interval checker, test could not be executed reliably."
+
+
+def test_modbus_validate_nodes_inheritance(local_nodes):
+    connection = ModbusConnection.from_node(local_nodes[0])
+
+    result = connection._validate_nodes(local_nodes[0])
+    assert isinstance(result, set)
+    assert len(result) == 1
+    assert local_nodes[0] in result
+
+    result = connection._validate_nodes(local_nodes[:2])
+    assert len(result) == 2
