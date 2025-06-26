@@ -31,8 +31,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pandas as pd
 import requests
-from requests import Response
-from requests_cache import DO_NOT_CACHE, CachedSession
+from requests_cache import DO_NOT_CACHE, CachedSession, Response
 
 from eta_nexus.nodes import ForecastsolarNode
 from eta_nexus.timeseries import df_interpolate
