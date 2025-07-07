@@ -222,7 +222,7 @@ class ForecastsolarNode(Node, protocol="forecast_solar", attrs_args=attrs_args):
 
     def __attrs_post_init__(self) -> None:
         """Process attributes after initialization."""
-        if self.url not in [None, ""]:
+        if self.url not in [None, "", "https://api.forecast.solar"]:
             log.info("Passing 'url' to Forecastsolar node is not supported and will be ignored.")
 
         if not (isinstance(self.declination, int) and isinstance(self.azimuth, int) and isinstance(self.kwp, float)):

@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
 import pytest
-import requests
 import requests_cache
 from attrs import validators
 
@@ -344,17 +343,15 @@ def test_watt_processing(connection: ForecastsolarConnection, forecast_solar_nod
     assert np.allclose(watt_hours_day[node.name], exp_hours_day, rtol=tolerance)
 
 
-def test_cached_responses(forecast_solar_nodes: dict[str, Node]):
+def test_cached_responses(forecast_solar_nodes: dict[str, Node], caplog: pytest.LogCaptureFixture):
     # Test connection from node
     node = forecast_solar_nodes["node"]
     connection: ForecastsolarConnection = ForecastsolarConnection.from_node(node)
 
     url, query_params = node.url, node._query_params
     for i in range(10):
-        try:
-            response = connection._raw_request("GET", url, params=query_params, headers=connection._headers)
-            if i != 0:
-                assert response.from_cache is True
-        except requests.exceptions.HTTPError as e:
-            if i == 0 and e.response.status_code == 429:
-                pytest.skip("Rate limit reached")
+        response = connection._raw_request("GET", url, params=query_params, headers=connection._headers)
+        if i == 0 and response is None and "429" in caplog.text:
+            pytest.skip("Rate limit reached")
+        elif i != 0:
+            assert response.from_cache is True
