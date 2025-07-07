@@ -352,7 +352,7 @@ class ForecastsolarConnection(SeriesConnection[ForecastsolarNode], protocol="for
             response = self._session.request(method, url, **kwargs)
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
-            log.warning(f"[Forecast.Solar] HTTP error for {url}: {e}")
+            log.warning(f"[Forecast.Solar] {e}")
             return None  # Request failed, return None
         except requests.exceptions.RequestException:
             log.exception("[Forecast.Solar] Request failed")

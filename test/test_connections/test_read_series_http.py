@@ -33,7 +33,7 @@ def test_forecastsolar_invalid_token_real_http_error(caplog):
         from_time=datetime(2024, 5, 7), to_time=datetime(2024, 5, 7, 1), interval=timedelta(minutes=15)
     )
     assert result is not None
-    assert "HTTPError" in caplog.text or "401" in caplog.text
+    assert "401" in caplog.text
 
 
 def test_entsoe_http_error_handled(monkeypatch, caplog):
@@ -99,4 +99,4 @@ def test_eneffco_http_error_handled(monkeypatch, caplog):
             result = conn.read_series(datetime(2024, 5, 1), datetime(2024, 5, 2))
 
         assert result is not None
-        assert any("HTTP error" in msg for msg in caplog.messages)
+        assert any("401 Client Error" in msg for msg in caplog.messages)

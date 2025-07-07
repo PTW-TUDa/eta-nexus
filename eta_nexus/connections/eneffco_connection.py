@@ -445,7 +445,7 @@ class EneffcoConnection(SeriesConnection[EneffcoNode], protocol="eneffco"):
             response.raise_for_status()
 
         except requests.exceptions.HTTPError as e:
-            log.warning(f"[Eneffco] HTTP error at {self.url}: {e}")
+            log.warning(f"[Eneffco] {e}")
             return None
 
         except requests.exceptions.RequestException:
