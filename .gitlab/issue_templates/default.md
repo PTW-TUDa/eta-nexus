@@ -1,32 +1,51 @@
-## Summary
+## 🐞 Summary
 
-(Summarize the bug encountered concisely.)
+<!-- Briefly summarize the bug you encountered (1–2 sentences). -->
 
-## Explain your context
+---
 
-(Explain what you did.)
+## 🧭 Context & Environment
 
-## What is the expected correct behavior? What was your goal?
+<!--
+What were you doing when the issue occurred?
+Include any relevant environment info:
+- OS/Platform
+- Software version or commit hash
+- CLI/API/GUI actions
+-->
 
-(What you should see instead.)
+---
 
+## ✅ Expected Behavior
 
-## What is the current bug behavior?
+<!-- What should have happened? -->
 
-(What actually happens.)
+---
 
-## Was there an error message?
+## 🚫 Actual Behavior
 
-(Paste any relevant logs - please use
+<!-- What actually happened instead? -->
 
-    code blocks like this one
+---
 
-or
+## 🧾 Error Messages or Logs (if any)
 
-```this one ```
+<!--
+Paste logs or console output **inside code blocks** like below:
 
-to format console output, logs, and code, as it's very hard to read otherwise.)
+```
+ExampleError: something went wrong
+at myfile.py line 42
+```
+-->
 
-## Steps to reproduce
+---
 
-(How one can reproduce the issue - this is very important)
+## 🔁 Steps to Reproduce
+
+<!--
+Please describe how to reproduce the issue step-by-step:
+1. ...
+2. ...
+3. ...
+-->

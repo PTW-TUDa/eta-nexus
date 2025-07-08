@@ -1,15 +1,44 @@
-## Summary
+## 📄 Summary
 
-(Summarize the merge request concisely.)
+<!--
+Briefly explain the goal of this merge request.
+What problem does it solve or what enhancement does it introduce?
+-->
 
-## Explain your context
+---
 
-(Explain what you did.)
+## 📝 Description
 
-## Please list breaking changes, new features or bugfixes
+<!--
+What changes were made and why?
+Mention any structural or architectural changes, if applicable.
+-->
 
-- _Breaking changes_:
+---
 
-- _New features_:
+## 🔧 Changelog
 
-- _Bugfixes_:
+<!-- Please list relevant changes. Leave empty if not applicable. -->
+
+- **Breaking changes**:
+  - <!-- e.g., Changed method signatures in XYZ -->
+- **New features**:
+  - <!-- e.g., Added support for ABC -->
+- **Bugfixes**:
+  - <!-- e.g., Fixed race condition in XYZ -->
+
+---
+
+## ✅ Checklist
+
+<!-- Mark with an 'x' where applicable -->
+
+- [ ] Code builds and passes tests
+- [ ] Documentation updated (if needed)
+- [ ] Tests added or updated
+- [ ] No breaking changes (or documented above)
+
+---
+
+## 📜 Commit History
+%{all_commits}
