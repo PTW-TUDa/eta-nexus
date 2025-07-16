@@ -20,9 +20,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from typing import Any
 
-    from typing_extensions import Self
-
-    from eta_nexus.util.type_annotations import Path
+    from eta_nexus.util.type_annotations import Path, Self
 
 
 log = getLogger(__name__)

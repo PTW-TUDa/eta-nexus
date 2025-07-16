@@ -13,11 +13,13 @@ import pandas as pd
 from pyModbusTCP import constants as mb_const
 from pyModbusTCP.client import ModbusClient
 
+from eta_nexus.connections.connection import Connection, Readable, Subscribable, Writable
 from eta_nexus.connections.connection_utils import (
     IntervalChecker,
     RetryWaiter,
 )
 from eta_nexus.nodes.modbus_node import ModbusNode, bitarray_to_registers
+from eta_nexus.subhandlers import SubscriptionHandler
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Mapping
@@ -27,12 +29,16 @@ if TYPE_CHECKING:
     from eta_nexus.util.type_annotations import Nodes, TimeStep
 
 
-from .base_classes import Connection
-
 log = getLogger(__name__)
 
 
-class ModbusConnection(Connection[ModbusNode], protocol="modbus"):
+class ModbusConnection(
+    Connection[ModbusNode],
+    Readable[ModbusNode],
+    Writable[ModbusNode],
+    Subscribable[ModbusNode],
+    protocol="modbus",
+):
     """The Modbus Connection class allows reading and writing from and to Modbus servers and clients. Additionally,
     it implements a subscription service, which reads continuously in a specified interval.
 

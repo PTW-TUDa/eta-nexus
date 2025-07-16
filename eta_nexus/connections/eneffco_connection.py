@@ -12,7 +12,16 @@ import pandas as pd
 import requests
 from requests_cache import CachedSession
 
+from eta_nexus.connections.connection import (
+    Connection,
+    Readable,
+    SeriesReadable,
+    SeriesSubscribable,
+    Subscribable,
+    Writable,
+)
 from eta_nexus.nodes import EneffcoNode
+from eta_nexus.subhandlers import SubscriptionHandler
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
@@ -22,12 +31,18 @@ if TYPE_CHECKING:
     from eta_nexus.util.type_annotations import Nodes, TimeStep
 
 
-from .base_classes import SeriesConnection
-
 log = getLogger(__name__)
 
 
-class EneffcoConnection(SeriesConnection[EneffcoNode], protocol="eneffco"):
+class EneffcoConnection(
+    Connection[EneffcoNode],
+    Readable[EneffcoNode],
+    Writable[EneffcoNode],
+    Subscribable[EneffcoNode],
+    SeriesReadable[EneffcoNode],
+    SeriesSubscribable[EneffcoNode],
+    protocol="eneffco",
+):
     """EneffcoConnection is a class to download and upload multiple features from and to the Eneffco database as
     timeseries.
 

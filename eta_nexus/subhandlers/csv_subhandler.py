@@ -17,10 +17,8 @@ if TYPE_CHECKING:
     from types import TracebackType
     from typing import Any, TextIO
 
-    from typing_extensions import Self
-
     from eta_nexus.nodes import Node
-    from eta_nexus.util.type_annotations import Number, Path, TimeStep
+    from eta_nexus.util.type_annotations import Number, Path, Self, TimeStep
 
 from eta_nexus.subhandlers.subhandler import SubscriptionHandler
 

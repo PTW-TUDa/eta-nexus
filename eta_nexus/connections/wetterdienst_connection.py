@@ -10,30 +10,27 @@ from wetterdienst.provider.dwd.mosmix.api import DwdMosmixRequest
 from wetterdienst.provider.dwd.observation.api import DwdObservationRequest
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
     from typing import Any
 
     from wetterdienst.core.timeseries.result import StationsResult
 
-    from eta_nexus.subhandlers import SubscriptionHandler
     from eta_nexus.util.type_annotations import Nodes, TimeStep
 
 from datetime import datetime, timedelta
 
+from eta_nexus.connections.connection import Connection, SeriesReadable
 from eta_nexus.nodes.wetterdienst_node import (
     WetterdienstNode,
     WetterdienstObservationNode,
     WetterdienstPredictionNode,
 )
 
-from .base_classes import SeriesConnection
-
 log = getLogger(__name__)
 
-NW = TypeVar("NW", bound=WetterdienstNode)
+WN = TypeVar("WN", bound=WetterdienstNode)
 
 
-class WetterdienstConnection(Generic[NW], SeriesConnection[NW], ABC):
+class WetterdienstConnection(Generic[WN], Connection[WN], SeriesReadable[WN], ABC):
     """The WetterdienstConnection class is a connection to the Wetterdienst API for retrieving weather data.
     This class is an abstract base class and should not be used directly. Instead, use the subclasses
     :class:`WetterdienstObservationConnection` and :class:`WetterdienstPredictionConnection`.
@@ -46,7 +43,7 @@ class WetterdienstConnection(Generic[NW], SeriesConnection[NW], ABC):
     def __init__(
         self,
         *,
-        nodes: Nodes[NW] | None = None,
+        nodes: Nodes[WN] | None = None,
         settings: Settings | None = None,
         **kwargs: Any,
     ) -> None:
@@ -57,7 +54,7 @@ class WetterdienstConnection(Generic[NW], SeriesConnection[NW], ABC):
         super().__init__("https://opendata.dwd.de/", nodes=nodes)  # dummy url
 
     @classmethod
-    def _from_node(cls, node: NW, **kwargs: Any) -> WetterdienstConnection:
+    def _from_node(cls, node: WN, **kwargs: Any) -> WetterdienstConnection:
         """Initialize the connection object from an wetterdienst protocol node object.
 
         :param node: Node to initialize from
@@ -71,7 +68,7 @@ class WetterdienstConnection(Generic[NW], SeriesConnection[NW], ABC):
         self,
         from_time: datetime,
         to_time: datetime,
-        nodes: NW | Nodes[NW] | None = None,
+        nodes: WN | Nodes[WN] | None = None,
         interval: TimeStep = 60,
         **kwargs: Any,
     ) -> pd.DataFrame:
@@ -90,66 +87,6 @@ class WetterdienstConnection(Generic[NW], SeriesConnection[NW], ABC):
             log.warning(
                 f"Timezone of from_time and to_time are different. Using from_time timezone: {from_time.tzinfo}"
             )
-
-    def read(self, nodes: NW | Nodes[NW] | None = None) -> pd.DataFrame:
-        """.. warning::
-            Cannot read single values from the Wetterdienst API. Use read_series instead.
-
-        :param nodes: Single node or list/set of nodes to read values from
-        :return: Pandas DataFrame containing the data read from the connection
-        """
-        raise NotImplementedError("Cannot read single values from the Wetterdienst API. Use read_series instead")
-
-    def write(self, values: Mapping[NW, Any], time_interval: timedelta | None = None) -> None:
-        """.. warning::
-            Cannot write to the Wetterdienst API.
-
-        :param values: Dictionary of nodes and data to write. {node: value}
-        :param time_interval: Interval between datapoints, default 1s
-        """
-        raise NotImplementedError("Cannot write to the Wetterdienst API.")
-
-    def subscribe(
-        self, handler: SubscriptionHandler, nodes: NW | Nodes[NW] | None = None, interval: TimeStep = 1
-    ) -> None:
-        """Subscribe to nodes and call handler when new data is available. This will return only the
-        last available values.
-
-        :param handler: SubscriptionHandler object with a push method that accepts node, value pairs
-        :param interval: interval for receiving new data. It is interpreted as seconds when given as an integer.
-        :param nodes: Single node or list/set of nodes to subscribe to
-        """
-        raise NotImplementedError("Cannot subscribe to data from the Wetterdienst API.")
-
-    def subscribe_series(
-        self,
-        handler: SubscriptionHandler,
-        req_interval: TimeStep,
-        offset: TimeStep | None = None,
-        nodes: NW | Nodes[NW] | None = None,
-        interval: TimeStep = 1,
-        data_interval: TimeStep = 1,
-        **kwargs: Any,
-    ) -> None:
-        """.. warning::
-            Not implemented: Cannot subscribe to data from the Wetterdienst API.
-
-        :param handler: SubscriptionHandler object with a push method that accepts node, value pairs
-        :param req_interval: Duration covered by requested data (time interval). Interpreted as seconds if given as int
-        :param offset: Offset from datetime.now from which to start requesting data (time interval).
-                       Interpreted as seconds if given as int. Use negative values to go to past timestamps.
-        :param data_interval: Time interval between values in returned data. Interpreted as seconds if given as int.
-        :param interval: interval (between requests) for receiving new data.
-                         It it interpreted as seconds when given as an integer.
-        :param nodes: Single node or list/set of nodes to subscribe to
-        """
-        raise NotImplementedError("Cannot subscribe to data from the Wetterdienst API.")
-
-    def close_sub(self) -> None:
-        """.. warning::
-        Not implemented: Cannot subscribe to data from the the Wetterdienst API.
-        """
-        raise NotImplementedError("Cannot subscribe to data from the the Wetterdienst API.")
 
     def retrieve_stations(self, node: WetterdienstNode, request: DwdObservationRequest) -> pd.DataFrame:
         """Retrieve stations from the Wetterdienst API and return the values as a pandas DataFrame

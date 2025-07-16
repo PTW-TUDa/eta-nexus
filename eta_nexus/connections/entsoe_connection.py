@@ -17,6 +17,7 @@ import requests
 from lxml import etree
 from requests_cache import DO_NOT_CACHE, CachedSession
 
+from eta_nexus.connections.connection import Connection, SeriesReadable
 from eta_nexus.nodes import EntsoeNode
 from eta_nexus.timeseries import df_resample, df_time_slice
 from eta_nexus.util import dict_search, round_timestamp
@@ -25,16 +26,13 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
     from typing import Any, Final
 
-    from eta_nexus.subhandlers import SubscriptionHandler
     from eta_nexus.util.type_annotations import Nodes, TimeStep
 
-
-from .base_classes import SeriesConnection
 
 log = getLogger(__name__)
 
 
-class EntsoeConnection(SeriesConnection[EntsoeNode], protocol="entsoe"):
+class EntsoeConnection(Connection[EntsoeNode], SeriesReadable[EntsoeNode], protocol="entsoe"):
     """ENTSOEConnection is a class to download and upload multiple features from and to the
     ENTSO-E transparency platform database as timeseries.
     The platform contains data about the european electricity markets.
@@ -82,37 +80,6 @@ class EntsoeConnection(SeriesConnection[EntsoeNode], protocol="entsoe"):
         """
 
         return super()._from_node(node)
-
-    def read(self, nodes: EntsoeNode | Nodes[EntsoeNode] | None = None) -> pd.DataFrame:
-        """.. warning::
-            Cannot read single values from ENTSO-E transparency platform. Use read_series instead.
-
-        :param nodes: Single node or list/set of nodes to read values from
-        :return: Pandas DataFrame containing the data read from the connection
-        """
-        raise NotImplementedError(
-            "Cannot read single values from ENTSO-E transparency platform. Use read_series instead"
-        )
-
-    def write(
-        self, values: Mapping[EntsoeNode, Mapping[datetime, Any]], time_interval: timedelta | None = None
-    ) -> None:
-        """.. warning::
-        Cannot write to ENTSO-E transparency platform.
-        """
-        raise NotImplementedError("Cannot write to ENTSO-E transparency platform.")
-
-    def subscribe(
-        self, handler: SubscriptionHandler, nodes: EntsoeNode | Nodes[EntsoeNode] | None = None, interval: TimeStep = 1
-    ) -> None:
-        """Subscribe to nodes and call handler when new data is available. This will return only the
-        last available values.
-
-        :param handler: SubscriptionHandler object with a push method that accepts node, value pairs
-        :param interval: interval for receiving new data. It is interpreted as seconds when given as an integer.
-        :param nodes: Single node or list/set of nodes to subscribe to
-        """
-        self.subscribe_series(handler=handler, req_interval=1, nodes=nodes, interval=interval, data_interval=interval)
 
     def _handle_xml(self, xml_content: bytes) -> dict[str, dict[str, list[pd.Series]]]:
         """Transform XML data from request response into dictionary containing resolutions and time series for the node.
@@ -252,36 +219,6 @@ class EntsoeConnection(SeriesConnection[EntsoeNode], protocol="entsoe"):
                 return pd.DataFrame()
 
         return pd.concat(results, axis=1, sort=False)
-
-    def subscribe_series(
-        self,
-        handler: SubscriptionHandler,
-        req_interval: TimeStep,
-        offset: TimeStep | None = None,
-        nodes: EntsoeNode | Nodes[EntsoeNode] | None = None,
-        interval: TimeStep = 1,
-        data_interval: TimeStep = 1,
-        **kwargs: Any,
-    ) -> None:
-        """.. warning::
-            Not implemented: Cannot subscribe to data from the ENTSO-E transparency platform.
-
-        :param handler: SubscriptionHandler object with a push method that accepts node, value pairs
-        :param req_interval: Duration covered by requested data (time interval). Interpreted as seconds if given as int
-        :param offset: Offset from datetime.now from which to start requesting data (time interval).
-                       Interpreted as seconds if given as int. Use negative values to go to past timestamps.
-        :param data_interval: Time interval between values in returned data. Interpreted as seconds if given as int.
-        :param interval: interval (between requests) for receiving new data.
-                         It it interpreted as seconds when given as an integer.
-        :param nodes: Single node or list/set of nodes to subscribe to
-        """
-        raise NotImplementedError("Cannot subscribe to data from the ENTSO-E transparency platform.")
-
-    def close_sub(self) -> None:
-        """.. warning::
-        Not implemented: Cannot subscribe to data from the ENTSO-E transparency platform.
-        """
-        raise NotImplementedError("Cannot subscribe to data from the ENTSO-E transparency platform.")
 
     def _raw_request(self, params: Mapping[str, str], **kwargs: Mapping[str, Any]) -> requests.Response | None:
         """Perform ENTSO-E request and handle possibly resulting errors.

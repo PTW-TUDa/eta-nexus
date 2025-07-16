@@ -16,9 +16,7 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
     from typing import Any
 
-    from typing_extensions import Self
-
-    from eta_nexus.util.type_annotations import Nodes
+    from eta_nexus.util.type_annotations import Nodes, Self
 
 log = getLogger(__name__)
 

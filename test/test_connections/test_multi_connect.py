@@ -1,10 +1,11 @@
 import asyncio
+import os
 
 import pytest
 import requests_cache
 from pyModbusTCP import client as mbclient
 
-from eta_nexus.connections.base_classes import Connection
+from eta_nexus.connections.connection import Connection
 from eta_nexus.nodes import Node
 from eta_nexus.servers import OpcuaServer
 from eta_nexus.subhandlers import CsvSubHandler
@@ -33,6 +34,7 @@ def local_server():
 def _mock_client(monkeypatch):
     monkeypatch.setattr(mbclient, "ModbusClient", MockModbusClient)
     monkeypatch.setattr(requests_cache.CachedSession, "request", request)
+    os.environ["ENEFFCO_API_TOKEN"] = ""
 
 
 def test_multi_connect(config_nodes_file, config_eneffco, temp_dir):

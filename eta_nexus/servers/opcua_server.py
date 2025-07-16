@@ -24,12 +24,11 @@ if TYPE_CHECKING:
 
     # Sync import
     from asyncua.sync import SyncNode as SyncOpcNode
-    from typing_extensions import Self
 
     # Async import
     # TODO: add async import: from asyncua import Node as asyncSyncOpcNode
     # https://git.ptw.maschinenbau.tu-darmstadt.de/eta-fabrik/public/eta-utility/-/issues/270
-    from eta_nexus.util.type_annotations import Nodes
+    from eta_nexus.util.type_annotations import Nodes, Self
 
 log = getLogger(__name__)
 

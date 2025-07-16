@@ -1,3 +1,5 @@
+import os
+
 import pandas as pd
 import pytest
 import requests_cache
@@ -29,6 +31,7 @@ from test.utilities.requests.forecast_solar_request import request as request_fo
 @pytest.fixture
 def _local_eneffco_requests(monkeypatch):
     monkeypatch.setattr(requests_cache.CachedSession, "request", request_eneffco)
+    os.environ["ENEFFCO_API_TOKEN"] = ""
 
 
 @pytest.fixture

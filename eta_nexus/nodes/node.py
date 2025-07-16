@@ -23,9 +23,7 @@ if TYPE_CHECKING:
     from typing import Any, ClassVar
     from urllib.parse import ParseResult
 
-    from typing_extensions import Self
-
-    from eta_nexus.util.type_annotations import Path
+    from eta_nexus.util.type_annotations import Path, Self
 
 default_schemes = {
     "modbus": "modbus.tcp",

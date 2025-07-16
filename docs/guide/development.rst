@@ -3,7 +3,7 @@
 Installation and Guide for Developers
 =================================================================================
 
-This section describes how to install *eta_nexus* using *poetry*, and how to contribute to development.
+This section describes how to install *eta_nexus* using *poetry* and how to contribute to development.
 
 Contributing to development
 -----------------------------
@@ -14,8 +14,8 @@ implement your changes there.
 
 If you are planning to develop on this package, based on the requirements of another
 package, you might want to import directly from a local git repository. To do this,
-uninstall eta_nexus from the other projects virtual environment and add the path to the local
-*eta_nexus* repository to the other projects main file:
+uninstall eta_nexus from the other project's virtual environment and add the path to the local
+*eta_nexus* repository to the other project's main file:
 
 .. code-block::
 
@@ -30,7 +30,7 @@ This project is being managed by `Poetry  <https://python-poetry.org/docs/#insta
 It's a tool for Python dependency management and packaging.
 In order to install the development environment, you need to install Poetry first.
 
-Open a terminal for the next steps (such as PowerShell)
+Open a terminal for the next steps (such as PowerShell).
 
  .. note::
     Depending on where the relevant folders for the installation are located on your OS,
@@ -48,12 +48,12 @@ Then install Poetry with pipx:
 
 .. code-block:: console
 
-    $ pipx install poetry==1.8.2
+    $ pipx install poetry==2.1.2
 
 
 .. note::
     Poetry will initially use the Python version that it has been installed with.
-    To change the Python version, see :ref:`managinv_environments_poetry`.
+    To change the Python version, see :ref:`managing_environments_poetry`.
 
 By default, Poetry will create its own virtual environment for each project.
 Only if there is already a virtual environment called ".venv" in the project folder, Poetry will use it.
@@ -223,14 +223,14 @@ All the CI/CD instructions are listed in the *.gitlab-ci.yml* file.
 GitLab - Docker containers
 -----------------------------
 
-The directory *.gitlab* contains the dockerfiles which defines the images that the jobs
+The directory *.gitlab* contains the dockerfiles which define the images that the jobs
 of the CI/CD run on. Currently there are two main dockerfiles, one to describe Python-Julia
 environment and another just for Python.
 
-All the dockerfiles contains an correspondent image stored in **Packages & Registries > Container Registry**.
+All the dockerfiles contain a corresponding image stored in **Packages & Registries > Container Registry**.
 In which the image will be used in a container to execute the jobs.
 
-To update the containers first you need to login in GitLab through docker.
+To update the containers, first you need to log in to GitLab through docker.
 
 .. code-block:: console
 
@@ -244,7 +244,7 @@ inside the project folder:
 
     $ docker build -t git-reg.ptw.maschinenbau.tu-darmstadt.de/eta-fabrik/public/eta-nexus/pyjulia:py3.9-jl1.9 -f .gitlab/docker/pyjulia-39-19.dockerfile .
 
-Using tags for the images is a good practice to differentiate image versions, in case it's not used it's automatic
+Using tags for the images is a good practice to differentiate image versions, in case it's not used, it's automatically
 labeled as *latest*. Currently there are three images for Python environments called *python*, with Python versions
 differentiated by tags (py3.9, py3.10 and py3.11) and there is an image with combined Python and Julia installations.
 

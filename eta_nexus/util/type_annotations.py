@@ -19,6 +19,25 @@ from cryptography.hazmat.primitives.asymmetric import (
 
 from eta_nexus.nodes.node import Node
 
+try:
+    # For Python 3.11+
+    from typing import Self  # type: ignore[attr-defined]
+except ImportError:
+    # For Python < 3.11, Self is not available, so we import it from typing_extensions
+    from typing_extensions import Self
+
+__all__ = [
+    "FillMethod",
+    "N",
+    "N_contra",
+    "Nodes",
+    "Number",
+    "Path",
+    "PrivateKey",
+    "Self",
+    "TimeStep",
+]
+
 # Other custom types:
 Path = str | PathLike
 Number = float | int | np.floating | np.signedinteger | np.unsignedinteger
@@ -38,7 +57,10 @@ PrivateKey = (
 )
 
 
-# Generic Template for Nodes, N has to be a subclass of Node
+"Generic Template for Nodes, N has to be a subclass of Node"
 N = TypeVar("N", bound=Node)
+
+"Contravariancy allows N to be a supertype of Node. This is necessary for mypy in some cases."
+N_contra = TypeVar("N_contra", bound=Node, contravariant=True)
 
 Nodes = Sequence[N] | set[N]
