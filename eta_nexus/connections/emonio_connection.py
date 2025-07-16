@@ -4,12 +4,11 @@ from datetime import datetime, timedelta
 from logging import getLogger
 from typing import TYPE_CHECKING
 
-from eta_nexus.connections.base_classes import Connection
+from eta_nexus.connections.connection import Connection, Readable, Subscribable
 from eta_nexus.connections.modbus_connection import ModbusConnection
 from eta_nexus.nodes import EmonioNode, ModbusNode
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
     from typing import Any
 
     import pandas as pd
@@ -20,7 +19,7 @@ if TYPE_CHECKING:
 log = getLogger(__name__)
 
 
-class EmonioConnection(Connection[EmonioNode], protocol="emonio"):
+class EmonioConnection(Connection[EmonioNode], Readable[EmonioNode], Subscribable[EmonioNode], protocol="emonio"):
     """Thin wrapper class for the Emonio that uses a modbus TCP Connection.
     Internally the Emonio nodes are converted to modbus nodes with
     fixed parameters, expect for the name, url and channel.
@@ -74,12 +73,6 @@ class EmonioConnection(Connection[EmonioNode], protocol="emonio"):
         """
         _nodes: set[EmonioNode] = self._validate_nodes(nodes)
         return self._connection.read(self._prepare_modbus_nodes(_nodes))
-
-    def write(self, values: Mapping[EmonioNode, Any]) -> None:
-        """.. warning::
-        Not implemented: Writing to Emonio nodes is not supported.
-        """
-        raise NotImplementedError("Writing to Emonio nodes is not supported")
 
     def subscribe(
         self, handler: SubscriptionHandler, nodes: EmonioNode | Nodes[EmonioNode] | None = None, interval: TimeStep = 1

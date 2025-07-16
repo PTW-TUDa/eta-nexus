@@ -9,11 +9,11 @@ from concurrent.futures import TimeoutError as ConTimeoutError
 from contextlib import AbstractContextManager
 from datetime import timedelta
 from logging import getLogger
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 
-from eta_nexus.connections.base_classes import Connection
+from eta_nexus.connections.connection import Connection, Readable, Writable
 from eta_nexus.nodes import Node
 from eta_nexus.nodes.node_utils import name_map_from_node_sequence
 from eta_nexus.util.io_utils import load_config
@@ -22,9 +22,7 @@ if TYPE_CHECKING:
     import types
     from typing import Any
 
-    from typing_extensions import Self
-
-    from eta_nexus.util.type_annotations import Path, TimeStep
+    from eta_nexus.util.type_annotations import Path, Self, TimeStep
 
 log = getLogger(__name__)
 
@@ -535,17 +533,21 @@ class ConnectionManager(AbstractContextManager):
             _nodes = dict(nodes)
 
         # Sort nodes to be written by connection
-        writes: dict[str, dict[Node, Any]] = {url: {} for url in self._connections}
+        node_writes: dict[str, dict[Node, Any]] = {url: {} for url in self._connections}
         for name, value in _nodes.items():
             n = f"{self.name}.{name}" if "." not in name and self.name is not None else name
-            writes[self._connection_map[n]][self._nodes[n]] = value
+            node_writes[self._connection_map[n]][self._nodes[n]] = value
 
         # Write to all selected nodes for each connection
-        for idx, connection in enumerate(self._connections):
+        for idx, (connection_name, connection_obj) in enumerate(self._connections.items()):
             try:
-                if writes[connection]:
-                    self._connections[connection].write(writes[connection])
-                    self.error_count[idx] = 0
+                if node_writes[connection_name]:
+                    if isinstance(connection_obj, Writable):
+                        writable_connection = cast("Writable", connection_obj)
+                        writable_connection.write(node_writes[connection_name])
+                        self.error_count[idx] = 0
+                    else:
+                        log.error(f"Connection '{connection_name}' is not writable.")
             except (ConnectionError, ConTimeoutError):
                 if self.error_count[idx] < self.max_error_count:
                     self.error_count[idx] += 1
@@ -573,15 +575,19 @@ class ConnectionManager(AbstractContextManager):
             raise KeyError("Check log. One or more nodes not found in node list.")
         # Read from all selected nodes for each connection
         result = {}
-        for idx, connection in enumerate(self._connections):
+        for idx, (connection_name, connection_obj) in enumerate(self._connections.items()):
             try:
-                if node_readings[connection]:
-                    result.update(self._connections[connection].read(node_readings[connection]).iloc[0].to_dict())
-                    self.error_count[idx] = 0
+                if node_readings[connection_name]:
+                    if isinstance(connection_obj, Readable):
+                        readable_connection = cast("Readable", connection_obj)
+                        result.update(readable_connection.read(node_readings[connection_name]).iloc[0].to_dict())
+                        self.error_count[idx] = 0
+                    else:
+                        log.error(f"Connection '{connection_name}' is not readable.")
             except (ConnectionError, ConTimeoutError):
                 if self.error_count[idx] < self.max_error_count:
                     self.error_count[idx] += 1
-                    result.update({name.name: np.nan for name in node_readings[connection]})
+                    result.update({name.name: np.nan for name in node_readings[connection_name]})
                     log.exception(f"Connection failed (attempt {self.error_count[idx]}:{self.max_error_count})")
                 else:
                     raise

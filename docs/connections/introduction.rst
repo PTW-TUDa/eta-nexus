@@ -100,7 +100,7 @@ If you have one or multiple nodes, use :attr:`from_nodes`. Create all of the :cl
 :attr:`from_nodes` then returns a dictionary of connections and automatically assigns the nodes to their correct connection.
 It requires less duplicate information than direct instantiation.
 
-.. autofunction:: eta_nexus.connections.base_classes::Connection.from_nodes
+.. autofunction:: eta_nexus.connections.connection::Connection.from_nodes
     :noindex:
 
 Create one Connection
@@ -108,7 +108,7 @@ Create one Connection
 If you have one or more :class:`Node` objects for the same hostname/protocol and just want to create one connection, you should use the :attr:`from_node` method of
 the :class:`Connection` class.
 
-.. autofunction:: eta_nexus.connections.base_classes::Connection.from_node
+.. autofunction:: eta_nexus.connections.connection::Connection.from_node
     :noindex:
 
 Direct Instantiation (not recommended)

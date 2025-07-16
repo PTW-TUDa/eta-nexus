@@ -16,7 +16,7 @@ from eta_nexus.util import dict_get_any
 if TYPE_CHECKING:
     from typing import Any
 
-    from typing_extensions import Self
+    from eta_nexus.util.type_annotations import Self
 
 
 log = getLogger(__name__)

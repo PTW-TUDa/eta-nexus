@@ -33,27 +33,28 @@ import pandas as pd
 import requests
 from requests_cache import DO_NOT_CACHE, CachedSession, Response
 
+from eta_nexus.connections.connection import Connection, Readable, SeriesReadable
 from eta_nexus.nodes import ForecastsolarNode
 from eta_nexus.timeseries import df_interpolate
 from eta_nexus.util import round_timestamp
 
-from .base_classes import SeriesConnection
-
 if TYPE_CHECKING:
-    from collections.abc import Callable, Mapping
+    from collections.abc import Callable
     from types import TracebackType
     from typing import Any, ClassVar
 
-    from typing_extensions import Self
-
-    from eta_nexus.subhandlers import SubscriptionHandler
-    from eta_nexus.util.type_annotations import Nodes, TimeStep
+    from eta_nexus.util.type_annotations import Nodes, Self, TimeStep
 
 
 log = getLogger(__name__)
 
 
-class ForecastsolarConnection(SeriesConnection[ForecastsolarNode], protocol="forecast_solar"):
+class ForecastsolarConnection(
+    Connection[ForecastsolarNode],
+    Readable[ForecastsolarNode],
+    SeriesReadable[ForecastsolarNode],
+    protocol="forecast_solar",
+):
     """ForecastsolarConnection is a class to download and upload multiple features from and to the
     ForecastSolar database as timeseries.
 
@@ -241,27 +242,6 @@ class ForecastsolarConnection(SeriesConnection[ForecastsolarNode], protocol="for
 
         return self._process_watts(values, nodes)
 
-    def write(self, values: Mapping[ForecastsolarNode, Any]) -> None:
-        """.. warning::
-            Cannot read single values from the Forecast.Solar API. Use read_series instead.
-
-        :raises NotImplementedError:
-        """
-        raise NotImplementedError("Write is not implemented for Forecast.Solar.")
-
-    def subscribe(
-        self,
-        handler: SubscriptionHandler,
-        nodes: ForecastsolarNode | Nodes[ForecastsolarNode] | None = None,
-        interval: TimeStep = 1,
-    ) -> None:
-        """.. warning::
-            Cannot read single values from the Forecast.Solar API. Use read_series instead.
-
-        :raises NotImplementedError:
-        """
-        raise NotImplementedError("Subscribe is not implemented for Forecast.Solar.")
-
     def read_series(
         self,
         from_time: datetime,
@@ -288,46 +268,6 @@ class ForecastsolarConnection(SeriesConnection[ForecastsolarNode], protocol="for
         values, _ = self._get_data(nodes, from_time, to_time)
         values = df_interpolate(values, _interval).loc[from_time:to_time]  # type: ignore[misc] # mypy doesn't recognize DatetimeIndex
         return self._process_watts(values, nodes)
-
-    def subscribe_series(
-        self,
-        handler: SubscriptionHandler,
-        req_interval: TimeStep,
-        offset: TimeStep | None = None,
-        nodes: ForecastsolarNode | Nodes[ForecastsolarNode] | None = None,
-        interval: TimeStep = 1,
-        data_interval: TimeStep = 1,
-        **kwargs: Any,
-    ) -> None:
-        """.. warning::
-            Cannot read single values from the Forecast.Solar  API. Use read_series instead.
-
-        :raises NotImplementedError:
-        """
-        raise NotImplementedError("Subscribe series is not implemented for Forecast.Solar.")
-
-    def close_sub(self) -> None:
-        """.. warning::
-            Cannot read single values from the Forecast.Solar  API. Use read_series instead.
-
-        :raises NotImplementedError:
-        """
-        raise NotImplementedError("Close subscription is not implemented for Forecast.Solar.")
-
-    async def _subscription_loop(
-        self,
-        handler: SubscriptionHandler,
-        interval: TimeStep,
-        req_interval: TimeStep,
-        offset: TimeStep,
-        data_interval: TimeStep,
-    ) -> None:
-        """.. warning::
-            Cannot read single values from the Forecast.Solar  API. Use read_series instead.
-
-        :raises NotImplementedError:
-        """
-        raise NotImplementedError("Subscription loop is not implemented for Forecast.Solar.")
 
     def timestr_from_datetime(self, dt: datetime) -> str:
         """Create an Forecast.Solar compatible time string.

@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
     from typing import Any
 
-    from typing_extensions import Self
+    from eta_nexus.util.type_annotations import Self
 
 
 log = getLogger(__name__)

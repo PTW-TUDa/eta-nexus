@@ -31,6 +31,7 @@ from asyncua.ua import SecurityPolicy, uaerrors
 
 from eta_nexus.connections.connection_utils import IntervalChecker, RetryWaiter
 from eta_nexus.nodes import OpcuaNode
+from eta_nexus.subhandlers import SubscriptionHandler
 from eta_nexus.util import KeyCertPair, Suppressor
 
 if TYPE_CHECKING:
@@ -46,12 +47,14 @@ if TYPE_CHECKING:
     from eta_nexus.util.type_annotations import Nodes, TimeStep
 
 
-from .base_classes import Connection
+from eta_nexus.connections.connection import Connection, Readable, Subscribable, Writable
 
 log = getLogger(__name__)
 
 
-class OpcuaConnection(Connection[OpcuaNode], protocol="opcua"):
+class OpcuaConnection(
+    Connection[OpcuaNode], Readable[OpcuaNode], Writable[OpcuaNode], Subscribable[OpcuaNode], protocol="opcua"
+):
     """The OPC UA Connection class allows reading and writing from and to OPC UA servers. Additionally,
     it implements a subscription method, which reads continuously in a specified interval.
 
