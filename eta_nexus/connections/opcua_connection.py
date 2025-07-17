@@ -44,7 +44,7 @@ if TYPE_CHECKING:
     # Async import
     # TODO: add async import: from asyncua import Node as asyncSyncOpcNode
     # https://git.ptw.maschinenbau.tu-darmstadt.de/eta-fabrik/public/eta-utility/-/issues/270
-    from eta_nexus.util.type_annotations import Nodes, TimeStep
+    from eta_nexus.util.type_annotations import Nodes, Primitive, TimeStep
 
 
 from eta_nexus.connections.connection import Connection, Readable, Subscribable, Writable
@@ -169,7 +169,7 @@ class OpcuaConnection(
 
         return pd.DataFrame(values, index=[self._assert_tz_awareness(datetime.now())])
 
-    def write(self, values: Mapping[OpcuaNode, Any]) -> None:
+    def write(self, values: Mapping[OpcuaNode, Primitive]) -> None:
         """Writes some manually selected values on OPC UA capable controller.
 
         :param values: Dictionary of nodes and data to write {node: value}.
@@ -443,7 +443,7 @@ class _OPCSubHandler:
         """Add a node to the subscription. This is necessary to translate between formats."""
         self._sub_nodes[opc_id] = node
 
-    def datachange_notification(self, node: OpcuaNode, val: Any, data: Any) -> None:
+    def datachange_notification(self, node: OpcuaNode, val: Primitive, data: Any) -> None:
         """datachange_notification is called whenever subscribed input data is received via OPC UA. This pushes data
         to the actual eta_nexus subscription handler.
 

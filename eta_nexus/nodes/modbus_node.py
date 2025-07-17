@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
     from typing import Any
 
-    from eta_nexus.util.type_annotations import Self
+    from eta_nexus.util.type_annotations import Primitive, Self
 
 
 log = getLogger(__name__)
@@ -184,7 +184,7 @@ class ModbusNode(Node, protocol="modbus"):
 
         return val
 
-    def encode_bits(self, value: str | float | bytes) -> list[int]:
+    def encode_bits(self, value: Primitive) -> list[int]:
         """Encode python data type to modbus value.
         This means an array of bytes to send to a modbus server.
 
@@ -210,7 +210,7 @@ class ModbusNode(Node, protocol="modbus"):
         bitstrings = [f"{bin(x)[2:]:0>8}" for x in byte]
         return [int(z) for z in "".join(bitstrings)]
 
-    def _get_encode_params(self, value: str | float | bytes) -> tuple[str, int]:
+    def _get_encode_params(self, value: Primitive) -> tuple[str, int]:
         byte_length: int = self.mb_bit_length // 8
 
         try:
@@ -219,14 +219,16 @@ class ModbusNode(Node, protocol="modbus"):
                 if value >= 0:
                     type_format = type_format.upper()  # Use unsigned integer
                 return type_format, 1
-            if isinstance(value, float):
-                return _FLOAT_TYPES[byte_length], 1
             if isinstance(value, (str, bytes)):
                 return "s", byte_length
+            if isinstance(value, float) or (value := float(value)):
+                return _FLOAT_TYPES[byte_length], 1
         except KeyError as e:
             raise ValueError(
                 f"The length of the value ({byte_length}) does not match the data type: {type(value)}"
             ) from e
+        # Fallback for unsupported types
+        raise TypeError(f"Unsupported value type: {type(value)}")
 
     def _get_decode_params(self, value: Sequence[int]) -> tuple[str, int]:
         """Provide parameters for decoding incoming modbus values

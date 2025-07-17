@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from typing import Any
 
     from eta_nexus.subhandlers import SubscriptionHandler
-    from eta_nexus.util.type_annotations import Nodes, TimeStep
+    from eta_nexus.util.type_annotations import Nodes, Primitive, TimeStep
 
 
 log = getLogger(__name__)
@@ -116,7 +116,9 @@ class EneffcoConnection(
         return self.read_series(the_time - timedelta(seconds=base_time), the_time, nodes, base_time)
 
     def write(
-        self, values: Mapping[EneffcoNode, Any] | pd.Series[datetime, Any], time_interval: timedelta | None = None
+        self,
+        values: Mapping[EneffcoNode, Primitive] | pd.Series[datetime, Primitive],
+        time_interval: timedelta | None = None,
     ) -> None:
         """Writes some values to the Eneffco Database.
 
@@ -144,7 +146,7 @@ class EneffcoConnection(
             log.info(response.text if response else "No response.")
 
     def _prepare_raw_data(
-        self, data: Mapping[datetime, Any] | pd.Series[datetime, Any], time_interval: timedelta
+        self, data: Mapping[datetime, Primitive] | pd.Series[datetime, Primitive], time_interval: timedelta
     ) -> str:
         """Change the input format into a compatible format with Eneffco and filter NaN values.
 
