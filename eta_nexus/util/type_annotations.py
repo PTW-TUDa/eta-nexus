@@ -3,7 +3,7 @@ from __future__ import annotations
 import datetime
 from collections.abc import Sequence
 from os import PathLike
-from typing import Literal, TypeVar
+from typing import Literal, Protocol, TypeVar
 
 import numpy as np
 from cryptography.hazmat.primitives.asymmetric import (
@@ -33,15 +33,25 @@ __all__ = [
     "Nodes",
     "Number",
     "Path",
+    "Primitive",
     "PrivateKey",
     "Self",
     "TimeStep",
 ]
 
+
+class FloatConvertible(Protocol):
+    """A protocol for objects that can be converted to a float."""
+
+    def __float__(self) -> float: ...
+
+
 # Other custom types:
 Path = str | PathLike
 Number = float | int | np.floating | np.signedinteger | np.unsignedinteger
 TimeStep = int | float | datetime.timedelta
+# str, bool, bytes explicitly defined for clarity, despite being implicitly included in FloatConvertible
+Primitive = FloatConvertible | str | bool | bytes
 
 FillMethod = Literal["ffill", "bfill", "interpolate", "asfreq"]
 

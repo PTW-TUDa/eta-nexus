@@ -7,7 +7,7 @@ import socket
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 from logging import getLogger
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import pandas as pd
 from pyModbusTCP import constants as mb_const
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from typing import Any
 
     from eta_nexus.subhandlers import SubscriptionHandler
-    from eta_nexus.util.type_annotations import Nodes, TimeStep
+    from eta_nexus.util.type_annotations import Nodes, Primitive, TimeStep
 
 
 log = getLogger(__name__)
@@ -100,11 +100,8 @@ class ModbusConnection(
 
         return pd.DataFrame(values, index=[self._assert_tz_awareness(datetime.now())])
 
-    def write(self, values: Mapping[ModbusNode, Any]) -> None:
+    def write(self, values: Mapping[ModbusNode, Primitive]) -> None:
         """Write some manually selected values on Modbus capable controller.
-
-        .. warning::
-            This is not implemented.
 
         :param values: Dictionary of nodes and data to write {node: value}.
         """
@@ -112,7 +109,11 @@ class ModbusConnection(
 
         with self._connection():
             for node in nodes:
-                bits = node.encode_bits(values[node]) if not isinstance(values[node], list) else values[node]
+                bits = (
+                    node.encode_bits(values[node])
+                    if not isinstance(values[node], list)
+                    else [int(x) for x in cast("list", values[node])]
+                )
 
                 self._write_mb_value(node, bits)
 
