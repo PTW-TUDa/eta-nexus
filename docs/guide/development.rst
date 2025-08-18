@@ -193,7 +193,6 @@ folder of the repository. If you correctly installed *eta_nexus* with the develo
 extension, sphinx should already be installed.
 
 You can edit the *.rst-files* in the *docs* folder. A simple text editor is sufficient for this.
-A helpful start for learning the syntax can be found `here <https://sublime-and-sphinx-guide.readthedocs.io/en/latest/index.html>`_.
 
 For test purposes, navigate to the *docs* folder and execute the following command:
 
