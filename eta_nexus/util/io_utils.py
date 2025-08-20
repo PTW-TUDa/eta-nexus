@@ -88,6 +88,12 @@ def yaml_import(path: Path) -> dict[str, Any]:
 def load_config(file: Path) -> dict[str, Any]:
     """Load configuration from JSON, TOML, or YAML file.
     The read file is expected to contain a dictionary of configuration options.
+    When no file extension is provided, searches for files in the following priority order:
+    1. JSON
+    2. TOML
+    3. YML
+    4. YAML
+
 
     :param file: Path to the configuration file.
     :return: Dictionary of configuration options.
@@ -100,13 +106,21 @@ def load_config(file: Path) -> dict[str, Any]:
     }
     file_path = pathlib.Path(file)
 
-    for extension, import_method in possible_extensions.items():
-        _file_path: pathlib.Path = file_path.with_suffix(extension)
-        if _file_path.exists():
-            config = import_method(_file_path)
-            break
+    if file_path.suffix != "":  # File ending is provided
+        ext = file_path.suffix.lower()
+        import_method = possible_extensions.get(ext)
+        if import_method is None:
+            raise ValueError(f"Unsupported config file extension: {ext}")
     else:
-        raise FileNotFoundError(f"Config file not found: {file}")
+        for extension, _import_method in possible_extensions.items():
+            file_path = file_path.with_suffix(extension)
+            if file_path.exists():
+                import_method = _import_method
+                break
+        else:
+            raise FileNotFoundError(f"Config file not found: {file}")
+
+    config = import_method(file_path)
 
     if not isinstance(config, dict):
         raise TypeError(f"Config file {file} must define a dictionary of options.")
