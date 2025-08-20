@@ -61,6 +61,7 @@ class OpcuaServer:
 
         self.idx: int = self._server.register_namespace(str(namespace))  #: idx: Namespace of the OPC UA _server
         log.debug(f'Server Namespace set to "{namespace}"')
+        self.nodes: list[OpcuaNode] | None = None
 
         self._server.set_security_policy([ua.SecurityPolicyType.NoSecurity])
         self._server.set_server_name("ETA Utility OPC UA Server")
@@ -155,6 +156,10 @@ class OpcuaServer:
             except RuntimeError as e:
                 raise ConnectionError(str(e)) from e
 
+            if not hasattr(self, "selected_nodes"):
+                self.selected_nodes = set()
+            self.selected_nodes.update(_nodes)
+
     def delete_nodes(self, nodes: Nodes[OpcuaNode]) -> None:
         """Delete the given nodes and their parents (if the parents do not have other children).
 
@@ -211,6 +216,9 @@ class OpcuaServer:
         :return: Set of valid Node objects for this connection.
         """
         _nodes = None
+
+        if nodes is None and hasattr(self, "selected_nodes"):
+            nodes = self.selected_nodes
 
         if nodes:
             # If not using preselected nodes from self.selected_nodes, check if nodes correspond to the connection

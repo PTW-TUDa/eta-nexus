@@ -1,8 +1,11 @@
+from pathlib import Path
+
 import asyncua as opcua
 import pytest
 
 from eta_nexus.nodes import Node
 from eta_nexus.servers import OpcuaServer
+from eta_nexus.servers.loaders.opcua_server_loader import load_opcua_servers_from_config
 
 nodes = (
     {
@@ -112,3 +115,58 @@ class TestServerOperations:
 
         with pytest.raises(RuntimeError, match=".*BadNodeIdUnknown.*"):
             server.read(local_nodes)
+
+
+class TestOpcuaServerFromConfigFile:
+    """
+    Tests loading OPCUA Servers from connection manager yaml file.
+    """
+
+    @pytest.fixture(scope="class", params=["yaml", "toml", "json"])
+    def servers_from_config(self, request):
+        extension = request.param
+        config_path = f"./test/resources/connection_manager/config.{extension}"
+        assert Path(config_path).exists(), f"{config_path} does not exist."
+
+        servers = load_opcua_servers_from_config(config_path)
+        yield servers
+
+        # Cleanup after tests
+        for s in servers:
+            s.stop()
+
+    def test_servers_started(self, servers_from_config):
+        for s in servers_from_config:
+            assert s.active is True
+
+    def test_servers_have_nodes(self, servers_from_config):
+        """
+        Verify that nodes configured in yaml are created and can be read from.
+        """
+        for s in servers_from_config:
+            try:
+                val_df = s.read()
+                assert not val_df.empty, "No variables found in server; s.read() returned empty DataFrame."
+            except Exception as e:
+                raise AssertionError(f"Failed to read from server {s.url}. Error: {e}") from e
+
+    @pytest.mark.parametrize(("index", "value"), [(0, 3.14), (1, 42), (2, "new_str_val")])
+    def test_write_node(self, servers_from_config, index, value):
+        for s in servers_from_config:
+            s.write({s.nodes[index]: value})
+            actual = s._server.get_node(s.nodes[index].opc_id).get_value()
+            assert actual == value, f"Expected {value}, got {actual}"
+
+    @pytest.mark.parametrize(("index", "expected"), [(0, 3.14), (1, 42), (2, "new_str_val")])
+    def test_read_node(self, servers_from_config, index, expected):
+        for s in servers_from_config:
+            s.write({s.nodes[index]: expected})
+            val_df = s.read(s.nodes[index])
+            assert val_df.iloc[0, 0] == expected
+            assert val_df.columns[0] == s.nodes[index].name
+
+    def test_delete_nodes(self, servers_from_config):
+        for s in servers_from_config:
+            s.delete_nodes(s.nodes)
+            with pytest.raises(RuntimeError, match=".*BadNodeIdUnknown.*"):
+                s.read(s.nodes)
