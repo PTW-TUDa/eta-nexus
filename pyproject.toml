@@ -1,10 +1,11 @@
 [project]
 name = "eta-nexus"
-version = "v0.1.0"
+version = "0.1.0"
 description = "Provides a standardized way to connect to machines and devices in a factory or other factory systems"
 license = "BSD-2-Clause"
 readme = "README.rst"
 requires-python = ">=3.10.16, <3.13.0"
+dynamic = ["classifiers"]
 authors = [
     {name = "Technical University of Darmstadt, Institute for Production Management, Technology and Machine Tools (PTW)", email="info@ptw.tu-darmstadt.de"}
 ]
@@ -16,7 +17,35 @@ maintainers = [
 keywords = [
     "connectivity", "servers", "iot", "multi-protocol", "eta-fabrik"
 ]
-dynamic = ["classifiers", "dependencies"]
+
+dependencies = [
+    "attrs >=25.3.0,<26.0.0",
+    "python-dateutil >=2.8.2,<3.0.0",
+    "numpy >=2.0.0,<3.0.0",
+    "pandas >=2.2.2,<2.3.0",
+    "xlrd >=2.0.1,<3.0.0",
+    "asyncua-fork-for-eta-utility ==1.0.7",
+    "lxml >=5.0.0,<6.0.0",
+    "requests >=2.31.0,<3.0.0",
+    "pymodbustcp >=0.3.0,<0.4.0",
+    "cryptography >=44.0.2,<45.0.0",
+    "wetterdienst >=0.97.0,<0.98.0",  # breaking changes expected
+    "requests-cache >=1.2.0,<2.0.0",
+    "pyyaml >=6.0.2,<7.0.0",
+    "toml >=0.10.2,<0.11.0",
+    "python-dotenv >=1.0.1,<2.0.0"
+]
+
+[project.optional-dependencies]
+examples = [
+    "onnxruntime>=1.21.0"
+]
+docs = [
+    "sphinx >=8.0.0,<9.0.0",
+    "sphinx-rtd-theme >=3.0.0,<4.0.0",
+    "sphinx-copybutton >=0.5.2,<0.6.0",
+    "esbonio >=0.16.5,<0.17.0",
+]
 
 [project.urls]
 homepage = "https://www.ptw.tu-darmstadt.de"
@@ -43,42 +72,28 @@ include = [
     {path="examples/", format=["sdist", "wheel"]}
 ]
 
+[tool.poetry.group.examples.dependencies]
+# Versions defined above to ensure pip compatibility
+onnxruntime= "*"
+
+[tool.poetry.group.docs.dependencies]
+# Versions defined above to ensure pip compatibility
+sphinx = "*"
+sphinx-rtd-theme = "*"
+sphinx-copybutton = "*"
+esbonio = "*"
+
 #  '^' limits to the next major version, '~' limits to the next minor version
 # e.g. ^3.9.0: 3.9.0 <= x < 4.0.0 and ~3.9.0: 3.9.0 <= x < 3.10.0
-[tool.poetry.dependencies]
-# default dependencies of eta_nexus
-attrs = "^25.3.0"
-python-dateutil = "^2.8.2"
-numpy = "^2.0.0"
-pandas = "~2.2.2"
-xlrd = "^2.0.1"
-asyncua-fork-for-eta-utility = "==1.0.7"
-lxml = "^5.0.0"
-requests = "^2.31.0"
-pymodbustcp = "~0.3.0"
-cryptography = "^44.0.2"
-wetterdienst = "~0.97.0"  # breaking changes expected
-requests-cache = "^1.2.0"
-pyyaml = "^6.0.2"
-toml = "^0.10.2"
-python-dotenv = "^1.0.1"
-
-[tool.poetry.group.examples.dependencies]
-onnxruntime = ">=1.21.0"
-
 [tool.poetry.group.dev.dependencies]
+# Dev install assumes poetry, so pip compatibility is not needed
+pre-commit = "^4.2.0"
 # tests
 pytest = "^8.0.0"
 pytest-cov = "^6.0.0"
 pytest-timeout = "^2.3.1"
 openpyxl = "^3.1.2"
-# docs
-sphinx = "^8.0.0"
-sphinx-rtd-theme = "^3.0.0"
-sphinx-copybutton = "^0.5.2"
-esbonio = "^0.16.5"
 # linting / formatting
-pre-commit = "^4.2.0"
 ruff = "~0.11.2"
 codespell = "^2.3.0"
 # typing
@@ -121,6 +136,7 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = "test.*"
 ignore_errors = true
+
 [tool.pytest.ini_options]
 filterwarnings = "ignore::DeprecationWarning:.*site-packages.*"
 addopts = ["--cov-config=pyproject.toml", "--color=yes"]

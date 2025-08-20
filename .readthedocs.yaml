@@ -5,22 +5,21 @@
 # Required
 version: 2
 
+python:
+  install:
+    - method: pip
+      path: .
+      extra_requirements:
+        - docs
 
 # Customize the build process
 build:
-  os: ubuntu-24.04
+  os: ubuntu-22.04
   tools:
     python: "3.10"
   apt_packages:
     - libgl1-mesa-glx
   jobs:
-    post_install:
-      # Install poetry
-      # https://python-poetry.org/docs/#installing-manually
-      - pip install poetry
-        # VIRTUAL_ENV needs to be set manually for now.
-      # See https://github.com/readthedocs/readthedocs.org/pull/11152/
-      - VIRTUAL_ENV=$READTHEDOCS_VIRTUALENV_PATH poetry install
     pre_build:
       # Build documentation stubs for the API documentation
       - sphinx-apidoc --tocfile api -e -M -o docs/_stubs eta_nexus

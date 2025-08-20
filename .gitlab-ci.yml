@@ -187,23 +187,23 @@ deploy-local:
     - poetry config repositories.eta-fabrik $CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/pypi
     - poetry publish --build --username $USERNAME --password $PASSWORD --repository eta-fabrik
 
-# # build the sources
-# deploy-pypi:
-#   extends: .deploy
-#   # Credentials for pypi repository
-#   variables:
-#     PASSWORD: '${PYPI_UPLOAD_TOKEN}'
-#     USERNAME: '__token__'
-#   needs:
-#     - deploy-local
-#   script:
-#     - rm -rf dist
-#     - poetry publish --build --username $USERNAME --password $PASSWORD
-#   artifacts:
-#     name: "eta_nexus-build-$CI_COMMIT_REF_NAME-$CI_JOB_STATUS"
-#     paths:
-#       - dist/
-#       - eta_nexus.egg-info/
+# build the sources
+deploy-pypi:
+  extends: .deploy
+  # Credentials for pypi repository
+  variables:
+    PASSWORD: '${PYPI_UPLOAD_TOKEN}'
+    USERNAME: '__token__'
+  needs:
+    - deploy-local
+  script:
+    - rm -rf dist
+    - poetry publish --build --username $USERNAME --password $PASSWORD
+  artifacts:
+    name: "eta_nexus-build-$CI_COMMIT_REF_NAME-$CI_JOB_STATUS"
+    paths:
+      - dist/
+      - eta_nexus.egg-info/
 
 # Create readthedocs documentation
 
