@@ -207,6 +207,7 @@ class EntsoeConnection(Connection[EntsoeNode], SeriesReadable[EntsoeNode], proto
                 log.warning(f"[ENTSO-E] No valid data for node {node.name}")
                 return None
             value_df = pd.concat(df_dict.values(), axis=1, keys=df_dict.keys())
+            value_df = value_df.ffill()
             return value_df.swaplevel(axis=1)
 
         with concurrent.futures.ThreadPoolExecutor() as executor:

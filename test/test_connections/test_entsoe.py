@@ -1,4 +1,5 @@
 import os
+import pathlib
 from datetime import datetime, timedelta, timezone
 
 import pandas as pd
@@ -123,3 +124,40 @@ def test_multiple_days(connection, end_time):
         round_timestamp(to_datetime, interval) - round_timestamp(from_datetime, interval)
     ).total_seconds() // interval + 1
     assert total_timestamps * number_of_resolutions == res.shape[0] * res.shape[1]
+
+
+@pytest.mark.parametrize("endpoint", ["Price"])
+def test_different_intervals(monkeypatch, connection: EntsoeConnection, endpoint):
+    """
+    Test reading series from different intervals in the same request.
+    Different intervals - especially when limited by day and not specific point of times - yield different stops.
+    For example, a request for a 15-minute and 60-minute interval yield limits at 23:00 and 23:45.
+
+    Ensure that the resulting DataFrame fills missing values for the different intervals.
+    """
+    # Mock the response path for the endpoint
+    _response_path = pathlib.Path("test/utilities/requests/entso_e_samples")
+    monkeypatch.setattr(requests_cache.CachedSession, "get", mock_get(_response_path))
+
+    node = create_node("Price")
+
+    start = datetime.strptime("2025-07-14T00:00:00+02:00", "%Y-%m-%dT%H:%M:%S%z")
+    end = datetime.strptime("2025-07-15T00:00:00+02:00", "%Y-%m-%dT%H:%M:%S%z")
+
+    # Read series data with different stops
+    # The DataFrame will have index with time delta of the specified interval in seconds
+    res = connection.read_series(from_time=start, to_time=end, nodes=node, interval=900)
+
+    # Check if the DataFrame is not empty, including for differing stops in original XML
+    assert not res.empty, f"DataFrame for endpoint {endpoint} is empty"
+    assert not res.isna().any().any(), f"DataFrame for endpoint {endpoint} contains NaN values"
+
+    # Additional checks for data integrity
+    assert isinstance(res.index, pd.DatetimeIndex), "Result index should be a DatetimeIndex"
+    assert isinstance(res.columns, pd.MultiIndex), "Result columns should be a MultiIndex"
+
+    # Verify we have the expected time range
+    expected_start = round_timestamp(start, 900)
+    expected_end = round_timestamp(end, 900) - timedelta(seconds=900)
+    assert res.index[0] == expected_start, f"Start time mismatch for {endpoint}"
+    assert res.index[-1] == expected_end, f"End time mismatch for {endpoint}"
