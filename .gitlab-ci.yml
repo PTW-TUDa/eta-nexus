@@ -1,13 +1,218 @@
-# You can override the included template(s) by including variable overrides
-# SAST customization: https://docs.gitlab.com/ee/user/application_security/sast/#customizing-the-sast-settings
-# Secret Detection customization: https://docs.gitlab.com/ee/user/application_security/secret_detection/pipeline/#customization
-# Dependency Scanning customization: https://docs.gitlab.com/ee/user/application_security/dependency_scanning/#customizing-the-dependency-scanning-settings
-# Container Scanning customization: https://docs.gitlab.com/ee/user/application_security/container_scanning/#customizing-the-container-scanning-settings
-# Note that environment variables can be set in several places
-# See https://docs.gitlab.com/ee/ci/variables/#cicd-variable-precedence
 stages:
-- test
-sast:
-  stage: test
+  - setup
+  - check
+  - test
+  - deploy
+
+workflow:
+  rules:
+    # Don't create a merge request pipeline for the default branch
+    - if:  $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME == $CI_DEFAULT_BRANCH
+      when: never
+    # Instead, create a branch pipeline for development
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    # Create merge request pipeline for other branches
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    # Create a pipeline for tags
+    - if: $CI_COMMIT_TAG
+
+.on_version_tag_rule:
+  rules:
+    # Deploy if a version tag was created
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+
 include:
-- template: Security/SAST.gitlab-ci.yml
+  - template: Security/Secret-Detection.gitlab-ci.yml
+
+variables:
+  # Poetry settings
+  POETRY_VERSION: 2.1.1
+  REGISTRY_IMAGE: $CI_REGISTRY/$CI_PROJECT_PATH/poetry${POETRY_VERSION}
+
+default:
+  tags:
+    - python
+    - docker
+  interruptible: true
+  image: ${REGISTRY_IMAGE}:py3.10
+  before_script:
+    - python --version
+    - rm -rf dist doc eta_nexus.egg-info build
+    - rm -rf docs/_build docs/_stubs
+    - ls -la
+    # Install development dependencies
+    - poetry sync
+
+  # Cache gets invalidated when poetry.lock changes
+  cache:
+    key: "global-deps-$(checksum poetry.lock)"
+    paths:
+      - ${POETRY_CACHE_DIR}
+      - ${PIP_CACHE_DIR}
+    policy: pull
+
+
+# Job to update pip cache
+update-cache:
+  stage: setup
+  script: echo Updating cache
+  cache:
+    policy: pull-push
+  artifacts:
+    paths:
+      - pyproject.toml
+      - poetry.lock
+  dependencies: []
+
+ruff:
+  stage: check
+  script:
+    - ruff --version
+    - ruff check
+    - ruff format --check
+
+codespell:
+  stage: check
+  script:
+    - codespell --version
+    - codespell
+
+mypy:
+  stage: check
+  script:
+    - mypy --version
+    - mypy --config-file pyproject.toml
+
+poetry:
+  stage: check
+  script:
+    - poetry --version
+    - poetry check
+
+secret_detection:
+  stage: check
+  before_script: []
+
+linkcheck-docs:
+  stage: check
+  script:
+    - rm -rf docs/_build docs/_stubs
+    - cd docs
+    - python -m sphinx -b linkcheck . _build/linkcheck
+  retry:
+    max: 2
+    when: script_failure
+
+.test:
+  stage: test
+  script:
+  - pytest
+  retry:
+    max: 1
+    when: script_failure
+
+.coverage:
+  extends: .test
+  coverage: '/TOTAL.*\s+(\d+%)$/'
+  script:
+  - pytest --cov --junitxml=./junit.xml --cov-report term --cov-report xml:coverage.xml
+  artifacts:
+    paths:
+      - junit.xml
+    reports:
+      junit: junit.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+
+# This job has test coverage report
+test3.10:
+  extends: .coverage
+
+
+test3.11:
+  extends: .test
+  image: ${REGISTRY_IMAGE}:py3.11
+
+test3.12:
+  extends: .test
+  image: ${REGISTRY_IMAGE}:py3.12
+
+# test3.12_updated_deps:
+#   extends: .test
+#   image: ${REGISTRY_IMAGE}:py3.12
+#   needs:
+#     - test3.12
+#   cache: []
+#   script:
+#     - cp poetry.lock poetry.lock.bak  # Backup the lockfile
+#     - poetry update
+#     - |
+#       if ! cmp -s poetry.lock poetry.lock.bak; then
+#         echo "Dependencies were updated! poetry.lock has changed."
+#         pytest --cov --cov-report term --junitxml=./junit.xml
+#       else
+#         echo "No dependencies changed. Skipping tests."
+#       fi
+
+
+.deploy:
+  stage: deploy
+  rules:
+    - !reference [.on_version_tag_rule, rules]
+
+# Publish local gitlab pages
+deploy-pages:
+  extends: .deploy
+  script:
+    - sphinx-build --version && sphinx-apidoc --version
+    - rm -rf docs/_build docs/_stubs public/html/*
+    - cd docs
+    - make html
+    - mv _build/html ../public
+  artifacts:
+    name: "eta-nexus_$CI_COMMIT_TAG"
+    paths:
+      - public/
+  pages: true
+
+deploy-local:
+  extends: .deploy
+  # Credentials for local repository
+  variables:
+    PASSWORD: '${CI_JOB_TOKEN}'
+    USERNAME: 'gitlab-ci-token'
+  script:
+    - rm -rf dist build
+    - poetry config repositories.eta-fabrik $CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/pypi
+    - poetry publish --build --username $USERNAME --password $PASSWORD --repository eta-fabrik
+
+# build the sources
+deploy-pypi:
+  extends: .deploy
+  # Credentials for pypi repository
+  variables:
+    PASSWORD: '${PYPI_UPLOAD_TOKEN}'
+    USERNAME: '__token__'
+  needs:
+    - deploy-local
+  script:
+    - rm -rf dist
+    - poetry publish --build --username $USERNAME --password $PASSWORD
+  artifacts:
+    name: "eta_nexus-build-$CI_COMMIT_REF_NAME-$CI_JOB_STATUS"
+    paths:
+      - dist/
+      - eta_nexus.egg-info/
+
+# Create readthedocs documentation
+
+deploy-readthedocs:
+  extends: .deploy
+  needs:
+    - deploy-local
+    - deploy-pages
+  before_script: []
+  script:
+    - echo $CI_COMMIT_TAG
+    - curl -X POST -d "branches=main" -d "token=$READTHEDOCS_TOKEN" https://readthedocs.org/api/v2/webhook/eta-nexus/294118/
