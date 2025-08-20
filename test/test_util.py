@@ -1,5 +1,7 @@
+import json
 import logging
 import pathlib
+import textwrap
 from datetime import datetime, timezone
 
 import pytest
@@ -22,6 +24,49 @@ def test_from_config(config_connection_manager):
     config_yaml = load_config(file.with_suffix(".yaml"))
 
     assert config_json == config_toml == config_yaml
+
+
+def test_load_config_respects_explicit_extension(tmp_path: pathlib.Path):
+    """
+    If a path with an extension is given, load that file ONLY,
+    even if siblings with other extensions exist.
+    """
+
+    (tmp_path / "config.json").write_text(json.dumps({"a": 2}))
+    (tmp_path / "config.toml").write_text("a = 3")
+    (tmp_path / "config.yaml").write_text("a: 1")
+
+    out = load_config(tmp_path / "config.yaml")
+    assert out == {"a": 1}
+
+
+def test_load_config_without_extension_searches_known_types(tmp_path: pathlib.Path):
+    """
+    If no extension is provided, the loader should search known extensions.
+    Here we only create TOML to make the behavior unambiguous.
+    """
+    (tmp_path / "config.toml").write_text("a = 42")
+
+    out = load_config(tmp_path / "config")  # no suffix
+    assert out == {"a": 42}
+
+
+def test_load_config_unsupported_extension_raises(tmp_path: pathlib.Path):
+    (tmp_path / "settings.ini").write_text("[section]\na=1\n")
+    with pytest.raises(ValueError, match=r"(?i)(unsupported|unknown).*(ext|extension|file type)"):
+        load_config(tmp_path / "settings.ini")
+
+
+def test_load_config_non_mapping_raises(tmp_path: pathlib.Path):
+    # YAML list instead of dict
+    (tmp_path / "list.yaml").write_text(
+        textwrap.dedent("""\
+        - 1
+        - 2
+    """)
+    )
+    with pytest.raises(TypeError, match="dict"):
+        load_config(tmp_path / "list.yaml")
 
 
 def test_log_file_handler():
