@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Mapping
-from datetime import datetime
+from datetime import datetime, timedelta
+from logging import getLogger
 from typing import TYPE_CHECKING, Any, Generic, Protocol, cast, runtime_checkable
 
 from attr import field
@@ -308,6 +309,38 @@ class Connection(Generic[N], ABC):
             )
 
         return _nodes
+
+    def _preprocess_series_context(
+        self,
+        from_time: datetime,
+        to_time: datetime,
+        nodes: N | Nodes[N] | None = None,
+        interval: TimeStep = 1,
+        **kwargs: Any,
+    ) -> tuple[datetime, datetime, set[N], timedelta]:
+        """Preprocesses the series context to ensure it is ready for reading.
+        This method validates the nodes, ensures the time interval is a timedelta, and rounds the timestamps
+        to the nearest interval. It also checks that the timezones of from_time and to_time are the same.
+
+        :param from_time: The start time of the series.
+        :param to_time: The end time of the series.
+        :param nodes: The nodes to read from.
+        :param interval: The time interval for the series.
+        :return: A tuple containing the processed from_time, to_time, nodes, and interval.
+        """
+        nodes = self._validate_nodes(nodes)
+
+        interval = interval if isinstance(interval, timedelta) else timedelta(seconds=interval)
+
+        from_time = round_timestamp(from_time, interval.total_seconds(), method="floor", ensure_tz=True)
+        to_time = round_timestamp(to_time, interval.total_seconds(), method="ceil", ensure_tz=True)
+
+        if from_time.tzinfo != to_time.tzinfo:
+            log = getLogger(self.__module__)
+            log.warning(
+                f"Timezone of from_time and to_time are different. Using from_time timezone: {from_time.tzinfo}"
+            )
+        return (from_time, to_time, nodes, interval)
 
 
 @deprecated("Use `Connection` and the appropriate protocols instead.")

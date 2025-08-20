@@ -7,6 +7,7 @@ import pandas as pd
 import pytest
 import requests_cache
 from attrs import validators
+from dateutil import tz
 
 from eta_nexus.connections import ForecastsolarConnection
 from eta_nexus.nodes import ForecastsolarNode, Node
@@ -165,6 +166,7 @@ def test_read_series(forecast_solar_nodes: dict[str, ForecastsolarNode], connect
     )
 
     assert isinstance(res, pd.DataFrame)
+    assert res.index.tzinfo == tz.tzlocal(), "The index should be timezone aware"
     assert res.shape == (385, 2), "The result has the wrong size of data"
     assert connection._api_token == "None", "The api_key is not set correctly"
 

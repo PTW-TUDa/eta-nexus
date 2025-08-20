@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
 import pytest
+from dateutil import tz
 
 from eta_nexus.connections import WetterdienstConnection
 from eta_nexus.nodes import Node
@@ -78,3 +79,4 @@ class TestWetterdienstConnection:
         result = connection.read_series(from_time=from_datetime, to_time=to_datetime)
 
         assert result.shape == (24, 4)
+        assert result.index.tzinfo == tz.tzlocal(), "The index should be timezone aware"

@@ -24,7 +24,7 @@ from __future__ import annotations
 import concurrent.futures
 import os
 import traceback
-from datetime import datetime, timedelta
+from datetime import datetime
 from logging import getLogger
 from typing import TYPE_CHECKING
 
@@ -139,8 +139,8 @@ class ForecastsolarConnection(
             return data
 
     def _select_data(
-        self, results: pd.DataFrame, from_time: pd.Timestamp | None = None, to_time: pd.Timestamp | None = None
-    ) -> tuple[pd.DataFrame, pd.Timestamp]:
+        self, results: pd.DataFrame, from_time: datetime | None = None, to_time: datetime | None = None
+    ) -> tuple[pd.DataFrame, datetime]:
         """Forecast.solar api returns the data for the whole day. Select data only for the time interval.
 
         :param nodes: pandas.DataFrame containing the raw data read from the connection.
@@ -148,22 +148,20 @@ class ForecastsolarConnection(
         :param to_time: Time to stop reading at (included in output).
         :return: pandas.DataFrame containing the selected data read from the connection and the current timestamp.
         """
-        now = pd.Timestamp.now().tz_localize(self._local_tz)
+        now = datetime.now(tz=self._local_tz)
 
-        previous_time = from_time if isinstance(from_time, pd.Timestamp) else now
-        next_time = to_time if isinstance(to_time, pd.Timestamp) else previous_time
-        previous_time = previous_time.floor("15min")
-        next_time = next_time.ceil("15min")
+        # Determine start and end times
+        start = round_timestamp(from_time or now, 900, method="floor")
+        end = round_timestamp(to_time or start, 900, method="ceil")
 
-        if previous_time not in results:
-            results.loc[previous_time] = 0
+        # Ensure start and end indices exist in the DataFrame
+        for timestamp in [start, end]:
+            if timestamp not in results.index:
+                results.loc[timestamp] = 0
 
-        if next_time not in results:
-            results.loc[next_time] = 0
-
+        # Sort the DataFrame and return the selected range
         results = results.sort_index()
-
-        return results.loc[previous_time:next_time], now
+        return results.loc[start:end], now  # type: ignore[misc]  # mypy doesn't recognize DatetimeIndex
 
     def _process_watts(self, values: pd.DataFrame, nodes: set[ForecastsolarNode]) -> pd.DataFrame:
         """Process the watt values from the Forecast.Solar API.
@@ -198,13 +196,15 @@ class ForecastsolarConnection(
     def _get_data(
         self,
         nodes: set[ForecastsolarNode],
-        from_time: pd.Timestamp | None = None,
-        to_time: pd.Timestamp | None = None,
+        from_time: datetime | None = None,
+        to_time: datetime | None = None,
     ) -> tuple[pd.DataFrame, pd.Timestamp]:
         """Return forecast data from the Forecast.Solar Database.
 
         :param nodes: List of nodes to read values from.
-        :return: pandas.DataFrame containing the data read from the connection.
+        :param from_time: Starting time to begin reading (included in output).
+        :param to_time: Time to stop reading at (included in output).
+        :return: pandas.DataFrame containing the data read from the connection and start and end timestamps.
         """
         with concurrent.futures.ThreadPoolExecutor() as executor:
             results = executor.map(self._read_node, nodes)
@@ -219,8 +219,7 @@ class ForecastsolarConnection(
                 col_names = ["__placeholder__"]
 
             empty_df = pd.DataFrame(columns=col_names)
-            now = pd.Timestamp.now(tz=self._local_tz)
-            return self._select_data(empty_df, from_time, to_time or now)
+            return self._select_data(empty_df, from_time, to_time)
 
         # Concatenate the filtered DataFrames
         values = pd.concat(filtered_results, axis=1, sort=False)
@@ -259,14 +258,12 @@ class ForecastsolarConnection(
         :param kwargs: Other parameters (ignored by this connection).
         :return: Pandas DataFrame containing the data read from the connection.
         """
-        _interval = interval if isinstance(interval, timedelta) else timedelta(seconds=interval)
+        from_time, to_time, nodes, interval = super()._preprocess_series_context(
+            from_time, to_time, nodes, interval, **kwargs
+        )
 
-        from_time = pd.Timestamp(round_timestamp(from_time, _interval.total_seconds())).tz_convert(self._local_tz)
-        to_time = pd.Timestamp(round_timestamp(to_time, _interval.total_seconds())).tz_convert(self._local_tz)
-
-        nodes = self._validate_nodes(nodes)
         values, _ = self._get_data(nodes, from_time, to_time)
-        values = df_interpolate(values, _interval).loc[from_time:to_time]  # type: ignore[misc] # mypy doesn't recognize DatetimeIndex
+        values = df_interpolate(values, interval).loc[from_time:to_time]  # type: ignore[misc] # mypy doesn't recognize DatetimeIndex
         return self._process_watts(values, nodes)
 
     def timestr_from_datetime(self, dt: datetime) -> str:

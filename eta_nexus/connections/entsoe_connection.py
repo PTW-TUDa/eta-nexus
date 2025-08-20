@@ -163,16 +163,9 @@ class EntsoeConnection(Connection[EntsoeNode], SeriesReadable[EntsoeNode], proto
         :param interval: interval between time steps. It is interpreted as seconds if given as integer.
         :return: Pandas DataFrame containing the data read from the connection
         """
-        nodes = self._validate_nodes(nodes)
-        interval = interval if isinstance(interval, timedelta) else timedelta(seconds=interval)
-
-        from_time = round_timestamp(from_time, interval.total_seconds())
-        to_time = round_timestamp(to_time, interval.total_seconds())
-
-        if from_time.tzinfo != to_time.tzinfo:
-            log.warning(
-                f"Timezone of from_time and to_time are different. Using from_time timezone: {from_time.tzinfo}"
-            )
+        from_time, to_time, nodes, interval = super()._preprocess_series_context(
+            from_time, to_time, nodes, interval, **kwargs
+        )
 
         def read_node(node: EntsoeNode) -> pd.DataFrame | None:
             params = self.config.create_params(node, from_time, to_time)

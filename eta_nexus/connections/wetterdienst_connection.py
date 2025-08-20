@@ -10,13 +10,12 @@ from wetterdienst.provider.dwd.mosmix.api import DwdMosmixRequest
 from wetterdienst.provider.dwd.observation.api import DwdObservationRequest
 
 if TYPE_CHECKING:
+    from datetime import datetime
     from typing import Any
 
     from wetterdienst.core.timeseries.result import StationsResult
 
     from eta_nexus.util.type_annotations import Nodes, TimeStep
-
-from datetime import datetime, timedelta
 
 from eta_nexus.connections.connection import Connection, SeriesReadable
 from eta_nexus.nodes.wetterdienst_node import (
@@ -83,10 +82,6 @@ class WetterdienstConnection(Generic[WN], Connection[WN], SeriesReadable[WN], AB
         :param kwargs: additional argument list, to be defined by subclasses.
         :return: pandas.DataFrame containing the data read from the connection.
         """
-        if from_time.tzinfo != to_time.tzinfo:
-            log.warning(
-                f"Timezone of from_time and to_time are different. Using from_time timezone: {from_time.tzinfo}"
-            )
 
     def retrieve_stations(self, node: WetterdienstNode, request: DwdObservationRequest) -> pd.DataFrame:
         """Retrieve stations from the Wetterdienst API and return the values as a pandas DataFrame
@@ -136,9 +131,9 @@ class WetterdienstObservationConnection(
         :param interval: Time interval between data points in seconds
         :return: Pandas DataFrame containing the data read from the connection
         """
-        super().read_series(from_time, to_time, nodes, interval)
-        nodes = self._validate_nodes(nodes)
-        interval = interval if isinstance(interval, timedelta) else timedelta(seconds=interval)
+        from_time, to_time, nodes, interval = super()._preprocess_series_context(
+            from_time, to_time, nodes, interval, **kwargs
+        )
 
         def _read_node(node: WetterdienstObservationNode) -> pd.Dataframe:
             # Get the resolution for the node from the interval
@@ -186,8 +181,9 @@ class WetterdienstPredictionConnection(
         :param interval: - Not used for prediction data
         :return: Pandas DataFrame containing the data read from the connection
         """
-        super().read_series(from_time, to_time, nodes, interval)
-        nodes = self._validate_nodes(nodes)
+        from_time, to_time, nodes, interval = super()._preprocess_series_context(
+            from_time, to_time, nodes, interval, **kwargs
+        )
 
         def _read_node(node: WetterdienstPredictionNode) -> pd.Dataframe:
             request = DwdMosmixRequest(

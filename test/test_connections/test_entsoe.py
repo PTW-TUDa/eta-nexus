@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 import pandas as pd
 import pytest
 import requests_cache
+from dateutil import tz
 
 from eta_nexus.connections import EntsoeConnection
 from eta_nexus.nodes import Node
@@ -46,6 +47,17 @@ def test_entsoe_endpoint(connection: EntsoeConnection, endpoint: str):
     assert isinstance(res.columns, pd.MultiIndex)
     assert isinstance(res.index, pd.DatetimeIndex)
     assert node.name in res.columns.get_level_values(0)[0]
+
+
+def test_entsoe_naive_timezone(connection: EntsoeConnection):
+    node = create_node("Price")
+
+    from_datetime = datetime(2022, 2, 15, 13, 18, 12)
+    to_datetime = datetime(2022, 2, 15, 14, 15, 31)
+
+    res = connection.read_series(nodes=node, from_time=from_datetime, to_time=to_datetime)
+    # Ensure timezone naive timestamps have been converted to tz aware
+    assert res.index.tzinfo == tz.tzlocal()
 
 
 def test_entsoe_timezone(connection: EntsoeConnection):
@@ -120,6 +132,6 @@ def test_multiple_days(connection, end_time):
 
     number_of_resolutions = len(res.columns.levels[1])
     total_timestamps = (
-        round_timestamp(to_datetime, interval) - round_timestamp(from_datetime, interval)
+        round_timestamp(to_datetime, interval, method="ceil") - round_timestamp(from_datetime, interval, method="floor")
     ).total_seconds() // interval + 1
     assert total_timestamps * number_of_resolutions == res.shape[0] * res.shape[1]
