@@ -1,0 +1,39 @@
+# syntax=docker/dockerfile:1
+
+# Run build_and_push_docker to build and push all images
+
+# Pass the python version as a build argument
+ARG PYTHON_VERSION=3.10
+ARG POETRY_VERSION=2.1.1
+
+FROM python:${PYTHON_VERSION}-slim-bullseye
+
+# Environment variables
+ENV APP_PATH="/usr/src/app" \
+    POETRY_HOME="/usr/local/poetry" \
+    POETRY_CACHE_DIR="/root/.cache/pypoetry" \
+    POETRY_NO_INTERACTION=1 \
+    POETRY_VIRTUALENVS_CREATE=false \
+    PIP_CACHE_DIR="/root/.cache/pip" \
+    PIP_NO_CACHE_DIR=off \
+    PIP_DISABLE_PIP_VERSION_CHECK=on \
+    PIP_DEFAULT_TIMEOUT=100
+
+ENV PATH="${POETRY_HOME}/bin:/root/.local/bin:${PATH}"
+
+WORKDIR ${APP_PATH}
+
+RUN set -eux && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends git make curl && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY pyproject.toml poetry.lock LICENSE README.rst ${APP_PATH}
+COPY eta_nexus ${APP_PATH}/eta_nexus
+
+
+# Install poetry and dependencies
+RUN curl -sSL https://install.python-poetry.org | POETRY_VERSION=${POETRY_VERSION} python3 - && \
+    # Remove torch and add torch+cpu because nvidia packages (cuda) are not needed
+    poetry sync && \
+    rm -rf ${APP_PATH}/* ${POETRY_CACHE_DIR}/*
