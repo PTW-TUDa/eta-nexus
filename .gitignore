@@ -4,6 +4,7 @@
 *.xlsx
 *.csv
 *.json
+
 !*/resources/**/*.json
 !*/resources/**/*.csv
 !*/resources/**/*.xls
