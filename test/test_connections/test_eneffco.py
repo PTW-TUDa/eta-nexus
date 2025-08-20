@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 import pytest
 import requests_cache
+from dateutil import tz
 
 from eta_nexus.connections import EneffcoConnection
 from eta_nexus.nodes import Node
@@ -42,31 +43,22 @@ def _local_requests(monkeypatch):
     os.environ["ENEFFCO_API_TOKEN"] = ""
 
 
-def test_eneffco_read(config_eneffco):
+def test_eneffco_read(config_eneffco, eneffco_nodes):
     """Test eneffco read function"""
-
-    node = Node(
-        "CH1.Elek_U.L1-N",
-        config_eneffco["url"],
-        "eneffco",
-        eneffco_code="CH1.Elek_U.L1-N",
-    )
-    node2 = Node("Pu3.425.ThHy_Q", config_eneffco["url"], "eneffco", eneffco_code="Pu3.425.ThHy_Q")
-
     # Test reading a single node
-    server = EneffcoConnection(node.url, config_eneffco["user"], config_eneffco["pw"])
+    server = EneffcoConnection(eneffco_nodes["node"].url, config_eneffco["user"], config_eneffco["pw"])
     # The interval is arbitrary here. range int[1,10]
     res = server.read_series(
         datetime.now() - timedelta(seconds=10),
         datetime.now(),
-        [node, node2],
+        [eneffco_nodes["node"], eneffco_nodes["node2"]],
         timedelta(seconds=1),
     )
 
     assert isinstance(res, pd.DataFrame)
     assert set(res.columns) == {"CH1.Elek_U.L1-N", "Pu3.425.ThHy_Q"}
 
-    res2 = server.read({node, node2})
+    res2 = server.read({eneffco_nodes["node"], eneffco_nodes["node2"]})
     assert isinstance(res2, pd.DataFrame)
     assert set(res2.columns) == {"CH1.Elek_U.L1-N", "Pu3.425.ThHy_Q"}
     assert len(res2.index) == 10
@@ -95,6 +87,21 @@ def test_eneffco_write(config_eneffco, eneffco_nodes):
     )
 
     server.write({eneffco_nodes["node"]: sample_series})
+
+
+def test_eneffco_naive_timezone(config_eneffco, eneffco_nodes):
+    """Test reading a series with timezone naive timestamps"""
+    server = EneffcoConnection(eneffco_nodes["node"].url, config_eneffco["user"], config_eneffco["pw"])
+
+    res = server.read_series(
+        datetime.now() - timedelta(seconds=10),
+        datetime.now(),
+        [eneffco_nodes["node"], eneffco_nodes["node2"]],
+        timedelta(seconds=1),
+    )
+
+    # Ensure timezone naive timestamps have been converted to tz aware
+    assert res.index.tzinfo == tz.tzlocal()
 
 
 def test_eneffco_subscribe_multi(config_eneffco, eneffco_nodes):

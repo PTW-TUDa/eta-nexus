@@ -238,16 +238,16 @@ class EneffcoConnection(
         :param kwargs: Other parameters (ignored by this connection).
         :return: Pandas DataFrame containing the data read from the connection.
         """
-        _interval = interval if isinstance(interval, timedelta) else timedelta(seconds=interval)
-
-        nodes = self._validate_nodes(nodes)
+        from_time, to_time, nodes, interval = super()._preprocess_series_context(
+            from_time, to_time, nodes, interval, **kwargs
+        )
 
         def read_node(node: EneffcoNode) -> pd.DataFrame:
             request_url = (
                 f"datapoint/{self.id_from_code(node.eneffco_code)}/value?"
                 f"from={self.timestr_from_datetime(from_time)}&"
                 f"to={self.timestr_from_datetime(to_time)}&"
-                f"timeInterval={int(_interval.total_seconds())!s}&"
+                f"timeInterval={int(interval.total_seconds())!s}&"
                 "includeNanValues=True"
             )
 
