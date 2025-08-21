@@ -56,7 +56,7 @@ class WetterdienstNode(Node):
         if self.parameter not in parameters:
             raise ValueError(
                 f"Parameter {self.parameter} is not valid. Valid parameters can be found here:"
-                f"https://wetterdienst.readthedocs.io/en/latest/data/parameters/"
+                f"https://wetterdienst.readthedocs.io/en/latest/data/parameters.html"
             )
 
     @classmethod

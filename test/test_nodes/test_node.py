@@ -64,7 +64,7 @@ fail_nodes = (
             "interval": "60",
         },
         "Parameter FOO-BAR is not valid. Valid parameters can be found here:"
-        "https://wetterdienst.readthedocs.io/en/latest/data/parameters/",
+        "https://wetterdienst.readthedocs.io/en/latest/data/parameters.html",
     ),
     (
         {
@@ -82,13 +82,13 @@ fail_nodes = (
             "name": "Serv.NodeName",
             "url": "",
             "protocol": "wetterdienst_observation",
-            "parameter": "temperature_air_mean_2m",
+            "parameter": "temperature_air_mean_200",
             "station_id": "0",
             "interval": "60",
         },
         re.escape(
-            "Parameter TEMPERATURE_AIR_MEAN_2M is not valid for the given resolution. "
-            "Valid resolutions for parameter TEMPERATURE_AIR_MEAN_2M are: "
+            "Parameter TEMPERATURE_AIR_MEAN_200 is not valid for the given resolution. "
+            "Valid resolutions for parameter TEMPERATURE_AIR_MEAN_200 are: "
             "['MINUTE_10', 'HOURLY', 'SUBDAILY', 'DAILY', 'MONTHLY', 'ANNUAL']"
         ),
     ),
@@ -97,7 +97,7 @@ fail_nodes = (
             "name": "Serv.NodeName",
             "url": "",
             "protocol": "wetterdienst_observation",
-            "parameter": "temperature_air_mean_2m",
+            "parameter": "temperature_air_mean_200",
             "station_id": "0",
             "interval": "200",
         },
@@ -503,13 +503,13 @@ nodes = (
             "name": "Serv.NodeName",
             "url": "https://some_url.de/path",
             "protocol": "wetterdienst_observation",
-            "parameter": "temperature_air_mean_2m",
+            "parameter": "temperature_air_mean_200",
             "interval": "3600",
             "station_id": "00917",
         },
         {
             "url": "https://opendata.dwd.de",
-            "parameter": "TEMPERATURE_AIR_MEAN_2M",
+            "parameter": "TEMPERATURE_AIR_MEAN_200",
             "interval": 3600,
             "station_id": "00917",
         },
@@ -519,13 +519,13 @@ nodes = (
             "name": "Serv.NodeName",
             "url": "https://some_url.de/path",
             "protocol": "wetterdienst_prediction",
-            "parameter": "temperature_air_mean_2m",
+            "parameter": "temperature_air_mean_200",
             "mosmix_type": "SMALL",
             "station_id": "K2596",
         },
         {
             "url": "https://opendata.dwd.de",
-            "parameter": "TEMPERATURE_AIR_MEAN_2M",
+            "parameter": "TEMPERATURE_AIR_MEAN_200",
             "mosmix_type": "SMALL",
             "station_id": "K2596",
         },

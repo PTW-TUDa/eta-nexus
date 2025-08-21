@@ -64,7 +64,7 @@ class OpcuaServer:
         self.nodes: list[OpcuaNode] | None = None
 
         self._server.set_security_policy([ua.SecurityPolicyType.NoSecurity])
-        self._server.set_server_name("ETA Utility OPC UA Server")
+        self._server.set_server_name("ETA Nexus OPC UA Server")
         self._server.start()
 
     def write(self, values: Mapping[OpcuaNode, Any]) -> None:
