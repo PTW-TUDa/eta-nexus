@@ -7,7 +7,7 @@ If you want to record timeseries continuously, you can also use the `Datarecorde
 
 Docs
 ****
-Full documentation can be found here: eta-nexus.readthedocs.io (TODO: Make this a link as soon as first docs version is released.)
+Full documentation can be found here: https://eta-nexus.readthedocs.io/en/stable/
 
 .. warning::
 
