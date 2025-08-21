@@ -19,7 +19,7 @@ pred_nodes = [
         "pred_node2",
         "https://opendata.dwd.de",
         "wetterdienst_prediction",
-        parameter="temperature_air_mean_2m",
+        parameter="temperature_air_mean_200",
         mosmix_type="LARGE",
         latlon=(49.86376654168076, 8.681726558050716),
         number_of_stations=3,
@@ -31,7 +31,7 @@ obsv_nodes = [
         "obsv_node1",
         "https://opendata.dwd.de",
         "wetterdienst_observation",
-        parameter="temperature_air_mean_2m",
+        parameter="temperature_air_mean_200",
         station_id="00917",  # Darmstadt observation ID
         interval=600,
     ),

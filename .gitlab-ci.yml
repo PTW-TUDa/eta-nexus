@@ -134,27 +134,6 @@ test3.11:
   extends: .test
   image: ${REGISTRY_IMAGE}:py3.11
 
-test3.12:
-  extends: .test
-  image: ${REGISTRY_IMAGE}:py3.12
-
-# test3.12_updated_deps:
-#   extends: .test
-#   image: ${REGISTRY_IMAGE}:py3.12
-#   needs:
-#     - test3.12
-#   cache: []
-#   script:
-#     - cp poetry.lock poetry.lock.bak  # Backup the lockfile
-#     - poetry update
-#     - |
-#       if ! cmp -s poetry.lock poetry.lock.bak; then
-#         echo "Dependencies were updated! poetry.lock has changed."
-#         pytest --cov --cov-report term --junitxml=./junit.xml
-#       else
-#         echo "No dependencies changed. Skipping tests."
-#       fi
-
 
 .deploy:
   stage: deploy
