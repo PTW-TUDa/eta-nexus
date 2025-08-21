@@ -1,6 +1,6 @@
 [project]
 name = "eta-nexus"
-version = "0.1.0"
+version = "0.1.1"
 description = "Provides a standardized way to connect to machines and devices in a factory or other factory systems"
 license = "BSD-2-Clause"
 readme = "README.rst"
