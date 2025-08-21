@@ -161,7 +161,8 @@ def test_selfsignedkeycertpair():
 
 
 def test_selfsignedkeycertpair_fail():
-    with pytest.raises(ValueError, match=r".*length must be >= 2 and <= 2, but it*"):
+    # with pytest.raises(ValueError, match=r".*length must be >= 2 and <= 2, but it*"):
+    with pytest.raises(ValueError, match=r".*Country name must be a 2 character country code*"):
         SelfsignedKeyCertPair(
             common_name="opc_client",
             country="DEUTSCHLAND",
