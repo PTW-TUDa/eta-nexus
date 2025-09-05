@@ -67,7 +67,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 include = [
-    {path="examples/", format=["sdist", "wheel"]}
+    {path="examples/", format=["sdist"]}
 ]
 
 [tool.poetry.group.examples.dependencies]
