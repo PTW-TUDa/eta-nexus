@@ -54,7 +54,7 @@ class OpcuaServer:
             self.url = f"opc.tcp://{ip}:{port}"
         log.info(f"Server Address is {self.url}")
 
-        self._url, _, _ = url_parse(self.url)
+        self.url_parsed, _, _ = url_parse(self.url)
 
         self._server: Server = Server()
         self._server.set_endpoint(self.url)
@@ -224,7 +224,9 @@ class OpcuaServer:
             # If not using preselected nodes from self.selected_nodes, check if nodes correspond to the connection
             nodes = {nodes} if isinstance(nodes, OpcuaNode) else nodes
             _nodes = {
-                node for node in nodes if isinstance(node, OpcuaNode) and node.url_parsed.hostname == self._url.hostname
+                node
+                for node in nodes
+                if isinstance(node, OpcuaNode) and node.url_parsed.hostname == self.url_parsed.hostname
             }
 
         # Make sure that some nodes remain after the checks and raise an error if there are none.

@@ -4,7 +4,7 @@ version = "0.1.1"
 description = "Provides a standardized way to connect to machines and devices in a factory or other factory systems"
 license = "BSD-2-Clause"
 readme = "README.rst"
-requires-python = ">=3.10.16, <3.12.0"
+requires-python = ">=3.10.16, <3.13.0"
 dynamic = ["classifiers"]
 authors = [
     {name = "Technical University of Darmstadt, Institute for Production Management, Technology and Machine Tools (PTW)", email="info@ptw.tu-darmstadt.de"}
@@ -32,6 +32,7 @@ dependencies = [
     "pyyaml >=6.0.2,<7.0.0",
     "toml >=0.10.2,<0.11.0",
     "python-dotenv >=1.0.1,<2.0.0",
+    "influxdb3-python (>=0.16.0,<0.17.0)",
 ]
 
 [project.optional-dependencies]
@@ -128,6 +129,7 @@ module = [
     "requests_cache.*",
     "toml.*",
     "yaml.*",
+    "influxdb_client_3.*"
 ]
 ignore_missing_imports = true
 

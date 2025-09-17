@@ -46,9 +46,9 @@ class ModbusServer:
             self.url = f"modbus.tcp://{ip}:{port}"
         log.info(f"Server Address is {self.url}")
 
-        self._url, _, _ = url_parse(self.url)
+        self.url_parsed, _, _ = url_parse(self.url)
 
-        self._server: BaseModbusServer = BaseModbusServer(self._url.hostname, self._url.port, no_block=True)
+        self._server: BaseModbusServer = BaseModbusServer(self.url_parsed.hostname, self.url_parsed.port, no_block=True)
         self.start()
 
     def write(self, values: Mapping[ModbusNode, Any]) -> None:
@@ -138,7 +138,7 @@ class ModbusServer:
             _nodes = {
                 node
                 for node in nodes
-                if isinstance(node, ModbusNode) and node.url_parsed.hostname == self._url.hostname
+                if isinstance(node, ModbusNode) and node.url_parsed.hostname == self.url_parsed.hostname
             }
 
         # Make sure that some nodes remain after the checks and raise an error if there are none.

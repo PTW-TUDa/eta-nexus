@@ -53,10 +53,12 @@ class ModbusConnection(
     ) -> None:
         super().__init__(url, usr, pwd, nodes=nodes)
 
-        if self._url.scheme != "modbus.tcp":
+        if self.url_parsed.scheme != "modbus.tcp":
             raise ValueError("Given URL is not a valid Modbus url (scheme: modbus.tcp)")
 
-        self.connection: ModbusClient = ModbusClient(host=self._url.hostname, port=self._url.port, timeout=2)
+        self.connection: ModbusClient = ModbusClient(
+            host=self.url_parsed.hostname, port=self.url_parsed.port, timeout=2
+        )
 
         self._subscription_open: bool = False
         self._subscription_nodes: set[ModbusNode] = set()

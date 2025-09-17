@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable, Mapping
 from datetime import datetime, timedelta
 from logging import getLogger
-from typing import TYPE_CHECKING, Any, Generic, Protocol, cast, runtime_checkable
+from typing import TYPE_CHECKING, Any, Generic, Protocol, cast, overload, runtime_checkable
 
 from attr import field
 from dateutil import tz
@@ -105,6 +105,50 @@ class SeriesReadable(Protocol, Generic[N_contra]):
 
 
 @runtime_checkable
+class SeriesWritable(Protocol, Generic[N]):
+    """Non-data Protocol for Connections with the ability to write historic (time series) data."""
+
+    @overload
+    def write_series(
+        self,
+        values: Mapping[N, pd.Series],
+        *,
+        allow_overwrite: bool = True,
+        **kwargs: Any,
+    ) -> None: ...
+
+    @overload
+    def write_series(
+        self,
+        values: pd.DataFrame,
+        *,
+        allow_overwrite: bool = True,
+        **kwargs: Any,
+    ) -> None: ...
+
+    def write_series(
+        self,
+        values: Mapping[N, pd.Series] | pd.DataFrame,
+        *,
+        allow_overwrite: bool = True,
+        **kwargs: Any,
+    ) -> None:
+        """Writes time series data for the given nodes.
+
+        Accepts either
+          - a mapping from Node -> pandas.Series (index must be datetime-like; series values are samples), or
+          - a pandas.DataFrame with a datetime-like index and one column per Node (column names must match node.name).
+
+        Implementations may round/align timestamps to node-specific intervals and should ensure timezone
+        awareness consistent with the Connection utilities.
+
+        :param values: Mapping of nodes to Series, or a DataFrame with datetime-like index.
+        :param allow_overwrite: If True, upsert points at identical timestamps; if False, avoid overwriting.
+        :param kwargs: Additional subclass arguments.
+        """
+
+
+@runtime_checkable
 class SeriesSubscribable(Protocol, Generic[N_contra]):
     """Non-data Protocol for Connections with the ability to subscribe to historic data."""
 
@@ -169,12 +213,12 @@ class Connection(Generic[N], ABC):
         self, url: str, usr: str | None = None, pwd: str | None = None, *, nodes: Nodes[N] | None = None
     ) -> None:
         #: URL of the server to connect to
-        self._url: ParseResult
+        self.url_parsed: ParseResult
         #: Username for login to server
         self.usr: str | None
         #: Password for login to server
         self.pwd: str | None
-        self._url, self.usr, self.pwd = url_parse(url)
+        self.url_parsed, self.usr, self.pwd = url_parse(url)
 
         if nodes is not None:
             #: Preselected nodes which will be used for reading and writing, if no other nodes are specified
@@ -206,6 +250,24 @@ class Connection(Generic[N], ABC):
 
         self.exc: BaseException | None = None
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Connection):
+            return False
+        return (self.url_parsed.netloc, self._extra_equality_key()) == (
+            other.url_parsed.netloc,
+            other._extra_equality_key(),
+        )
+
+    def __hash__(self) -> int:
+        return hash((self.url_parsed.netloc, self._extra_equality_key()))
+
+    def _extra_equality_key(self) -> Any | None:
+        """Additional attributes that are relevant for deciding if nodes belong to a connection.
+        Override this in case extra keys are necessary, don't forget to also set this in the node class.
+        Enforce presence of attributes used in this method!
+        """
+        return None
+
     @classmethod
     def from_node(cls, node: Nodes[N] | N, usr: str | None = None, pwd: str | None = None, **kwargs: Any) -> Self:
         """Will return a single connection for an enumerable of nodes with the same url netloc.
@@ -220,8 +282,8 @@ class Connection(Generic[N], ABC):
         :return: Connection object
         """
         nodes = {node} if not isinstance(node, Iterable) else set(node)
-        # Check if all nodes have the same netloc
-        if len({f"{_node.url_parsed.netloc}" for _node in nodes}) != 1:
+        # Check if all nodes belong to the same connection
+        if len({_node.connection_identifier() for _node in nodes}) != 1:
             raise ValueError("Nodes must all have the same netloc to be used with the same connection.")
 
         for index, _node in enumerate(nodes):
@@ -254,14 +316,14 @@ class Connection(Generic[N], ABC):
         connections: dict[str, Connection[N]] = {}
 
         for node in nodes:
-            node_id = f"{node.url_parsed.netloc}"
+            connection_id = str(node.connection_identifier())
 
             # If we already have a connection for this URL, add the node to connection
-            if node_id in connections:
-                connections[node_id].selected_nodes.add(node)
+            if connection_id in connections:
+                connections[connection_id].selected_nodes.add(node)
                 continue  # Skip creating a new connection
 
-            connections[node_id] = cls.from_node(node, **kwargs)
+            connections[connection_id] = cls.from_node(node, **kwargs)
 
         return connections
 
@@ -283,7 +345,7 @@ class Connection(Generic[N], ABC):
 
     @property
     def url(self) -> str:
-        return self._url.geturl()
+        return self.url_parsed.geturl()
 
     def _validate_nodes(self, nodes: N | Nodes[N] | None) -> set[N]:
         """Make sure that nodes are a Set of nodes and that all nodes correspond to the protocol and url
@@ -298,7 +360,9 @@ class Connection(Generic[N], ABC):
             nodes = {nodes} if not isinstance(nodes, Iterable) else nodes
             # If not using preselected nodes from self.selected_nodes, check if nodes correspond to the connection
             _nodes = {
-                node for node in nodes if node.protocol == self._PROTOCOL and node.url_parsed.netloc == self._url.netloc
+                node
+                for node in nodes
+                if node.protocol == self._PROTOCOL and node.url_parsed.netloc == self.url_parsed.netloc
             }
 
         # Make sure that some nodes remain after the checks and raise an error if there are none.
@@ -345,7 +409,14 @@ class Connection(Generic[N], ABC):
 
 @deprecated("Use `Connection` and the appropriate protocols instead.")
 class SeriesConnection(
-    Readable[N], Writable[N], Subscribable[N], SeriesReadable[N], SeriesSubscribable[N], Connection[N], ABC
+    Readable[N],
+    Writable[N],
+    Subscribable[N],
+    SeriesReadable[N],
+    SeriesWritable[N],
+    SeriesSubscribable[N],
+    Connection[N],
+    ABC,
 ):
     """Connection object for protocols with the ability to provide access to timeseries data.
 

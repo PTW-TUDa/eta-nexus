@@ -15,7 +15,7 @@ def read_series() -> pd.DataFrame:
 
     # Construct a node with the necessary information to request data from the Wetterdienst API
     node = (
-        WetterdienstNode(
+        WetterdienstNode(  # type: ignore[abstract]
             "Temperature_Darmstadt",
             "https://opendata.dwd.de",
             "wetterdienst_observation",
