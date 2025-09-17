@@ -139,7 +139,7 @@ class ConnectionManager(AbstractContextManager):
         self._connection_map: dict[str, str] = {}
         for node in self._nodes.values():
             if node.url_parsed.netloc is not None:
-                self._connection_map[node.name] = node.url_parsed.netloc
+                self._connection_map[node.name] = node.connection_identifier()
             else:
                 raise ValueError(f"Node without netloc supplied: {node.name}")
         #: Start time of initialisation.

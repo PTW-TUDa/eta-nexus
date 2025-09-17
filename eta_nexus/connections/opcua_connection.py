@@ -76,7 +76,7 @@ class OpcuaConnection(
     ) -> None:
         super().__init__(url, usr, pwd, nodes=nodes)
 
-        if self._url.scheme != "opc.tcp":
+        if self.url_parsed.scheme != "opc.tcp":
             raise ValueError("Given URL is not a valid OPC url (scheme: opc.tcp).")
 
         self.connection: Client
