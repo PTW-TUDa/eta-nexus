@@ -1,3 +1,16 @@
+"""
+InfluxDB v3 SQL-backed connection for ETA Nexus.
+
+This module provides :class:`InfluxConnection`, a concrete ``Connection`` that can
+read latest values, read historic time series and write single/bulk time series
+to InfluxDB v3 via the official ``influxdb-client-3`` pandas API.
+
+Authentication is performed with an API token. You may pass it explicitly
+via ``token=...`` or set the environment variable ``INFLUXDB3_AUTH_TOKEN``.
+If neither is present, a final fallback to the base-connection password (``pwd``)
+is attempted for convenience.
+"""
+
 from __future__ import annotations
 
 import os
@@ -33,37 +46,57 @@ class InfluxConnection(
     protocol="influx",
 ):
     """
-    Async wrapper around InfluxDBClient for reading and writing single points or time series via pandas.
-    Configured via environment variables: INFLUXDB_HOST, INFLUXDB_PORT, INFLUXDB_USER, INFLUXDB_PASS, INFLUXDB_DB.
+    InfluxDB v3 connection using SQL+Pandas.
 
-    :param url: Inherited from Connection.
-    :param usr: Inherited from Connection.
-    :param pwd: Inherited from Connection.
-    :param nodes: Inherited from Connection.
-    :param database: The database name to connect to.
-
+    Parameters (in addition to :class:`~eta_nexus.connections.connection.Connection`):
+        database (str): Database (a.k.a. bucket) to connect to. If omitted, we try
+            to infer from the first provided node or from ``INFLUXDB_DB``.
+        token (str, optional): Auth token for InfluxDB v3. If omitted, we try
+            ``INFLUXDB3_AUTH_TOKEN`` and finally ``pwd`` from the base connection.
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-        self.database = kwargs.get("database")
-        if not self.database:
+        """
+        Initialize the InfluxDB v3 client and validate required settings.
+
+        Raises:
+            ValueError: if ``database`` or authentication token cannot be resolved.
+        """
+        # --- PRE-RESOLVE database so base __init__ can use it in _extra_equality_key()
+        db: str | None = kwargs.get("database")
+        if not db:
             nodes = kwargs.get("nodes")
             if nodes:
-                self.database = nodes[0].database
+                # nodes can be list/set; take the first
+                first_node = next(iter(nodes))
+                db = getattr(first_node, "database", None)
+        if not db:
+            db = os.getenv("INFLUXDB_DB")
+
+        # Make it available during the base init:
+        self.database = db  # may still be None; validate after super()
+
+        super().__init__(*args, **kwargs)
+
         if self.database is None:
             raise ValueError(f"Database must be provided for {self.url_parsed.netloc}.")
 
-        # Store a clear host string; underlying base already parsed URL for us
-        self.host = self.url_parsed.geturl()
+        # Resolve token (kwarg > ENV > base pwd fallback)
+        token: str | None = kwargs.get("token") or os.getenv("INFLUXDB3_AUTH_TOKEN") or self.pwd
+        if not token:
+            raise ValueError(
+                "Missing InfluxDB auth token. Pass `token=...`, set INFLUXDB3_AUTH_TOKEN, "
+                "or provide a `pwd` on the base connection."
+            )
 
         self._client = InfluxDBClient3(
             host=self.url_parsed.geturl(),
-            token=os.getenv("INFLUXDB3_AUTH_TOKEN"),
+            token=token,
             database=self.database,
         )
 
     def _group_by_table(self, nodes: set[InfluxNode]) -> dict[str, list[InfluxNode]]:
+        """Group nodes by their target measurement/table name."""
         by_table: dict[str, list[InfluxNode]] = {}
         for n in nodes:
             by_table.setdefault(n.table, []).append(n)
@@ -73,22 +106,21 @@ class InfluxConnection(
     def _from_node(
         cls, node: InfluxNode, usr: str | None = None, pwd: str | None = None, **kwargs: Any
     ) -> InfluxConnection:
-        """Initialize the connection object from an Influx protocol node object.
-
-        :param node: Node to initialize from.
-        :param usr: Username to use.
-        :param pwd: Password to use.
-        :return: InfluxConnection object.
-        """
+        """Initialize from an :class:`InfluxNode` (implements Connection API)."""
         return super()._from_node(node, usr=usr, pwd=pwd, **kwargs)
 
     def _extra_equality_key(self) -> Any | None:
-        """Adds database to equality check."""
-        return self.database
+        """Include the database in equality/hash to distinguish same host different DBs."""
+        return getattr(self, "database", None)
 
     # ---------- Readable ----------
     def read(self, nodes: InfluxNode | Nodes[InfluxNode] | None = None) -> pd.DataFrame:
-        """Return the latest values for the requested nodes as a single-row DataFrame."""
+        """
+        Read the *latest* value for each requested node.
+
+        Returns:
+            pd.DataFrame: Single-row DataFrame indexed by timestamp with one column per node field.
+        """
         nodes_set = self._validate_nodes(nodes)
         by_table = self._group_by_table(nodes_set)
 
@@ -118,7 +150,15 @@ class InfluxConnection(
         interval: TimeStep = 1,
         **kwargs: Any,
     ) -> pd.DataFrame:
-        """Read historic series for the requested nodes."""
+        """
+        Read historic series for each requested node over the partly-open interval
+        ``[from_time, to_time)``. The *interval* parameter is currently accepted for
+        API compatibility and may be used by backends that support server-side resampling.
+
+        Returns:
+            pd.DataFrame: Time-indexed frame with one column per node field.
+        """
+
         nodes_set = self._validate_nodes(nodes)
         by_table = self._group_by_table(nodes_set)
 
@@ -150,7 +190,11 @@ class InfluxConnection(
 
     # ---------- Writable ----------
     def write(self, values: Mapping[InfluxNode, Any]) -> None:
-        """Write **current** values. Groups by table and writes one row per table at 'now'."""
+        """
+        Write **current** values for the provided nodes.
+
+        Groups by table/measurement and writes one row per table at the rounded current time.
+        """
         if not values:
             return
         nodes_set = self._validate_nodes(set(values.keys()))
@@ -176,10 +220,14 @@ class InfluxConnection(
         **kwargs: Any,
     ) -> None:
         """
-        Write historic series.
+        Write **historic** time series.
 
-        - Mapping[Node -> Series]: each Series index must be datetime-like
-        - DataFrame: index must be datetime-like; columns must match node names of `selected_nodes`
+        Accepts either:
+          - ``Mapping[InfluxNode, pd.Series]``: each Series must have a datetime-like index.
+          - ``pd.DataFrame``: datetime-like index; columns must match node fields of ``selected_nodes``.
+
+        Args:
+            allow_overwrite: Currently forwarded to the underlying client if supported.
         """
         # --- DataFrame branch ---
         if isinstance(values, pd.DataFrame):

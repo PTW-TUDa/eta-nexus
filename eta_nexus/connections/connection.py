@@ -348,8 +348,7 @@ class Connection(Generic[N], ABC):
         return self.url_parsed.geturl()
 
     def _validate_nodes(self, nodes: N | Nodes[N] | None) -> set[N]:
-        """Make sure that nodes are a Set of nodes and that all nodes correspond to the protocol and url
-        of the connection.
+        """Make sure that nodes are a Set of nodes and that all nodes correspond to the connection.
 
         :param nodes: Single node or list/set of nodes to validate.
         :return: Set of valid node objects for this connection.
@@ -362,7 +361,11 @@ class Connection(Generic[N], ABC):
             _nodes = {
                 node
                 for node in nodes
-                if node.protocol == self._PROTOCOL and node.url_parsed.netloc == self.url_parsed.netloc
+                if (
+                    node.protocol == self._PROTOCOL
+                    and node.url_parsed.netloc == self.url_parsed.netloc
+                    and node._extra_equality_key() == self._extra_equality_key()
+                )
             }
 
         # Make sure that some nodes remain after the checks and raise an error if there are none.
