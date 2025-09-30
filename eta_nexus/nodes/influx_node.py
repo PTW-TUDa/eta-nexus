@@ -53,3 +53,7 @@ class InfluxNode(Node, protocol="influx"):
             return cls(name, url, "influx", usr=usr, pwd=pwd, database=database, table=table, interval=interval)
         except (TypeError, AttributeError) as e:
             raise TypeError(f"Could not convert all types for node {name}.") from e
+
+    def _extra_equality_key(self) -> Any | None:
+        # Nodes from different databases must not be grouped into one connection
+        return self.database
