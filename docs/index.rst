@@ -35,6 +35,7 @@ Please read the development guide before starting development on *eta_nexus*: :r
     /connections/entsoe
     /connections/forecastsolar
     /connections/wetterdienst
+    /connections/influx
     /connections/sub_handlers
     /connections/connection_manager
 

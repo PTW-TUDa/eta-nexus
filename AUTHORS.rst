@@ -12,6 +12,7 @@ These individuals have contributed to this repository (eta_nexus) through develo
 - *Jerome Stock*
 - *Julius Balzer*
 - *Mikael Hailu*
+- *Md Shadman Hasan*
 
 Legacy Contributors
 --------------------

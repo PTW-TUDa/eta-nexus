@@ -54,7 +54,14 @@ html_static_path = ["_static"]
 copybutton_exclude = ".linenos, .gp"
 
 
-autodoc_mock_imports = ["opcua", "numpy.random", "pandas", "wetterdienst"]
+autodoc_mock_imports = [
+    "opcua",
+    "numpy.random",
+    "pandas",
+    "wetterdienst",
+    "influxdb_client_3",
+    "influxdb_client",
+]
 autodoc_default_options = {"undoc-members": True, "member-order": "bysource"}
 
 intersphinx_mapping = {
