@@ -362,7 +362,11 @@ class Connection(Generic[N], ABC):
             _nodes = {
                 node
                 for node in nodes
-                if node.protocol == self._PROTOCOL and node.url_parsed.netloc == self.url_parsed.netloc
+                if (
+                    node.protocol == self._PROTOCOL
+                    and node.url_parsed.netloc == self.url_parsed.netloc
+                    and node._extra_equality_key() == self._extra_equality_key()
+                )
             }
 
         # Make sure that some nodes remain after the checks and raise an error if there are none.
