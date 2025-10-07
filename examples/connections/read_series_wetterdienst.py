@@ -19,7 +19,7 @@ def read_series() -> pd.DataFrame:
             "Temperature_Darmstadt",
             "https://opendata.dwd.de",
             "wetterdienst_observation",
-            parameter="TEMPERATURE_AIR_MEAN_200",
+            parameter="TEMPERATURE_AIR_MEAN_2M",
             station_id="00917",  # Darmstadt observation station ID
             interval=600,  # 10 minutes interval
         ),
