@@ -507,7 +507,7 @@ class ConnectionManager(AbstractContextManager):
             log.exception("Step_size between write and read function is too small")
 
         if self._observe_vals is not None:
-            return self.read(*self._observe_vals)
+            return self.read()
         return {}
 
     def write(self, nodes: Mapping[str, Any] | Sequence[str], values: Sequence[Any] | None = None) -> None:
@@ -558,13 +558,20 @@ class ConnectionManager(AbstractContextManager):
     def read(self, *nodes: str) -> dict[str, Any]:
         """Take a list of nodes and return their names and most recent values.
 
+        If no nodes are passed, default to reading the observe nodes defined in the config.
+
         :param nodes: One or more nodes to read.
         :return: Dictionary of the most current node values.
         """
         # Sort nodes to be read by connection
         node_readings: dict[str, list[Node]] = {url: [] for url in self._connections}
+        input_nodes = nodes or self._observe_vals
+
+        if input_nodes is None:
+            return {}
+
         _error = False
-        for name in nodes:
+        for name in input_nodes:
             n = f"{self.name}.{name}" if "." not in name and self.name is not None else name
             if n not in self._nodes:
                 log.error(f"Node {n} not found in node list")
