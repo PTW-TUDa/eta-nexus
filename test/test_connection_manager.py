@@ -62,6 +62,23 @@ def test_read(setup_connection_manager, values):
     assert result == values
 
 
+read_observe_values = (
+    {
+        "CHP.control_value_opti": 0.0,
+        "CHP.operation": False,
+        "CHP.power_elek": 0.0,
+    },
+)
+
+
+@pytest.mark.parametrize(("values"), read_observe_values)
+def test_read_default(setup_connection_manager, values):
+    connection = setup_connection_manager
+    result = connection.read()
+
+    assert result == values
+
+
 read_write_values = (
     (
         {
