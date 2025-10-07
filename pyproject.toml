@@ -19,15 +19,16 @@ keywords = [
 ]
 
 dependencies = [
-    "attrs >=23.1.0,<24.0.0",
+    "attrs >=25.3.0,<26.0.0",
     "python-dateutil >=2.8.2,<3.0.0",
-    "numpy >=1.26.0,<2.0.0",
+    "numpy >=2.0.0,<3.0.0",
     "pandas[excel, xml] >=2.2.2,<2.3.0",
     "asyncua-fork-for-eta-utility ==1.0.7",
     "requests >=2.31.0,<3.0.0",
-    "pymodbustcp >=0.2.0,<0.4.0",
-    "cryptography >=41.0.4,<42.0.0",
-    "wetterdienst >=0.88.0,<0.89.0",  # breaking changes expected
+    "pymodbustcp >=0.3.0,<0.4.0",
+    "cryptography >=44.0.2,<45.0.0",
+    "wetterdienst >=0.97.0,<0.98.0",  # breaking changes expected
+    "pint ==0.24.4",
     "requests-cache >=1.2.0,<2.0.0",
     "pyyaml >=6.0.2,<7.0.0",
     "toml >=0.10.2,<0.11.0",
