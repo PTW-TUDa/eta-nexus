@@ -257,8 +257,6 @@ class _ConnectionConfiguration:
     **Energy price day ahead** and **Actual energy generation per type**. All the data requests available are listed in
     the _doc_type class attribute, but each of them contains a mandatory list of parameters to establish the connection,
     which can be seemed in the ENTSO-E documentation_.
-
-    .. _documentation: https://transparency.entsoe.eu/content/static_content/Static%20content/web%20api/Guide.html
     """
 
     #: XML Namespace for the API
