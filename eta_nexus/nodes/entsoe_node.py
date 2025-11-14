@@ -17,8 +17,7 @@ log = getLogger(__name__)
 
 
 class EntsoeNode(Node, protocol="entsoe"):
-    """Node for the EntsoE API (see `ENTSO-E Transparency Platform API
-    <https://transparency.entsoe.eu/content/static_content/Static%20content/web%20api/Guide.html>`_).
+    """Node for the EntsoE API
 
     .. list-table:: **Available endpoint**
         :widths: 25 35
