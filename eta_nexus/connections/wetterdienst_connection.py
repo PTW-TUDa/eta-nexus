@@ -24,8 +24,6 @@ from eta_nexus.nodes.wetterdienst_node import (
     WetterdienstPredictionNode,
 )
 
-log = getLogger(__name__)
-
 WN = TypeVar("WN", bound=WetterdienstNode)
 
 
@@ -38,6 +36,8 @@ class WetterdienstConnection(Generic[WN], Connection[WN], SeriesReadable[WN], AB
     :param nodes: Nodes to select in connection
     :param settings: Wetterdienst settings object
     """
+
+    logger = getLogger(__name__)
 
     def __init__(
         self,

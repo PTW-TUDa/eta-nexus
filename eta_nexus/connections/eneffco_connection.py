@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import concurrent.futures
-import os
 from datetime import datetime, timedelta, timezone
 from logging import getLogger
 from typing import TYPE_CHECKING
@@ -13,8 +12,8 @@ import requests
 from requests_cache import CachedSession
 
 from eta_nexus.connections.connection import (
-    Connection,
     Readable,
+    RESTConnection,
     SeriesReadable,
     SeriesSubscribable,
     Subscribable,
@@ -31,11 +30,8 @@ if TYPE_CHECKING:
     from eta_nexus.util.type_annotations import Nodes, Primitive, TimeStep
 
 
-log = getLogger(__name__)
-
-
 class EneffcoConnection(
-    Connection[EneffcoNode],
+    RESTConnection[EneffcoNode],
     Readable[EneffcoNode],
     Writable[EneffcoNode],
     Subscribable[EneffcoNode],
@@ -54,29 +50,38 @@ class EneffcoConnection(
 
     API_PATH: str = "/API/v1.0"
 
-    def __init__(self, url: str, usr: str | None, pwd: str | None, *, nodes: Nodes[EneffcoNode] | None = None) -> None:
+    logger = getLogger(__name__)
+
+    def __init__(self, url: str, usr: str, pwd: str, *, nodes: Nodes[EneffcoNode] | None = None) -> None:
         url = url + self.API_PATH
-        _api_token: str | None = os.getenv("ENEFFCO_API_TOKEN")
         super().__init__(url, usr, pwd, nodes=nodes)
 
         if self.usr is None:
             raise ValueError("Username must be provided for the Eneffco connection.")
         if self.pwd is None:
             raise ValueError("Password must be provided for the Eneffco connection.")
-        if _api_token is None:
+        if self._api_token is None:
             raise ValueError("ENEFFCO_API_TOKEN environment variable is not set.")
-        self._api_token: str = _api_token
         self._node_ids: pd.DataFrame | None = None
         self._node_ids_raw: pd.DataFrame | None = None
 
         self._sub: asyncio.Task | None = None
         self._subscription_nodes: set[EneffcoNode] = set()
         self._subscription_open: bool = False
-        self._session: CachedSession = CachedSession(
+
+    def _initialize_session(self) -> CachedSession:
+        """Initialize the cached request session."""
+        self._cached_session = CachedSession(
             cache_name="eta_nexus/connections/requests_cache/eneffco_cache",
             expire_after=timedelta(minutes=15),
             use_cache_dir=True,
         )
+        return self._cached_session
+
+    @property
+    def authentication(self) -> requests.auth.HTTPBasicAuth:
+        """Return the authentication method for the API."""
+        return requests.auth.HTTPBasicAuth(self.usr, self.pwd)  # type: ignore[arg-type]
 
     @classmethod
     def _from_node(
@@ -131,7 +136,7 @@ class EneffcoConnection(
             time_interval = timedelta(seconds=1)
 
         for node in nodes:
-            request_url = f"rawdatapoint/{self.id_from_code(node.eneffco_code, raw_datapoint=True)}/value"
+            request_url = f"{self.url}/rawdatapoint/{self.id_from_code(node.eneffco_code, raw_datapoint=True)}/value"
             response = self._raw_request(
                 "POST",
                 request_url,
@@ -143,7 +148,7 @@ class EneffcoConnection(
                 },
                 params={"comment": ""},
             )
-            log.info(response.text if response else "No response.")
+            self.logger.info(response.text if response else "No response.")
 
     def _prepare_raw_data(
         self, data: Mapping[datetime, Primitive] | pd.Series[datetime, Primitive], time_interval: timedelta
@@ -184,12 +189,14 @@ class EneffcoConnection(
         values = []
 
         for node in nodes:
-            request_url = f"datapoint/{self.id_from_code(node.eneffco_code)}"
+            request_url = f"{self.url}/datapoint/{self.id_from_code(node.eneffco_code)}"
             response = self._raw_request("GET", request_url)
             json_data = self._safe_json_dict(response)
 
             if json_data is None:
-                log.warning(f"[Eneffco] Skipping node {node.eneffco_code} — upstream request failed or returned empty")
+                self.logger.warning(
+                    f"[Eneffco] Skipping node {node.eneffco_code} — upstream request failed or returned empty"
+                )
                 continue
 
             values.append(pd.Series(json_data, name=node.name))
@@ -198,12 +205,12 @@ class EneffcoConnection(
 
     def _safe_json_dict(self, response: requests.Response | None) -> dict | None:
         if response is None:
-            log.warning("[Eneffco] No HTTP response received")
+            self.logger.warning("[Eneffco] No HTTP response received")
             return None
         try:
             return response.json()
         except ValueError:
-            log.exception("[Eneffco] Failed to parse JSON as dict — invalid content or upstream error")
+            self.logger.exception("[Eneffco] Failed to parse JSON as dict — invalid content or upstream error")
             return None
 
     def subscribe(
@@ -244,7 +251,7 @@ class EneffcoConnection(
 
         def read_node(node: EneffcoNode) -> pd.DataFrame:
             request_url = (
-                f"datapoint/{self.id_from_code(node.eneffco_code)}/value?"
+                f"{self.url}/datapoint/{self.id_from_code(node.eneffco_code)}/value?"
                 f"from={self.timestr_from_datetime(from_time)}&"
                 f"to={self.timestr_from_datetime(to_time)}&"
                 f"timeInterval={int(interval.total_seconds())!s}&"
@@ -253,19 +260,19 @@ class EneffcoConnection(
 
             response = self._raw_request("GET", request_url)
             if response is None:
-                log.warning(f"[Eneffco] No response from {request_url} — possible connection or timeout issue")
+                self.logger.warning(f"[Eneffco] No response from {request_url} — possible connection or timeout issue")
                 return pd.DataFrame(columns=[node.name])  # Empty DataFrame
 
             try:
                 json_data = response.json()
             except ValueError:
-                log.exception(
+                self.logger.exception(
                     f"[Eneffco] Failed to parse JSON from {request_url} — upstream HTTP or token error likely"
                 )
                 return pd.DataFrame(columns=[node.name])
 
             if not json_data:  # Empty or None response
-                log.warning(
+                self.logger.warning(
                     f"[Eneffco] Empty JSON returned from {request_url} — check API response or token access rights"
                 )
                 return pd.DataFrame(columns=[node.name])
@@ -286,7 +293,7 @@ class EneffcoConnection(
                 data.index.name = "Time (with timezone)"
 
             except (KeyError, ValueError, TypeError):
-                log.exception(
+                self.logger.exception(
                     f"[Eneffco] Failed to construct DataFrame for {node.eneffco_code} — "
                     f"invalid or incomplete response structure"
                 )
@@ -361,7 +368,7 @@ class EneffcoConnection(
         try:
             self._sub.cancel()  # type: ignore[union-attr]
         except Exception:
-            log.exception("Error while closing EnEffCo subscription.")
+            self.logger.exception("Error while closing EnEffCo subscription.")
 
     async def _subscription_loop(
         self,
@@ -406,15 +413,17 @@ class EneffcoConnection(
         """
         # Only build lists of IDs if they are not available yet
         if self._node_ids is None:
-            self._node_ids = self._safe_json_df(self._raw_request("GET", "/datapoint"))
+            self._node_ids = self._safe_json_df(self._raw_request("GET", f"{self.url}//datapoint"))
             if self._node_ids is None:
-                log.error("[Eneffco] Failed to load /datapoint — upstream request returned empty or malformed response")
+                self.logger.error(
+                    "[Eneffco] Failed to load /datapoint — upstream request returned empty or malformed response"
+                )
                 return ""
 
         if self._node_ids_raw is None:
-            self._node_ids_raw = self._safe_json_df(self._raw_request("GET", "/rawdatapoint"))
+            self._node_ids_raw = self._safe_json_df(self._raw_request("GET", f"{self.url}//rawdatapoint"))
             if self._node_ids_raw is None:
-                log.error(
+                self.logger.error(
                     "[Eneffco] Failed to load /rawdatapoint - upstream request returned empty or malformed response"
                 )
                 return ""
@@ -432,7 +441,7 @@ class EneffcoConnection(
         try:
             return pd.DataFrame(data=response.json())
         except ValueError:
-            log.exception("[Eneffco] JSON parse failed — check HTTP status or token/connection issues")
+            self.logger.exception("[Eneffco] JSON parse failed — check HTTP status or token/connection issues")
             return None
 
     def timestr_from_datetime(self, dt: datetime) -> str:
@@ -442,31 +451,3 @@ class EneffcoConnection(
         :return: Eneffco compatible time string.
         """
         return dt.isoformat(sep="T", timespec="seconds").replace(":", "%3A").replace("+", "%2B")
-
-    def _raw_request(self, method: str, endpoint: str, **kwargs: Any) -> requests.Response | None:
-        """Perform Eneffco request and handle possibly resulting errors.
-
-        :param method: HTTP request method.
-        :param endpoint: Endpoint for the request (server URI is added automatically).
-        :param kwargs: Additional arguments for the request.
-        """
-        if self.usr is None:
-            raise AttributeError("Make sure to specify a username before performing Eneffco requests.")
-        if self.pwd is None:
-            raise AttributeError("Make sure to specify a password before performing Eneffco requests.")
-
-        try:
-            response = self._session.request(
-                method, self.url + "/" + str(endpoint), auth=requests.auth.HTTPBasicAuth(self.usr, self.pwd), **kwargs
-            )
-            response.raise_for_status()
-
-        except requests.exceptions.HTTPError as e:
-            log.warning(f"[Eneffco] {e}")
-            return None
-
-        except requests.exceptions.RequestException:
-            log.exception(f"[Eneffco] Request failed at {self.url}")
-            return None
-        else:
-            return response

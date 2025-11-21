@@ -5,7 +5,6 @@ does not have the ability to write data.
 from __future__ import annotations
 
 import concurrent.futures
-import os
 from contextlib import suppress
 from datetime import datetime, timedelta, timezone
 from logging import getLogger
@@ -17,22 +16,20 @@ import requests
 from lxml import etree
 from requests_cache import DO_NOT_CACHE, CachedSession
 
-from eta_nexus.connections.connection import Connection, SeriesReadable
+from eta_nexus.connections.connection import RESTConnection, SeriesReadable
 from eta_nexus.nodes import EntsoeNode
 from eta_nexus.timeseries import df_resample, df_time_slice
 from eta_nexus.util import dict_search, round_timestamp
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
     from typing import Any, Final
+
+    from requests_cache import AnyResponse
 
     from eta_nexus.util.type_annotations import Nodes, TimeStep
 
 
-log = getLogger(__name__)
-
-
-class EntsoeConnection(Connection[EntsoeNode], SeriesReadable[EntsoeNode], protocol="entsoe"):
+class EntsoeConnection(RESTConnection[EntsoeNode], SeriesReadable[EntsoeNode], protocol="entsoe"):
     """ENTSOEConnection is a class to download and upload multiple features from and to the
     ENTSO-E transparency platform database as timeseries.
     The platform contains data about the european electricity markets.
@@ -45,6 +42,8 @@ class EntsoeConnection(Connection[EntsoeNode], SeriesReadable[EntsoeNode], proto
 
     API_PATH: str = "api"
 
+    logger = getLogger(__name__)
+
     def __init__(
         self,
         url: str = "https://web-api.tp.entsoe.eu",
@@ -54,22 +53,23 @@ class EntsoeConnection(Connection[EntsoeNode], SeriesReadable[EntsoeNode], proto
         url = url.rstrip("/") + "/" + self.API_PATH
         super().__init__(url, None, None, nodes=nodes)
 
-        _api_token: str | None = os.getenv("ENTSOE_API_TOKEN")
-        if _api_token is None:
+        if self._api_token is None:
             raise ValueError("ENTSOE_API_TOKEN environment variable is not set.")
-        self._api_token: str = _api_token
 
         self._node_ids: str | None = None
         self.config = _ConnectionConfiguration()
-        self._session: CachedSession = CachedSession(
+
+    def _initialize_session(self) -> CachedSession:
+        self._cached_session = CachedSession(
             cache_name="eta_nexus/connections/requests_cache/entso_e_cache",
             urls_expire_after={
-                url + "/*": timedelta(minutes=15),
+                self.url + "/*": timedelta(minutes=15),
                 "*": DO_NOT_CACHE,  # Don't cache other URLs
             },
             allowable_codes=(200, 400, 401),
             use_cache_dir=True,
         )
+        return self._cached_session
 
     @classmethod
     def _from_node(cls, node: EntsoeNode, **kwargs: Any) -> EntsoeConnection:
@@ -168,16 +168,16 @@ class EntsoeConnection(Connection[EntsoeNode], SeriesReadable[EntsoeNode], proto
         )
 
         def read_node(node: EntsoeNode) -> pd.DataFrame | None:
-            params = self.config.create_params(node, from_time, to_time)
+            params = self.config.create_params(node, from_time, to_time, self._api_token)
+            result = self._raw_request("GET", self.url, params)
 
-            result = self._raw_request(params)
             if result is None:
-                log.warning(f"[ENTSO-E] Skipping node {node.name} due to failed HTTP request.")
+                self.logger.warning(f"[ENTSO-E] Skipping node {node.name} due to failed HTTP request.")
                 return None
             try:
                 data = self._handle_xml(result.content)
             except Exception as e:
-                log.warning(
+                self.logger.warning(
                     f"[ENTSO-E] Failed to parse XML for node {node.name}: {e}"
                     f"Response status code: {result.status_code}. "
                     f"This may be due to a preceding HTTP error or an unexpected response format."
@@ -197,7 +197,7 @@ class EntsoeConnection(Connection[EntsoeNode], SeriesReadable[EntsoeNode], proto
                 df_resolution = df_time_slice(df_resolution, from_time, to_time)
                 df_dict[resolution] = df_resolution
             if not df_dict:
-                log.warning(f"[ENTSO-E] No valid data for node {node.name}")
+                self.logger.warning(f"[ENTSO-E] No valid data for node {node.name}")
                 return None
             value_df = pd.concat(df_dict.values(), axis=1, keys=df_dict.keys())
             value_df = value_df.ffill()
@@ -209,24 +209,26 @@ class EntsoeConnection(Connection[EntsoeNode], SeriesReadable[EntsoeNode], proto
             results = [r for r in raw_results if r is not None]
 
             if not results:
-                log.error("[ENTSO-E] No valid data retrieved from any node. All requests failed or returned empty.")
+                self.logger.error(
+                    "[ENTSO-E] No valid data retrieved from any node. All requests failed or returned empty."
+                )
                 return pd.DataFrame()
 
         return pd.concat(results, axis=1, sort=False)
 
-    def _raw_request(self, params: Mapping[str, str], **kwargs: Mapping[str, Any]) -> requests.Response | None:
+    # TODO: Remove/Adapt to generic raw request function for REST
+    # https://git.ptw.maschinenbau.tu-darmstadt.de/eta-fabrik/public/eta-nexus/-/work_items/71
+    def _raw_request(
+        self, method: str, url: str, params: dict[str, Any] | None = None, **kwargs: Any
+    ) -> AnyResponse | None:
         """Perform ENTSO-E request and handle possibly resulting errors.
 
         :param params: Parameters to identify the endpoint
         :param kwargs: Additional arguments for the request.
         :return: request response
         """
-        # Prepare the basic request for usage in the requests.
-        params = dict(params)
-        params["securityToken"] = self._api_token  # API token added as a query parameter
-
         try:
-            response = self._session.get(self.url, params=params, **kwargs)  # Send GET request
+            response = self.session.request(method, self.url, params=params, **kwargs)  # Send GET request
             if response.status_code == 400:
                 with suppress(Exception):
                     parser = etree.XMLParser(load_dtd=False, ns_clean=True, remove_pis=True)
@@ -238,13 +240,11 @@ class EntsoeConnection(Connection[EntsoeNode], SeriesReadable[EntsoeNode], proto
                     response.reason = f"ENTSO-E Error {response.status_code} ({e_code}: {e_text})"
 
             response.raise_for_status()
-
         except requests.exceptions.HTTPError:
-            log.exception(f"[ENTSO-E] HTTPError for params {params}")
+            self.logger.exception(f"[ENTSO-E] HTTPError for params {params}")
             return None
-
         except requests.exceptions.RequestException:
-            log.exception(f"[ENTSO-E] Request failed for params {params}")
+            self.logger.exception(f"[ENTSO-E] Request failed for params {params}")
             return None
         else:
             return response
@@ -487,7 +487,9 @@ class _ConnectionConfiguration:
         "FlowBasedAllocations": "B11",
     }
 
-    def create_params(self, node: EntsoeNode, from_time: datetime, to_time: datetime) -> dict[str, str]:
+    def create_params(
+        self, node: EntsoeNode, from_time: datetime, to_time: datetime, security_token: str | None
+    ) -> dict[str, str]:
         """Create request parameters object according to API specifications
         Handle configuration parameters for each type of connection.
 
@@ -525,6 +527,8 @@ class _ConnectionConfiguration:
 
         params["periodStart"] = rounded_from_time_utc.strftime("%Y%m%d%H%M")  # yyyyMMddHHmm
         params["periodEnd"] = rounded_to_time_utc.strftime("%Y%m%d%H%M")  # yyyyMMddHHmm
+
+        params["securityToken"] = security_token  # API token added as a query parameter
 
         return params
 
