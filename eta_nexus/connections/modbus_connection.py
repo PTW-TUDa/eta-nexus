@@ -29,9 +29,6 @@ if TYPE_CHECKING:
     from eta_nexus.util.type_annotations import Nodes, Primitive, TimeStep
 
 
-log = getLogger(__name__)
-
-
 class ModbusConnection(
     Connection[ModbusNode],
     Readable[ModbusNode],
@@ -47,6 +44,8 @@ class ModbusConnection(
     :param pwd: No login supported, only here to satisfy the interface
     :param nodes: List of nodes to use for all operations.
     """
+
+    logger = getLogger(__name__)
 
     def __init__(
         self, url: str, usr: str | None = None, pwd: str | None = None, *, nodes: Nodes[ModbusNode] | None = None
@@ -155,7 +154,7 @@ class ModbusConnection(
             if self._sub.done() is False:
                 self._sub.cancel()
         except Exception:
-            log.exception("Canceling Modbus subscription failed.")
+            self.logger.exception("Canceling Modbus subscription failed.")
 
         if self.connection.is_open:
             self._disconnect()
@@ -172,7 +171,7 @@ class ModbusConnection(
                     await self._retry.wait_async()
                     self._connect()
                 except ConnectionError as e:
-                    log.warning(str(e))
+                    self.logger.warning(str(e))
                     continue
 
                 for node in self._subscription_nodes:
@@ -180,7 +179,7 @@ class ModbusConnection(
                     try:
                         result = self._read_mb_value(node)
                     except ValueError as e:
-                        log.warning(str(e))
+                        self.logger.warning(str(e))
                     except ConnectionError:
                         handler.push(node, pd.NA, self._assert_tz_awareness(datetime.now()))
                         continue
@@ -198,7 +197,7 @@ class ModbusConnection(
                     _changed_within_interval = self._connection_interval_checker.check_interval_connection()
 
                     if not _changed_within_interval:
-                        log.warning(
+                        self.logger.warning(
                             f"The subscription connection for {self.url} doesn't change the values "
                             "anymore. Trying to reconnect."
                         )
@@ -277,9 +276,9 @@ class ModbusConnection(
         try:
             self.connection.close()
         except (OSError, RuntimeError):
-            log.exception(f"Closing connection to server {self.url} failed")
+            self.logger.exception(f"Closing connection to server {self.url} failed")
         except AttributeError:
-            log.info(f"Connection to server {self.url} already closed.")
+            self.logger.info(f"Connection to server {self.url} already closed.")
 
     @contextmanager
     def _connection(self) -> Generator:

@@ -1,4 +1,5 @@
 import json
+import os
 import pathlib
 from datetime import datetime, timedelta
 
@@ -12,6 +13,8 @@ from dateutil import tz
 from eta_nexus.connections import ForecastsolarConnection
 from eta_nexus.nodes import ForecastsolarNode, Node
 from test.utilities.requests.forecast_solar_request import request
+
+USE_API_TOKEN = False
 
 
 # Sample node
@@ -65,7 +68,10 @@ def forecast_solar_nodes(config_forecast_solar: dict[str, str]) -> dict[str, For
 
 @pytest.fixture
 def _local_requests(monkeypatch: pytest.MonkeyPatch) -> None:
+    if USE_API_TOKEN:
+        return
     monkeypatch.setattr(requests_cache.CachedSession, "request", request)
+    os.environ["FORECAST_SOLAR_API_TOKEN"] = ""
 
 
 @pytest.fixture
@@ -168,7 +174,7 @@ def test_read_series(forecast_solar_nodes: dict[str, ForecastsolarNode], connect
     assert isinstance(res, pd.DataFrame)
     assert res.index.tzinfo == tz.tzlocal(), "The index should be timezone aware"
     assert res.shape == (385, 2), "The result has the wrong size of data"
-    assert connection._api_token == "None", "The api_key is not set correctly"
+    assert connection._api_token == "", "The api_key is not set correctly"
 
 
 @pytest.mark.usefixtures("_local_requests")

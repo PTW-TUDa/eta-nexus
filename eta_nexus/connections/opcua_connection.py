@@ -49,8 +49,6 @@ if TYPE_CHECKING:
 
 from eta_nexus.connections.connection import Connection, Readable, Subscribable, Writable
 
-log = getLogger(__name__)
-
 
 class OpcuaConnection(
     Connection[OpcuaNode], Readable[OpcuaNode], Writable[OpcuaNode], Subscribable[OpcuaNode], protocol="opcua"
@@ -63,6 +61,8 @@ class OpcuaConnection(
     :param pwd: Password in OPC UA for login.
     :param nodes: List of nodes to use for all operations.
     """
+
+    logger = getLogger(__name__)
 
     def __init__(
         self,
@@ -237,7 +237,7 @@ class OpcuaConnection(
                     try:
                         self._connect()
                     except ConnectionError:
-                        log.error(f"Retrying to connect to {self.url}.")  # noqa: TRY400
+                        self.logger.error(f"Retrying to connect to {self.url}.")  # noqa: TRY400
                         continue
 
                 elif self._connected and not subscribed:
@@ -246,7 +246,7 @@ class OpcuaConnection(
                         subscribed = True
                     except RuntimeError:
                         subscribed = False
-                        log.error(f"Unable to subscribe to server {self.url} - Retrying.")  # noqa: TRY400
+                        self.logger.error(f"Unable to subscribe to server {self.url} - Retrying.")  # noqa: TRY400
                         self._disconnect()
                         continue
 
@@ -257,7 +257,9 @@ class OpcuaConnection(
                                 self._sub.subscribe_data_change(self.connection.get_node(node.opc_id))
                             )
                         except RuntimeError as e:
-                            log.warning(f"Could not subscribe to node '{node.name}' on server {self.url}, error: {e}")
+                            self.logger.warning(
+                                f"Could not subscribe to node '{node.name}' on server {self.url}, error: {e}"
+                            )
 
             except (ConnectionAbortedError, ConnectionResetError, TimeoutError, ConCancelledError, BaseException) as e:
                 if isinstance(e, (ConnectionAbortedError, ConnectionResetError)):
@@ -269,10 +271,10 @@ class OpcuaConnection(
                         f"Connection to OPC UA-Server {self.url} was terminated "
                         "during connection establishment or maintenance."
                     )
-                log.exception(f"Handling exception for server {self.url}.")
+                self.logger.exception(f"Handling exception for server {self.url}.")
                 if msg:
                     msg += " Trying to reconnect."
-                    log.info(msg)
+                    self.logger.info(msg)
                 subscribed = False
                 self._connected = False
 
@@ -291,7 +293,7 @@ class OpcuaConnection(
                 if not _changed_within_interval:
                     subscribed = False
                     self._connected = False
-                    log.warning(
+                    self.logger.warning(
                         f"The subscription connection for {self.url} doesn't change the values "
                         "anymore. Trying to reconnect."
                     )
@@ -310,7 +312,7 @@ class OpcuaConnection(
         except AttributeError:
             pass
         except Exception:
-            log.exception("Canceling OpcUA subscription failed.")
+            self.logger.exception("Canceling OpcUA subscription failed.")
         finally:
             self._subbed_nodes = []
 
@@ -318,10 +320,10 @@ class OpcuaConnection(
             self._sub_task.cancel()
             self._sub.delete()
         except (OSError, RuntimeError) as e:
-            log.debug(f"Deleting subscription for server {self.url} failed.")
-            log.debug(f"Server {self.url} returned error: {e}.")
+            self.logger.debug(f"Deleting subscription for server {self.url} failed.")
+            self.logger.debug(f"Server {self.url} returned error: {e}.")
         except (TimeoutError, ConTimeoutError):
-            log.debug(f"Timeout occurred while trying to close the subscription to server {self.url}.")
+            self.logger.debug(f"Timeout occurred while trying to close the subscription to server {self.url}.")
         except AttributeError:
             # Occurs if the subscription did not exist and can be ignored.
             pass
@@ -382,7 +384,7 @@ class OpcuaConnection(
         except (RuntimeError, ConnectionError) as e:
             raise ConnectionError(f"OPC Connection Error: {self.url}: {e!s}") from e
         else:
-            log.debug(f"Connected to OPC UA server: {self.url}")
+            self.logger.debug(f"Connected to OPC UA server: {self.url}")
             self._connected = True
             self._retry.success()
 
@@ -392,10 +394,10 @@ class OpcuaConnection(
                 self.connection.get_node(ua.FourByteNodeId(ua.ObjectIds.Server_ServerStatus_State)).read_value()
             except AttributeError:
                 self._connected = False
-                log.debug(f"Connection to server {self.url} did not exist - connection check failed.")
+                self.logger.debug(f"Connection to server {self.url} did not exist - connection check failed.")
             except Exception:
                 self._connected = False
-                log.error(f"Error while checking connection to server {self.url}.")  # noqa: TRY400
+                self.logger.error(f"Error while checking connection to server {self.url}.")  # noqa: TRY400
             else:
                 self._connected = True
 
@@ -410,12 +412,12 @@ class OpcuaConnection(
         try:
             self.connection.disconnect()
         except (ConCancelledError, ConnectionAbortedError):
-            log.debug(f"Connection to {self.url} already closed by server.")
+            self.logger.debug(f"Connection to {self.url} already closed by server.")
         except (OSError, RuntimeError) as e:
-            log.debug(f"Closing connection to server {self.url} failed")
-            log.debug(f"Connection to {self.url} returned an error while closing the connection: {e}")
+            self.logger.debug(f"Closing connection to server {self.url} failed")
+            self.logger.debug(f"Connection to {self.url} returned an error while closing the connection: {e}")
         except AttributeError:
-            log.debug(f"Connection to server {self.url} already closed.")
+            self.logger.debug(f"Connection to server {self.url} already closed.")
 
     @contextmanager
     def _connection(self) -> Generator:

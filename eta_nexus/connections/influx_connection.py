@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import os
 from datetime import timezone
+from logging import getLogger
 from typing import TYPE_CHECKING, Any, cast
 
 import pandas as pd
@@ -54,6 +55,8 @@ class InfluxConnection(
         token (str, optional): Auth token for InfluxDB v3. If omitted, we try
             ``INFLUXDB3_AUTH_TOKEN`` and finally ``pwd`` from the base connection.
     """
+
+    logger = getLogger(__name__)
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """

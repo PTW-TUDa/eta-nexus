@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Mapping
 from datetime import datetime, timedelta
@@ -10,6 +11,7 @@ from typing import TYPE_CHECKING, Any, Generic, Protocol, cast, overload, runtim
 
 from attr import field
 from dateutil import tz
+from requests.exceptions import HTTPError, RequestException
 from typing_extensions import deprecated
 
 from eta_nexus.nodes.node import Node
@@ -20,10 +22,13 @@ from eta_nexus.util.type_annotations import N, N_contra
 if TYPE_CHECKING:
     from collections.abc import Mapping
     from datetime import datetime
+    from logging import Logger
     from typing import Any, ClassVar
     from urllib.parse import ParseResult
 
     import pandas as pd
+    from requests.auth import AuthBase
+    from requests_cache import AnyResponse, CachedSession
 
     from eta_nexus.subhandlers import SubscriptionHandler
     from eta_nexus.util.type_annotations import Nodes, Self, TimeStep
@@ -196,6 +201,8 @@ class Connection(Generic[N], ABC):
     :param pwd: Password for login to server.
     :param nodes: List of nodes to select as a standard case.
     """
+
+    logger: Logger
 
     _registry: ClassVar[dict[str, type[Connection]]] = {}
     _PROTOCOL: ClassVar[str] = field(repr=False, eq=False, order=False)
@@ -425,3 +432,97 @@ class SeriesConnection(
 
     :param url: URL of the server to connect to.
     """
+
+
+class RESTConnection(Connection[N], ABC):
+    """
+    RESTConnection is an abstract base class for managing RESTful API connections in the ETA Nexus framework.
+    It extends the `Connection` class and provides standardized functionality for handling HTTP requests,
+    managing API tokens, and session management. This class is designed to reduce boilerplate code and
+    streamline the integration of new REST-based connections.
+
+    Key Features:
+    - Centralized HTTP request handling with consistent error management and logging.
+    - Lazy-loaded session management using a cached session.
+    - API token retrieval from environment variables based on the connection protocol name.
+    - Abstract methods for session initialization and node-specific data reading.
+    - Authentication abstraction for subclasses to define custom authentication mechanisms.
+
+    Subclasses should implement the `_initialize_session` method to define session initialization logic
+    and the `_read_node` method to handle node-specific data reading.
+
+    :param url: URL of the REST API endpoint.
+    :param usr: Username for authentication (optional).
+    :param pwd: Password for authentication (optional).
+    :param nodes: List of nodes to connect to (optional).
+    """
+
+    def __init__(
+        self,
+        url: str,
+        usr: str | None = None,
+        pwd: str | None = None,
+        *,
+        nodes: Nodes[N] | None = None,
+    ) -> None:
+        super().__init__(url, usr, pwd, nodes=nodes)
+
+    @property
+    def _api_token(self) -> str | None:
+        """Return the API token from the environment variable if set."""
+        token = os.getenv(self._PROTOCOL.upper() + "_API_TOKEN")
+        if not token:
+            self.logger.warning(
+                f"[{self._PROTOCOL.capitalize()}] {self._PROTOCOL.upper()}_API_TOKEN not found in environment."
+            )
+        return token
+
+    @property
+    def session(self) -> CachedSession:
+        "Return the cached session."
+        if not hasattr(self, "_cached_session"):
+            return self._initialize_session()
+        return self._cached_session
+
+    @property
+    def authentication(self) -> None | AuthBase:
+        """Return the authentication method for the API."""
+        return None
+
+    @abstractmethod
+    def _initialize_session(self) -> CachedSession:
+        "Initialize the cached session and return it."
+
+    def _raw_request(
+        self, method: str, url: str, params: dict[str, Any] | None = None, **kwargs: Any
+    ) -> AnyResponse | None:
+        """Send a raw HTTP request to the REST API.
+
+        :param method: HTTP method to use (e.g., GET, POST).
+        :param url: URL of the API endpoint.
+        :return: Response object from the requests library.
+        """
+        kwargs.setdefault("timeout", 10)
+        try:
+            response = self.session.request(method, url, params=params, auth=self.authentication, **kwargs)
+            response.raise_for_status()
+        except HTTPError:  # Bad Response
+            self.logger.exception(f"[{self._PROTOCOL.capitalize()}] Request failed:")
+            return None
+        except RequestException:  # Errors occurred during request processing
+            self.logger.exception(
+                f"[{self._PROTOCOL.capitalize()}]"
+                "There was an ambiguous exception that occurred while handling the request"
+            )
+            return None
+        else:
+            return response
+
+    def _read_node(self, node: N, **kwargs: Any) -> pd.DataFrame:
+        """Read data from a REST API endpoint.
+
+        :param node: Node to read data from.
+        :return: DataFrame containing the data read from the API.
+        """
+        # TODO: Implement REST generic read function
+        # https://git.ptw.maschinenbau.tu-darmstadt.de/eta-fabrik/public/eta-nexus/-/work_items/73
