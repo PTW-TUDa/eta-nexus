@@ -191,6 +191,7 @@ def test_read_data_types(forecast_solar_nodes: dict[str, ForecastsolarNode], con
         evolved_node = node.evolve(data=data_type)
         res = connection.read_series(start, end, evolved_node, interval)
         assert res.attrs["name"] == data_type, f"Data type '{data_type}' is not correctly processed"
+        assert res.shape in [(385, 1), (5, 1)], f"Data shape for data type '{data_type}' is incorrect"
 
     # Test multiple nodes with default data type fallback to "watts"
     nodes = [node.evolve(data=data_type) for data_type in data_types]
@@ -198,11 +199,13 @@ def test_read_data_types(forecast_solar_nodes: dict[str, ForecastsolarNode], con
     assert res.attrs["name"] == "watts", (
         "Default data type 'watts' is not correctly processed for multiple specifications"
     )
+    assert res.shape == (385, 4)
 
     # Test multiple nodes with explicit data type "watthours"
     nodes = [node.evolve(data="watthours") for node in forecast_solar_nodes.values()]
     res = connection.read_series(start, end, nodes, interval)
     assert res.attrs["name"] == "watthours", "Data type 'watthours' is not correctly processed for multiple nodes"
+    assert res.shape == (385, 4)
 
 
 @pytest.mark.usefixtures("_local_requests")
@@ -235,6 +238,7 @@ def test_read_multiple_nodes(forecast_solar_nodes: dict[str, ForecastsolarNode],
     result = connection.read_series(start, end, nodes, interval)
     assert isinstance(result, pd.DataFrame)
     assert len(result.columns) == len(nodes), "The result has the wrong number of columns"
+    assert result.shape == (121, len(nodes)), "The result has the wrong size of data"
 
 
 @pytest.mark.usefixtures("_local_requests")

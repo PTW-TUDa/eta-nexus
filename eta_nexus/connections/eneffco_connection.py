@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import asyncio
-import concurrent.futures
 from datetime import datetime, timedelta, timezone
 from logging import getLogger
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 import pandas as pd
@@ -245,66 +244,35 @@ class EneffcoConnection(
         :param kwargs: Other parameters (ignored by this connection).
         :return: Pandas DataFrame containing the data read from the connection.
         """
-        from_time, to_time, nodes, interval = super()._preprocess_series_context(
-            from_time, to_time, nodes, interval, **kwargs
+        return self._get_data(from_time, to_time, nodes, interval, **kwargs)
+
+    def _parse_response(self, json_data: dict[Any, Any]) -> tuple[pd.DatetimeIndex, pd.Generator[Any, None, None]]:
+        """Parse the response from the Eneffco API into a DataFrame.
+
+        :param json_data: JSON data from the API response.
+        :return: Timestamps and values as separate Series.
+        """
+        timestamps = pd.to_datetime(
+            [r["From"] for r in json_data],
+            utc=True,
+            format="%Y-%m-%dT%H:%M:%SZ",
         )
+        values = (r["Value"] for r in json_data)
 
-        def read_node(node: EneffcoNode) -> pd.DataFrame:
-            request_url = (
-                f"{self.url}/datapoint/{self.id_from_code(node.eneffco_code)}/value?"
-                f"from={self.timestr_from_datetime(from_time)}&"
-                f"to={self.timestr_from_datetime(to_time)}&"
-                f"timeInterval={int(interval.total_seconds())!s}&"
-                "includeNanValues=True"
-            )
+        return timestamps, values
 
-            response = self._raw_request("GET", request_url)
-            if response is None:
-                self.logger.warning(f"[Eneffco] No response from {request_url} — possible connection or timeout issue")
-                return pd.DataFrame(columns=[node.name])  # Empty DataFrame
-
-            try:
-                json_data = response.json()
-            except ValueError:
-                self.logger.exception(
-                    f"[Eneffco] Failed to parse JSON from {request_url} — upstream HTTP or token error likely"
-                )
-                return pd.DataFrame(columns=[node.name])
-
-            if not json_data:  # Empty or None response
-                self.logger.warning(
-                    f"[Eneffco] Empty JSON returned from {request_url} — check API response or token access rights"
-                )
-                return pd.DataFrame(columns=[node.name])
-
-            try:
-                data = pd.DataFrame(
-                    data=(r["Value"] for r in json_data),
-                    index=(
-                        pd.to_datetime(
-                            [r["From"] for r in json_data],
-                            utc=True,
-                            format="%Y-%m-%dT%H:%M:%SZ",
-                        ).tz_convert(self._local_tz)
-                    ),
-                    columns=[node.name],
-                    dtype="float64",
-                )
-                data.index.name = "Time (with timezone)"
-
-            except (KeyError, ValueError, TypeError):
-                self.logger.exception(
-                    f"[Eneffco] Failed to construct DataFrame for {node.eneffco_code} — "
-                    f"invalid or incomplete response structure"
-                )
-                return pd.DataFrame(columns=[node.name])
-            else:
-                return data
-
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            results = executor.map(read_node, nodes)
-
-        return pd.concat(results, axis=1, sort=False)
+    def read_node(self, node: EneffcoNode, **kwargs: Any) -> pd.DataFrame:
+        from_time = cast("datetime", kwargs.get("from_time"))
+        to_time = cast("datetime", kwargs.get("to_time"))
+        interval = cast("timedelta", kwargs.get("interval"))
+        request_url = (
+            f"{self.url}/datapoint/{self.id_from_code(node.eneffco_code)}/value?"
+            f"from={self.timestr_from_datetime(from_time)}&"
+            f"to={self.timestr_from_datetime(to_time)}&"
+            f"timeInterval={int(interval.total_seconds())!s}&"
+            "includeNanValues=True"
+        )
+        return super()._read_node(node, request_url)
 
     def subscribe_series(
         self,

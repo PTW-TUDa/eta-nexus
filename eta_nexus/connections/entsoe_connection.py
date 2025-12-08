@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
     from requests_cache import AnyResponse
 
-    from eta_nexus.util.type_annotations import Nodes, TimeStep
+    from eta_nexus.util.type_annotations import N, Nodes, TimeStep
 
 
 class EntsoeConnection(RESTConnection[EntsoeNode], SeriesReadable[EntsoeNode], protocol="entsoe"):
@@ -248,6 +248,22 @@ class EntsoeConnection(RESTConnection[EntsoeNode], SeriesReadable[EntsoeNode], p
             return None
         else:
             return response
+
+    def _parse_response(self, json_data: dict[Any, Any]) -> tuple[pd.DatetimeIndex, pd.Series]:
+        """Parse the JSON data from the REST API into a DataFrame.
+
+        :param json_data: JSON data from the API response.
+        :return: Timestamps and values as separate Series.
+        """
+        raise NotImplementedError("ENTSO-E connection does not support REST Interface functions.")
+
+    def read_node(self, node: N, **kwargs: Any) -> pd.DataFrame:
+        """Read data from a REST API endpoint.
+
+        :param node: Node to read data from.
+        :return: DataFrame containing the data read from the API.
+        """
+        raise NotImplementedError("ENTSO-E connection does not support REST Interface functions.")
 
 
 class _ConnectionConfiguration:

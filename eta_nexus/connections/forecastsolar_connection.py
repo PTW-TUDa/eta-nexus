@@ -21,15 +21,13 @@ For more information, visit the `forecast.solar API documentation <https://doc.f
 
 from __future__ import annotations
 
-import concurrent.futures
 import traceback
-from datetime import datetime
+from datetime import datetime, timedelta
 from logging import getLogger
 from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
-import requests
 from requests_cache import DO_NOT_CACHE, CachedSession
 
 from eta_nexus.connections.connection import Readable, RESTConnection, SeriesReadable
@@ -97,6 +95,8 @@ class ForecastsolarConnection(
             allowable_codes=(200, 400, 401, 403),
             use_cache_dir=True,
         )
+        self._cached_session.auth = self.authentication
+        self._cached_session.headers.update(self._headers)
         return self._cached_session
 
     @classmethod
@@ -108,7 +108,18 @@ class ForecastsolarConnection(
         """
         return super()._from_node(node)
 
-    def _read_node(self, node: ForecastsolarNode, **kwargs: Any) -> pd.DataFrame:
+    def _parse_response(self, json_data: dict[Any, Any]) -> tuple[pd.DatetimeIndex, np.ndarray]:
+        """Parse the response from the Forecast.Solar API into a DataFrame.
+
+        :param json_data: JSON data from the API response.
+        :return: Timestamps and watt values as separate Series.
+        """
+        timestamps = pd.to_datetime(list(json_data["result"].keys()))
+        watts = np.fromiter(json_data["result"].values(), dtype=float)
+
+        return timestamps, watts
+
+    def read_node(self, node: ForecastsolarNode, **kwargs: Any) -> pd.DataFrame:
         """Download data from the Forecast.Solar Database.
 
         :param node: Node to read values from.
@@ -117,30 +128,7 @@ class ForecastsolarConnection(
         url, query_params = node.url, node._query_params
         query_params["time"] = "utc"
 
-        raw_response = self._raw_request("GET", url, params=query_params, headers=self._headers, **kwargs)
-
-        if raw_response is None:
-            self.logger.warning(f"[Forecast.Solar] Failed to fetch data for node: {node.name}")
-            return pd.DataFrame({node.name: [float("nan")]}, index=pd.DatetimeIndex([], name="Time (with timezone)"))
-
-        try:
-            response = raw_response.json()
-            timestamps = pd.to_datetime(list(response["result"].keys()))
-            watts = response["result"].values()
-
-            data = pd.DataFrame(
-                data=watts,
-                index=timestamps.tz_convert(self._local_tz),
-                dtype="float64",
-            )
-            data.index.name = "Time (with timezone)"
-            data.columns = [node.name]
-
-        except (KeyError, ValueError, AttributeError, TypeError):
-            self.logger.exception(f"[Forecast.Solar] Failed to parse response for node {node.name}")
-            return pd.DataFrame({node.name: [float("nan")]}, index=pd.DatetimeIndex([], name="Time (with timezone)"))
-        else:
-            return data
+        return super()._read_node(node, url, params=query_params)
 
     def _select_data(
         self, results: pd.DataFrame, from_time: datetime | None = None, to_time: datetime | None = None
@@ -197,46 +185,16 @@ class ForecastsolarConnection(
 
         return actions[data](values)
 
-    def _get_data(
-        self,
-        nodes: set[ForecastsolarNode],
-        from_time: datetime | None = None,
-        to_time: datetime | None = None,
-    ) -> tuple[pd.DataFrame, pd.Timestamp]:
-        """Return forecast data from the Forecast.Solar Database.
-
-        :param nodes: List of nodes to read values from.
-        :param from_time: Starting time to begin reading (included in output).
-        :param to_time: Time to stop reading at (included in output).
-        :return: pandas.DataFrame containing the data read from the connection and start and end timestamps.
-        """
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            results = executor.map(self._read_node, nodes)
-
-        # Filter out empty or all-NA DataFrames
-        filtered_results = [df for df in results if not df.empty and not df.isna().all().all()]
-
-        if not filtered_results:
-            self.logger.warning("[Forecast.Solar] No valid forecast data retrieved from any node.")
-            col_names = [node.name for node in nodes]
-            if not col_names:
-                col_names = ["__placeholder__"]
-
-            empty_df = pd.DataFrame(columns=col_names)
-            return self._select_data(empty_df, from_time, to_time)
-
-        # Concatenate the filtered DataFrames
-        values = pd.concat(filtered_results, axis=1, sort=False)
-        return self._select_data(values, from_time, to_time)
-
     def read(self, nodes: ForecastsolarNode | Nodes[ForecastsolarNode] | None = None) -> pd.DataFrame:
         """Return solar forecast for the current time.
 
         :param nodes: Single node or list/set of nodes to read values from.
         :return: Pandas DataFrame containing the data read from the connection.
         """
+        now = datetime.now(tz=self._local_tz)
+        earliest_date = now - timedelta(days=30)  # Default to 30 days ago
         nodes = self._validate_nodes(nodes)
-        values, now = self._get_data(nodes)
+        values = self.read_series(from_time=earliest_date, to_time=now, nodes=nodes)
 
         # Insert the current timestamp _now and sort the index column to finish with the linear interpolation method
         values.loc[now] = np.nan
@@ -265,8 +223,8 @@ class ForecastsolarConnection(
         from_time, to_time, nodes, interval = super()._preprocess_series_context(
             from_time, to_time, nodes, interval, **kwargs
         )
-
-        values, _ = self._get_data(nodes, from_time, to_time)
+        values = self._get_data(from_time, to_time, nodes, interval, **kwargs)
+        values, _ = self._select_data(values, from_time, to_time)
         values = df_interpolate(values, interval).loc[from_time:to_time]  # type: ignore[misc] # mypy doesn't recognize DatetimeIndex
         return self._process_watts(values, nodes)
 
@@ -302,10 +260,8 @@ class ForecastsolarConnection(
             """Validate all routes for a node."""
             urls = _build_url(node)
             for url in urls:
-                try:
-                    conn._raw_request("GET", url, headers=conn._headers, **kwargs)
-                except requests.exceptions.HTTPError:
-                    cls.logger.exception(f"Route of node: {node.name} could not be verified")
+                if conn._raw_request("GET", url) is None:
+                    cls.logger.error(f"Route of node: {node.name} could not be verified")
                     return False
             return True
 
