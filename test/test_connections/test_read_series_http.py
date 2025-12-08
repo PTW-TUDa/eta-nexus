@@ -77,7 +77,7 @@ def test_eneffco_json_error_handled(monkeypatch, caplog):
         result = conn.read_series(from_time, to_time)
 
     assert result is not None
-    assert any("JSON parse error" in msg or "Failed to parse JSON" in msg for msg in caplog.messages)
+    assert any("JSON parse failed" in msg or "Failed to load" in msg for msg in caplog.messages)
 
 
 def test_eneffco_http_error_handled(monkeypatch, caplog):

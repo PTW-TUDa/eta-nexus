@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import concurrent.futures
 import os
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Mapping
@@ -9,6 +10,7 @@ from datetime import datetime, timedelta
 from logging import getLogger
 from typing import TYPE_CHECKING, Any, Generic, Protocol, cast, overload, runtime_checkable
 
+import pandas as pd
 from attr import field
 from dateutil import tz
 from requests.exceptions import HTTPError, RequestException
@@ -26,7 +28,7 @@ if TYPE_CHECKING:
     from typing import Any, ClassVar
     from urllib.parse import ParseResult
 
-    import pandas as pd
+    from pandas._typing import ArrayLike
     from requests.auth import AuthBase
     from requests_cache import AnyResponse, CachedSession
 
@@ -471,7 +473,7 @@ class RESTConnection(Connection[N], ABC):
     def _api_token(self) -> str | None:
         """Return the API token from the environment variable if set."""
         token = os.getenv(self._PROTOCOL.upper() + "_API_TOKEN")
-        if not token:
+        if token is None:
             self.logger.warning(
                 f"[{self._PROTOCOL.capitalize()}] {self._PROTOCOL.upper()}_API_TOKEN not found in environment."
             )
@@ -518,11 +520,96 @@ class RESTConnection(Connection[N], ABC):
         else:
             return response
 
-    def _read_node(self, node: N, **kwargs: Any) -> pd.DataFrame:
+    @abstractmethod
+    def _parse_response(self, json_data: dict[Any, Any]) -> tuple[pd.DatetimeIndex, ArrayLike]:
+        """Parse the JSON data from the REST API into a DataFrame.
+
+        :param json_data: JSON data from the API response.
+        :return: Tuple of (timestamps, values) where:
+            - timestamps: DatetimeIndex to use as the DataFrame index. Must be timezone-aware.
+            - values: Array-like data for the DataFrame. If a pd.Series is returned,
+                    its index MUST match the timestamps to avoid NaN values from
+                    misalignment. For other array-like types (list, tuple, ndarray),
+                    the values will be automatically aligned with timestamps.
+        """
+
+    @abstractmethod
+    def read_node(self, node: N, **kwargs: Any) -> pd.DataFrame:
         """Read data from a REST API endpoint.
 
         :param node: Node to read data from.
         :return: DataFrame containing the data read from the API.
         """
-        # TODO: Implement REST generic read function
-        # https://git.ptw.maschinenbau.tu-darmstadt.de/eta-fabrik/public/eta-nexus/-/work_items/73
+        raise NotImplementedError(
+            "Subclasses must implement read_node to define how data is read from a REST API endpoint for a given node."
+        )
+
+    def _read_node(self, node: N, url: str, params: dict[str, Any] | None = None) -> pd.DataFrame:
+        """Read data from a REST API endpoint.
+
+        :param node: Node to read data from.
+        :return: DataFrame containing the data read from the API.
+        """
+        empty_df = pd.DataFrame(columns=[node.name], index=pd.DatetimeIndex([], name="Time (with timezone)"))
+        response = self._raw_request("GET", url, params=params)
+        if response is None:
+            self.logger.warning(f"[{self._PROTOCOL}] No response from {url} for node {node.name}")
+            return empty_df
+        # Process the data into a DataFrame
+        try:
+            json_data = response.json()
+            timestamps, node_values = self._parse_response(json_data)
+            node_data_frame = pd.DataFrame(
+                data=node_values,
+                index=timestamps.tz_convert(self._local_tz),
+                columns=[node.name],
+                dtype="float64",
+            )
+            node_data_frame.index.name = "Time (with timezone)"
+        except (KeyError, ValueError, AttributeError, TypeError):
+            self.logger.exception(f"[{self._PROTOCOL}] Failed to process data for node {node.name}")
+            return empty_df
+        else:
+            return node_data_frame
+
+    def _get_data(
+        self,
+        from_time: datetime,
+        to_time: datetime,
+        nodes: N | Nodes[N] | None = None,
+        interval: TimeStep = 60,
+        **kwargs: Any,
+    ) -> pd.DataFrame:
+        """Get data from the REST API for the specified nodes and time interval.
+
+        :param from_time: Start of the time series, treated as partly open interval [from_time, to_time).
+        :param to_time: End of the time series, treated as partly open interval [from_time, to_time).
+        :param nodes: Single node or list/set of nodes to read values from.
+        :param interval: Time between time series' values. Interpreted as seconds if Numeric is given.
+        :param kwargs: Additional subclass arguments.
+        """
+        from_time, to_time, nodes, interval = super()._preprocess_series_context(
+            from_time, to_time, nodes, interval, **kwargs
+        )
+        kwargs.update(
+            {
+                "from_time": from_time,
+                "to_time": to_time,
+                "interval": interval,
+            }
+        )
+
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            results = executor.map(lambda node: self.read_node(node, **kwargs), nodes)
+
+        # Filter out empty or all-NA DataFrames
+        filtered_results = [df for df in results if not df.empty and not df.isna().all().all()]
+
+        if not filtered_results:
+            self.logger.warning(f"[{self._PROTOCOL.capitalize()}] No valid data retrieved from any node.")
+            col_names = [node.name for node in nodes]
+            if not col_names:
+                col_names = ["__placeholder__"]
+            return pd.DataFrame(columns=col_names)
+
+        return pd.concat(filtered_results, axis=1, sort=False)

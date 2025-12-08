@@ -1,4 +1,7 @@
-from eta_nexus.connections.connection import Connection as Connection
+from eta_nexus.connections.connection import (
+    Connection as Connection,
+    RESTConnection as RESTConnection,
+)
 from eta_nexus.connections.emonio_connection import EmonioConnection as EmonioConnection
 from eta_nexus.connections.eneffco_connection import EneffcoConnection as EneffcoConnection
 from eta_nexus.connections.entsoe_connection import EntsoeConnection as EntsoeConnection
