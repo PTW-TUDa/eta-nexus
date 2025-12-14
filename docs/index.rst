@@ -38,6 +38,7 @@ Please read the development guide before starting development on *eta_nexus*: :r
     /connections/influx
     /connections/sub_handlers
     /connections/connection_manager
+    /connections/Implementing_REST_Connections
 
 .. toctree::
     :maxdepth: 1
