@@ -1,0 +1,54 @@
+system:
+  - name: MIX
+    servers:
+      glt:
+        url: 127.0.0.1:4852
+        protocol: opcua
+      mb1:
+        url: 127.0.0.1:5062
+        protocol: modbus
+    nodes:
+      # OPC UA nodes (assigned to 'glt')
+      - name: NodeFloat
+        server: glt
+        opc_id: ns=6;s=.Test.NodeFloat
+        dtype: float
+      - name: NodeInt
+        server: glt
+        opc_id: ns=6;s=.Test.NodeInt
+        dtype: int
+      - name: NodeStr
+        server: glt
+        opc_id: ns=6;s=.Test.NodeStr
+        dtype: str
+      # Modbus nodes (assigned to 'mb1')
+      - name: int_val
+        server: mb1
+        mb_channel: "5000"
+        mb_register: holding
+        mb_bitlength: 32
+        dtype: int
+      - name: float_val
+        server: mb1
+        mb_channel: "5032"
+        mb_register: holding
+        mb_bitlength: 32
+        dtype: float
+      - name: str_val
+        server: mb1
+        mb_channel: "5064"
+        mb_register: holding
+        mb_bitlength: 64
+        dtype: string
+      - name: coil1
+        server: mb1
+        mb_channel: "5128"
+        mb_register: coils
+        mb_bitlength: 1
+        dtype: int
+      - name: coil4
+        server: mb1
+        mb_channel: "5136"
+        mb_register: coils
+        mb_bitlength: 4
+        dtype: int
