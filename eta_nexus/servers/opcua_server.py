@@ -55,6 +55,7 @@ class OpcuaServer:
         log.info(f"Server Address is {self.url}")
 
         self.url_parsed, _, _ = url_parse(self.url)
+        self._url = self.url_parsed  # For compatibility with tests that expect _url
 
         self._server: Server = Server()
         self._server.set_endpoint(self.url)
