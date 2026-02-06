@@ -10,21 +10,18 @@ from eta_nexus.servers.loaders.opcua_server_loader import load_opcua_servers_fro
 nodes = (
     {
         "name": "Serv.NodeName",
-        "port": 4840,
         "protocol": "opcua",
         "opc_id": "ns=6;s=.Some_Namespace.NodeFloat",
         "dtype": "float",
     },
     {
         "name": "Serv.NodeName2",
-        "port": 4840,
         "protocol": "opcua",
         "opc_id": "ns=6;s=.Some_Namespace.NodeInt",
         "dtype": "int",
     },
     {
         "name": "Serv.NodeName2",
-        "port": 4840,
         "protocol": "opcua",
         "opc_id": "ns=6;s=.Some_Namespace.NodeStr",
         "dtype": "str",
@@ -33,17 +30,17 @@ nodes = (
 
 
 @pytest.fixture(scope="module")
-def local_nodes(config_host_ip):
+def local_nodes(config_host_ip, config_opcua_port):
     _nodes = []
     for node in nodes:
-        _nodes.extend(Node.from_dict({**node, "ip": config_host_ip}))
+        _nodes.extend(Node.from_dict({**node, "ip": config_host_ip, "port": config_opcua_port}))
 
     return _nodes
 
 
-def test_init():
+def test_init(config_opcua_port):
     try:
-        server = OpcuaServer(5, ip="127.0.0.1")
+        server = OpcuaServer(5, ip="127.0.0.1", port=config_opcua_port)
         assert server._server.aio_obj.bserver._server._serving is True  # Check session can be created
     finally:
         server.stop()
@@ -52,8 +49,8 @@ def test_init():
     assert server._server.aio_obj.bserver._server._serving is False
 
 
-def test_init_with():
-    with OpcuaServer(5, ip="127.0.0.1") as server:
+def test_init_with(config_opcua_port):
+    with OpcuaServer(5, ip="127.0.0.1", port=config_opcua_port) as server:
         assert server._server.aio_obj.bserver._server._serving is True  # Check session can be created
 
     # Check session is closed
@@ -62,8 +59,8 @@ def test_init_with():
 
 class TestServerOperations:
     @pytest.fixture(scope="class")
-    def server(self, config_host_ip):
-        with OpcuaServer(5, ip=config_host_ip) as server:
+    def server(self, config_host_ip, config_opcua_port):
+        with OpcuaServer(5, ip=config_host_ip, port=config_opcua_port) as server:
             yield server
 
     def test_active(self, server: OpcuaServer):
@@ -123,12 +120,12 @@ class TestOpcuaServerFromConfigFile:
     """
 
     @pytest.fixture(scope="class", params=["yaml", "toml", "json"])
-    def servers_from_config(self, request):
+    def servers_from_config(self, request, config_opcua_port):
         extension = request.param
         config_path = f"./test/resources/connection_manager/config.{extension}"
         assert Path(config_path).exists(), f"{config_path} does not exist."
 
-        servers = load_opcua_servers_from_config(config_path)
+        servers = load_opcua_servers_from_config(config_path, port_override=config_opcua_port)
         yield servers
 
         # Cleanup after tests
