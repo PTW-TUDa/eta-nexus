@@ -26,7 +26,7 @@ from asyncua import ua
 from asyncua.crypto.security_policies import SecurityPolicyBasic256Sha256
 
 # Synchronous imports
-from asyncua.sync import Client, Subscription
+from asyncua.sync import Client, Subscription, ThreadLoopNotRunning
 from asyncua.ua import SecurityPolicy, uaerrors
 
 from eta_nexus.connections.connection_utils import IntervalChecker, RetryWaiter
@@ -274,6 +274,10 @@ class OpcuaConnection(
                             )
 
             except (ConnectionAbortedError, ConnectionResetError, TimeoutError, ConCancelledError, BaseException) as e:
+                if isinstance(e, asyncio.CancelledError):
+                    self.logger.debug(f"Subscription loop for {self.url} was cancelled.")
+                    break
+                msg = None
                 if isinstance(e, (ConnectionAbortedError, ConnectionResetError)):
                     msg = f"Subscription to the OPC UA server {self.url} is unexpectedly terminated."
                 if isinstance(e, TimeoutError):
@@ -322,6 +326,10 @@ class OpcuaConnection(
         try:
             self._sub.unsubscribe(self._subbed_nodes)
         except AttributeError:
+            # Occurs only if subscription did not exist and can be ignored.
+            pass
+        except ThreadLoopNotRunning:
+            # Occurs only if subscription was already stopped (and therefore the ThreadLoop as well) and can be ignored.
             pass
         except Exception:
             self.logger.exception("Canceling OpcUA subscription failed.")

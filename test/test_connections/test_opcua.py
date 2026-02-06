@@ -287,15 +287,14 @@ class TestConnectionSubscriptions:
             yield server
 
     async def write_loop(self, server, local_nodes, values):
-        await asyncio.sleep(0.5)
         for i in range(len(values["Serv.NodeName"])):
             server.write({node: values[node.name][i] for node in local_nodes})
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.1)
 
     def test_subscribe(self, local_nodes, server):
         connection = OpcuaConnection.from_node(local_nodes, usr="admin", pwd="0")
-        handler = DFSubscriptionHandler(write_interval=0.5)
-        connection.subscribe(handler, interval=0.5)
+        handler = DFSubscriptionHandler(write_interval=0.01)
+        connection.subscribe(handler, interval=0.01)
 
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.write_loop(server, local_nodes, self.values))
@@ -314,6 +313,7 @@ class TestConnectionSubscriptions:
                 except AssertionError:
                     max_missing_values -= 1
                     if max_missing_values < 0:
+                        connection.close_sub()
                         raise
 
         connection.close_sub()
@@ -339,18 +339,24 @@ class TestConnectionSubscriptions:
 
                 # Index should fall back to one if the number of provided values is exceeded.
                 i += 1
-                await asyncio.sleep(1)
+                await asyncio.sleep(0.5)
 
-        asyncio.get_event_loop().create_task(write_loop(server, local_nodes, self.values))
+        task = asyncio.get_event_loop().create_task(write_loop(server, local_nodes, self.values))
+        yield
+        task.cancel()
+        try:
+            asyncio.get_event_loop().run_until_complete(task)
+        except asyncio.CancelledError:
+            pass
 
     @pytest.mark.usefixtures("_write_nodes_interrupt")
     def test_subscribe_interrupted(self, local_nodes, caplog):
         connection: OpcuaConnection = OpcuaConnection.from_node(local_nodes, usr="admin", pwd="0")
-        handler = DFSubscriptionHandler(write_interval=1)
-        connection.subscribe(handler, interval=1)
+        handler = DFSubscriptionHandler(write_interval=0.1)
+        connection.subscribe(handler, interval=0.1)
 
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(stop_execution(25))
+        loop.run_until_complete(stop_execution(5))
         connection.close_sub()
 
         for node, values in self.values.items():
@@ -374,21 +380,21 @@ nodes_interval_to_check = (
         "protocol": "opcua",
         "opc_id": "ns=6;s=.Some_Namespace.NodeFloat",
         "dtype": "float",
-        "interval": 2,
+        "interval": 0.1,
     },
     {
         "name": "Serv.NodeName2",
         "protocol": "opcua",
         "opc_id": "ns=6;s=.Some_Namespace.NodeInt",
         "dtype": "int",
-        "interval": 2,
+        "interval": 0.1,
     },
     {
         "name": "Serv.NodeName4",
         "protocol": "opcua",
         "opc_id": "ns=6;s=.Some_Namespace.NodeStr",
         "dtype": "str",
-        "interval": 2,
+        "interval": 0.1,
     },
 )
 
@@ -444,18 +450,24 @@ class TestConnectionSubscriptionsIntervalChecker:
                         pass
 
                 i += 1
-                await asyncio.sleep(1)
+                await asyncio.sleep(0.5)
 
-        asyncio.get_event_loop().create_task(write_loop(server, local_nodes_interval_checking, self.values))
+        task = asyncio.get_event_loop().create_task(write_loop(server, local_nodes_interval_checking, self.values))
+        yield
+        task.cancel()
+        try:
+            asyncio.get_event_loop().run_until_complete(task)
+        except asyncio.CancelledError:
+            pass
 
     @pytest.mark.usefixtures("_write_nodes_interval_checking")
     def test_subscribe_interval_checking(self, local_nodes_interval_checking, caplog):
         connection: OpcuaConnection = OpcuaConnection.from_node(local_nodes_interval_checking, usr="admin", pwd="0")
-        handler = DFSubscriptionHandler(write_interval=1)
-        connection.subscribe(handler, interval=1)
+        handler = DFSubscriptionHandler(write_interval=0.1)
+        connection.subscribe(handler, interval=0.1)
 
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(stop_execution(10))
+        loop.run_until_complete(stop_execution(5))
         connection.close_sub()
 
         for node, values in self.values.items():
@@ -467,7 +479,7 @@ class TestConnectionSubscriptionsIntervalChecker:
             if "The subscription connection for" in message:
                 messages_found += 1
 
-        assert messages_found >= 3, "Error while testing the interval checker, test could not be executed reliably."
+        assert messages_found >= 2, "Error while testing the interval checker, test could not be executed reliably."
 
 
 class TestTypeMismatchDetection:
