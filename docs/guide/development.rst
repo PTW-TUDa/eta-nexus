@@ -177,13 +177,78 @@ Or if you have the virtual environment already activated:
 
     $ pytest
 
-Please always refresh the *test_nsga2_agent.zip* file when changes are made in the nsga2 agent and in julia files. The zip-file is located
-in *eta-nexus/test/resources/agents* and creates a new NSGA2 model for the tests. To do this, execute the following
-command in the terminal:
+Running tests in parallel
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The test suite is configured to support parallel execution using `pytest-xdist <https://pytest-xdist.readthedocs.io/>`_.
+This significantly reduces test duration by distributing tests across multiple CPU cores.
+
+To run tests in parallel:
 
 .. code-block:: console
 
-    $ poetry run update-julia-agent
+    $ pytest -n auto
+
+The ``-n auto`` option automatically detects the number of available CPU cores. You can also specify
+a fixed number of workers:
+
+.. code-block:: console
+
+    $ pytest -n 4
+
+For tests that require fixture isolation (e.g., server tests), use the ``loadscope`` distribution strategy:
+
+.. code-block:: console
+
+    $ pytest -n logical --dist loadscope
+
+This is the configuration used in the CI/CD pipeline and ensures that tests with class or module-scoped
+fixtures are properly isolated.
+
+.. note::
+    Some tests that make real network requests may be slower or flakier when run in parallel.
+    If you encounter issues, try running those tests sequentially or using the ``loadscope`` distribution.
+
+For more information, see the `pytest-xdist documentation <https://pytest-xdist.readthedocs.io/en/stable/>`_.
+
+Measuring test coverage
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+To measure code coverage, use `pytest-cov <https://pytest-cov.readthedocs.io/>`_.
+The project has coverage configured in ``pyproject.toml``, so you can simply run:
+
+.. code-block:: console
+
+    $ pytest --cov
+
+This generates a terminal summary and saves the coverage data to a ``.coverage`` file.
+
+To generate an HTML report from the saved coverage data:
+
+.. code-block:: console
+
+    $ coverage html
+
+This creates an HTML coverage report in the ``htmlcov/`` directory. Open ``htmlcov/index.html``
+in a browser to view detailed coverage information showing which lines of code are covered by tests.
+
+For a detailed terminal report:
+
+.. code-block:: console
+
+    $ coverage report
+
+You can combine coverage with parallel execution:
+
+.. code-block:: console
+
+    $ pytest -n auto --cov
+
+.. note::
+    The ``.coverage`` file persists between test runs. You can regenerate reports using
+    ``coverage html`` or ``coverage report`` without re-running tests.
+
+For more coverage options, see the `pytest-cov documentation <https://pytest-cov.readthedocs.io/en/stable/>`_.
 
 Editing this documentation
 -----------------------------

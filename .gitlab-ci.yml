@@ -106,7 +106,8 @@ linkcheck-docs:
 .test:
   stage: test
   script:
-  - pytest
+  # Run tests with pytest in parallel through pytest-xdist
+  - pytest -n logical --dist loadscope # -n logical uses logical CPU count, --dist loadscope groups tests by module
   retry:
     max: 1
     when: script_failure
@@ -115,7 +116,7 @@ linkcheck-docs:
   extends: .test
   coverage: '/TOTAL.*\s+(\d+%)$/'
   script:
-  - pytest --cov --junitxml=./junit.xml --cov-report term --cov-report xml:coverage.xml
+  - pytest -n logical --dist loadscope --cov --junitxml=./junit.xml --cov-report term --cov-report xml:coverage.xml
   artifacts:
     paths:
       - junit.xml
@@ -135,6 +136,8 @@ test3.11:
 
 test3.12:
   extends: .test
+  script:
+  - pytest # Run tests without parallelization
   image: ${REGISTRY_IMAGE}:py3.12
 
 # test3.12_updated_deps:

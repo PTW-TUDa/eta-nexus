@@ -20,12 +20,11 @@ node = Node(
     opc_id="ns=6;s=.HLK.System_425.Pumpe_425.Zustand.Drehzahl",
 )
 ip = "127.0.0.1"  # local ip address
-port = 48050
 
 
 @pytest.fixture(autouse=True)
-def local_server():
-    server = OpcuaServer(5, ip=ip, port=port)
+def local_server(config_opcua_port):
+    server = OpcuaServer(5, ip=ip, port=config_opcua_port)
     yield server
     server.stop()
 

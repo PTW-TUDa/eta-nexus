@@ -1,12 +1,19 @@
 import asyncio
 import logging
 import pathlib
-import platform
 import random
 import shutil
 import socket
 
 import pytest
+
+
+def get_free_port():
+    """Find an available port dynamically."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.bind(("", 0))
+        return s.getsockname()[1]
 
 
 @pytest.fixture(autouse=True, scope="session")
@@ -46,11 +53,16 @@ async def stop_execution(sleep_time):
     await asyncio.sleep(sleep_time)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def config_modbus_port():
-    if platform.system() == "Linux" or platform.system() == "Darwin":
-        return 5050
-    return 502
+    """Dynamic port for Modbus server - module scoped for isolation."""
+    return get_free_port()
+
+
+@pytest.fixture(scope="module")
+def config_opcua_port():
+    """Dynamic port for OPC-UA server - module scoped for isolation."""
+    return get_free_port()
 
 
 @pytest.fixture(scope="session")

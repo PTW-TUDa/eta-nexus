@@ -5,7 +5,7 @@ from eta_nexus.util.io_utils import load_config
 from eta_nexus.util.utils import dict_get_any, url_parse
 
 
-def load_opcua_servers_from_config(config_path: str) -> list[OpcuaServer]:
+def load_opcua_servers_from_config(config_path: str, port_override: int | None = None) -> list[OpcuaServer]:
     """
     Load and instantiate OPC UA servers from a configuration file.
 
@@ -44,7 +44,7 @@ def load_opcua_servers_from_config(config_path: str) -> list[OpcuaServer]:
     for s in raw_servers:
         namespace = s.get("namespace") or s.get("name") or "default"
         ip = s.get("ip")
-        port = s.get("port", 4840)
+        port = port_override if port_override is not None else s.get("port", 4840)
 
         server = OpcuaServer(namespace=namespace, ip=ip, port=port)
 

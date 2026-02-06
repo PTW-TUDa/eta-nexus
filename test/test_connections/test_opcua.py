@@ -217,21 +217,18 @@ read = (
 nodes = (
     {
         "name": "Serv.NodeName",
-        "port": 4840,
         "protocol": "opcua",
         "opc_id": "ns=6;s=.Some_Namespace.NodeFloat",
         "dtype": "float",
     },
     {
         "name": "Serv.NodeName2",
-        "port": 4840,
         "protocol": "opcua",
         "opc_id": "ns=6;s=.Some_Namespace.NodeInt",
         "dtype": "int",
     },
     {
         "name": "Serv.NodeName4",
-        "port": 4840,
         "protocol": "opcua",
         "opc_id": "ns=6;s=.Some_Namespace.NodeStr",
         "dtype": "str",
@@ -240,18 +237,19 @@ nodes = (
 
 
 @pytest.fixture(scope="module")
-def local_nodes(config_host_ip):
+def local_nodes(config_host_ip, config_opcua_port):
     _nodes = []
     for node in nodes:
-        _nodes.extend(Node.from_dict({**node, "ip": config_host_ip}))
+        _nodes.extend(Node.from_dict({**node, "ip": config_host_ip, "port": config_opcua_port}))
 
     return _nodes
 
 
 class TestConnectionOperations:
-    @pytest.fixture(autouse=True)
-    def server(self, config_host_ip):
-        with OpcuaServer(5, ip=config_host_ip) as server:
+    @pytest.fixture(scope="class", autouse=True)
+    def server(self, config_host_ip, config_opcua_port, local_nodes):
+        with OpcuaServer(5, ip=config_host_ip, port=config_opcua_port) as server:
+            server.create_nodes(local_nodes)
             yield server
 
     @pytest.fixture(scope="class")
@@ -263,14 +261,12 @@ class TestConnectionOperations:
 
     @pytest.mark.parametrize(("index", "value"), values)
     def test_write_node(self, server: OpcuaServer, connection: OpcuaConnection, local_nodes, index, value):
-        server.create_nodes(local_nodes)
         connection.write({local_nodes[index]: value})
 
         assert server.read(local_nodes[index]).iloc[0, 0] == value
 
     @pytest.mark.parametrize(("index", "expected"), values)
     def test_read_node(self, server: OpcuaServer, connection: OpcuaConnection, local_nodes, index, expected):
-        server.create_nodes(local_nodes)
         server.write({local_nodes[index]: expected})
         val = connection.read(local_nodes[index])
 
@@ -279,14 +275,12 @@ class TestConnectionOperations:
 
     def test_read_fail(self, server, connection: OpcuaConnection, local_nodes):
         n = local_nodes[0]
-        server.create_nodes(local_nodes)
         fail_node = Node(n.name, n.url, n.protocol, usr=n.usr, pwd=n.pwd, opc_id="ns=6;s=AnotherNamespace.DoesNotExist")
         with pytest.raises(ConnectionError, match=".*BadNodeIdUnknown.*"):
             connection.read(fail_node)
 
     def test_login_fail_write(self, server, local_nodes):
         n = local_nodes[0]
-        server.create_nodes(local_nodes)
         connection = OpcuaConnection.from_node(n, usr="another", pwd="something")
         with pytest.raises(ConnectionError, match=".*BadUserAccessDenied.*"):
             connection.write({n: 123})
@@ -335,8 +329,8 @@ class TestConnectionSubscriptions:
     }
 
     @pytest.fixture(scope="class", autouse=True)
-    def server(self, local_nodes, config_host_ip):
-        with OpcuaServer(5, ip=config_host_ip) as server:
+    def server(self, local_nodes, config_host_ip, config_opcua_port):
+        with OpcuaServer(5, ip=config_host_ip, port=config_opcua_port) as server:
             server.create_nodes(local_nodes)
             yield server
 
@@ -425,7 +419,6 @@ class TestConnectionSubscriptions:
 nodes_interval_to_check = (
     {
         "name": "Serv.NodeName",
-        "port": 4840,
         "protocol": "opcua",
         "opc_id": "ns=6;s=.Some_Namespace.NodeFloat",
         "dtype": "float",
@@ -433,7 +426,6 @@ nodes_interval_to_check = (
     },
     {
         "name": "Serv.NodeName2",
-        "port": 4840,
         "protocol": "opcua",
         "opc_id": "ns=6;s=.Some_Namespace.NodeInt",
         "dtype": "int",
@@ -441,7 +433,6 @@ nodes_interval_to_check = (
     },
     {
         "name": "Serv.NodeName4",
-        "port": 4840,
         "protocol": "opcua",
         "opc_id": "ns=6;s=.Some_Namespace.NodeStr",
         "dtype": "str",
@@ -451,10 +442,10 @@ nodes_interval_to_check = (
 
 
 @pytest.fixture(scope="module")
-def local_nodes_interval_checking(config_host_ip):
+def local_nodes_interval_checking(config_host_ip, config_opcua_port):
     _nodes = []
     for node in nodes_interval_to_check:
-        _nodes.extend(Node.from_dict({**node, "ip": config_host_ip}))
+        _nodes.extend(Node.from_dict({**node, "ip": config_host_ip, "port": config_opcua_port}))
 
     return _nodes
 
@@ -479,8 +470,8 @@ class TestConnectionSubscriptionsIntervalChecker:
     }
 
     @pytest.fixture(scope="class", autouse=True)
-    def server(self, local_nodes_interval_checking, config_host_ip):
-        with OpcuaServer(5, ip=config_host_ip) as server:
+    def server(self, local_nodes_interval_checking, config_host_ip, config_opcua_port):
+        with OpcuaServer(5, ip=config_host_ip, port=config_opcua_port) as server:
             server.create_nodes(local_nodes_interval_checking)
             yield server
 
