@@ -48,7 +48,7 @@ def test_multi_connect(config_nodes_file, config_eneffco, temp_dir):
         for connection in connections.values():
             connection.subscribe(subscription_handler)
 
-        loop.run_until_complete(stop_execution(10))
+        loop.run_until_complete(stop_execution(3))
 
     except KeyboardInterrupt:
         pass

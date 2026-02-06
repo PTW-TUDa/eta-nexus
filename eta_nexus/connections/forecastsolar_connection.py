@@ -193,7 +193,7 @@ class ForecastsolarConnection(
         :return: Pandas DataFrame containing the data read from the connection.
         """
         now = datetime.now(tz=self._local_tz)
-        earliest_date = now - timedelta(days=30)  # Default to 30 days ago
+        earliest_date = now - timedelta(hours=1)  # Default to 1 hour ago
         nodes = self._validate_nodes(nodes)
         values = self.read_series(from_time=earliest_date, to_time=now, nodes=nodes)
 

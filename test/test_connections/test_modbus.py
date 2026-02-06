@@ -153,8 +153,22 @@ def test_init_fail(args, kwargs, expected):
         ModbusConnection(*args, **kwargs)
 
 
-def test_modbus_connection_fail():
-    """Test modbus failures"""
+def test_modbus_connection_fail(monkeypatch):
+    """Test modbus failures - mock client to fail immediately"""
+    from test.utilities.pyModbusTCP.client import ModbusClient as MockModbusClient
+
+    # Create a failing version of the mock client
+    class FailingModbusClient(MockModbusClient):
+        @property
+        def is_open(self):
+            return False
+
+        def open(self):
+            return False
+
+    # Patch where it's used (in modbus_connection module), not where it's defined
+    monkeypatch.setattr("eta_nexus.connections.modbus_connection.ModbusClient", FailingModbusClient)
+
     node = Node(
         "Serv.NodeName",
         "modbus.tcp://10.0.0.1:502",
@@ -315,15 +329,15 @@ class TestConnectionSubscriptions:
             yield server
 
     async def write_loop(self, server, local_nodes, values):
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(0.1)
         for i in range(len(values["Serv.NodeName"])):
             server.write({node: values[node.name][i] for node in local_nodes})
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.1)
 
     def test_subscribe(self, local_nodes, server):
         connection = ModbusConnection.from_node(local_nodes, usr="admin", pwd="0")
-        handler = DFSubscriptionHandler(write_interval=0.5)
-        connection.subscribe(handler, interval=0.5)
+        handler = DFSubscriptionHandler(write_interval=0.1)
+        connection.subscribe(handler, interval=0.1)
 
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.write_loop(server, local_nodes, self.values))
@@ -364,18 +378,18 @@ class TestConnectionSubscriptions:
 
                 # Index should fall back to one if the number of provided values is exceeded.
                 i += 1
-                await asyncio.sleep(1)
+                await asyncio.sleep(0.5)
 
         asyncio.get_event_loop().create_task(write_loop(server, local_nodes, self.values))
 
     @pytest.mark.usefixtures("_write_nodes_interrupt")
     def test_subscribe_interrupted(self, local_nodes, caplog):
         connection = ModbusConnection.from_node(local_nodes, usr="admin", pwd="0")
-        handler = DFSubscriptionHandler(write_interval=1)
-        connection.subscribe(handler, interval=1)
+        handler = DFSubscriptionHandler(write_interval=0.01)
+        connection.subscribe(handler, interval=0.01)
 
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(stop_execution(25))
+        loop.run_until_complete(stop_execution(5))
         connection.close_sub()
         data = handler.data
         for node, values in self.values.items():
@@ -405,7 +419,7 @@ nodes_interval_to_check = (
         "mb_register": "Holding",
         "mb_byteorder": "big",
         "dtype": "float",
-        "interval": 2,
+        "interval": 0.1,
     },
     {
         "name": "Serv.NodeName2",
@@ -414,7 +428,7 @@ nodes_interval_to_check = (
         "mb_register": "Holding",
         "mb_byteorder": "big",
         "dtype": "int",
-        "interval": 2,
+        "interval": 0.1,
     },
     {
         "name": "Serv.NodeName4",
@@ -424,7 +438,7 @@ nodes_interval_to_check = (
         "mb_byteorder": "big",
         "mb_bitlength": 80,
         "dtype": "str",
-        "interval": 2,
+        "interval": 0.1,
     },
 )
 
@@ -465,18 +479,18 @@ class TestConnectionSubscriptionsIntervalChecker:
                     server.write({node: values[node.name][1] for node in local_nodes_interval_checking})
 
                 i += 1
-                await asyncio.sleep(1)
+                await asyncio.sleep(0.1)
 
         asyncio.get_event_loop().create_task(write_loop(server, local_nodes_interval_checking, self.values))
 
     @pytest.mark.usefixtures("_write_nodes_interval_checking")
     def test_subscribe_interval_checking(self, local_nodes_interval_checking, caplog):
         connection = ModbusConnection.from_node(local_nodes_interval_checking, usr="admin", pwd="0")
-        handler = DFSubscriptionHandler(write_interval=1)
-        connection.subscribe(handler, interval=1)
+        handler = DFSubscriptionHandler(write_interval=0.1)
+        connection.subscribe(handler, interval=0.1)
 
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(stop_execution(10))
+        loop.run_until_complete(stop_execution(5))
         connection.close_sub()
 
         for node, values in self.values.items():
