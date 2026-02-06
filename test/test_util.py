@@ -10,10 +10,13 @@ import pandas as pd
 import pytest
 import toml
 import yaml
+from asyncua import ua
 from dateutil import tz
 
 from eta_nexus.util import (
+    DTYPE_TO_VARIANT_TYPE,
     SelfsignedKeyCertPair,
+    check_type_mismatch,
     dict_search,
     load_config,
     log_add_filehandler,
@@ -254,6 +257,31 @@ def test_selfsignedkeycertpair_fail() -> None:
             city="Darmstadt",
             organization="TU Darmstadt",
         )
+
+
+class TestTypeMismatchUtilities:
+    """Unit tests for the type checking utility functions."""
+
+    def test_check_type_mismatch_warns_on_mismatch(self, caplog):
+        """Verify warning is logged when types don't match."""
+        logger = logging.getLogger("eta_nexus.util.type_utils")
+        with caplog.at_level(logging.WARNING):
+            check_type_mismatch(int, ua.VariantType.String, "test_node", logger)
+        assert "Type mismatch for node 'test_node'" in caplog.text
+
+    def test_check_type_mismatch_silent_on_match(self, caplog):
+        """Verify no warning when types match."""
+        logger = logging.getLogger("eta_nexus.util.type_utils")
+        check_type_mismatch(int, ua.VariantType.Int32, "test_node", logger)
+        assert "Type mismatch" not in caplog.text
+
+    def test_dtype_to_variant_type_mapping_complete(self):
+        """Verify mapping covers all expected types."""
+        assert int in DTYPE_TO_VARIANT_TYPE
+        assert float in DTYPE_TO_VARIANT_TYPE
+        assert str in DTYPE_TO_VARIANT_TYPE
+        assert bool in DTYPE_TO_VARIANT_TYPE
+        assert bytes in DTYPE_TO_VARIANT_TYPE
 
 
 class TestReplaceDecimalStr:
