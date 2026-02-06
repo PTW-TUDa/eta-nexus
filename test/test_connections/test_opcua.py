@@ -1,5 +1,5 @@
 import asyncio
-import datetime
+import logging
 
 import pandas as pd
 import pytest
@@ -165,54 +165,6 @@ def test_init_fail(args, kwargs, expected):
     with pytest.raises(ValueError, match=expected):
         OpcuaConnection(*args, **kwargs)
 
-
-read = (
-    (
-        (
-            Node(
-                "Serv.NodeName",
-                "opc.tcp://127.0.0.1:4840",
-                "opcua",
-                opc_id="ns=6;s=.Some_Namespace.Node1",
-            ),
-        ),
-        pd.DataFrame(data={"Serv.NodeName": 2858.00000}, index=[datetime.datetime.now()]),
-    ),
-    (
-        (
-            Node(
-                "Serv.NodeName",
-                "opc.tcp://127.0.0.1:4840",
-                "opcua",
-                opc_id="ns=6;s=.Some_Namespace.Node1",
-            ),
-            Node(
-                "Serv.NodeName2",
-                "opc.tcp://127.0.0.1:4840",
-                "opcua",
-                opc_id="ns=6;s=.Some_Namespace.Node1",
-            ),
-        ),
-        pd.DataFrame(data={"Serv.NodeName": 2858.00000, "Serv.NodeName2": 2858.00000}, index=[datetime.datetime.now()]),
-    ),
-    (
-        (
-            Node(
-                "Serv.NodeName",
-                "opc.tcp://127.0.0.1:4840",
-                "opcua",
-                opc_id="ns=6;s=.Some_Namespace.Node1",
-            ),
-            Node(
-                "Serv.NodeName2",
-                "opc.tcp://10.10.0.1:4840",
-                "opcua",
-                opc_id="ns=6;s=.Some_Namespace.Node1",
-            ),
-        ),
-        pd.DataFrame(data={"Serv.NodeName": 2858.00000}, index=[datetime.datetime.now()]),
-    ),
-)
 
 nodes = (
     {
@@ -516,3 +468,67 @@ class TestConnectionSubscriptionsIntervalChecker:
                 messages_found += 1
 
         assert messages_found >= 3, "Error while testing the interval checker, test could not be executed reliably."
+
+
+class TestTypeMismatchDetection:
+    """Integration tests for type mismatch detection in OPC UA operations."""
+
+    @pytest.fixture(autouse=True)
+    def server(self, config_host_ip):
+        with OpcuaServer(6, ip=config_host_ip) as server:
+            yield server
+
+    def test_read_with_type_mismatch_logs_warning(self, server: OpcuaServer, config_host_ip, caplog):
+        """Verify type mismatch warning during read operation."""
+        node_as_int = Node(
+            "TypeMismatchNode",
+            f"opc.tcp://{config_host_ip}:4840",
+            "opcua",
+            opc_id="ns=6;s=.TypeMismatch_Namespace.StringAsInt",
+            dtype="int",
+        )
+        node_as_str = Node(
+            "TypeMismatchNode",
+            f"opc.tcp://{config_host_ip}:4840",
+            "opcua",
+            opc_id="ns=6;s=.TypeMismatch_Namespace.StringAsInt",
+            dtype="str",
+        )
+
+        server.create_nodes([node_as_str])
+        server.write({node_as_str: "123"})
+        connection = OpcuaConnection.from_node(node_as_int, usr="admin", pwd="0")
+
+        with caplog.at_level(logging.WARNING, logger="eta_nexus.connections.opcua_connection"):
+            result = connection.read(node_as_int)
+            assert result.iloc[0, 0] == 123
+            assert "Type mismatch for node 'TypeMismatchNode'" in caplog.text
+
+    def test_subscribe_with_type_mismatch_logs_warning(self, server: OpcuaServer, config_host_ip, caplog):
+        """Verify type mismatch warning during subscription."""
+        node_as_int = Node(
+            "SubTypeMismatchNode",
+            f"opc.tcp://{config_host_ip}:4840",
+            "opcua",
+            opc_id="ns=6;s=.TypeMismatch_Namespace.SubStringAsInt",
+            dtype="int",
+        )
+        node_as_str = Node(
+            "SubTypeMismatchNode",
+            f"opc.tcp://{config_host_ip}:4840",
+            "opcua",
+            opc_id="ns=6;s=.TypeMismatch_Namespace.SubStringAsInt",
+            dtype="str",
+        )
+
+        server.create_nodes([node_as_str])
+        server.write({node_as_str: "456"})
+        connection = OpcuaConnection.from_node(node_as_int, usr="admin", pwd="0")
+        handler = DFSubscriptionHandler(write_interval=0.5)
+
+        with caplog.at_level(logging.WARNING, logger="eta_nexus.connections.opcua_connection"):
+            connection.subscribe(handler, interval=0.5)
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(asyncio.sleep(1))
+            connection.close_sub()
+            assert "Type mismatch for node 'SubTypeMismatchNode'" in caplog.text

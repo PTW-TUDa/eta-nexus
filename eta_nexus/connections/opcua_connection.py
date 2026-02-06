@@ -32,7 +32,7 @@ from asyncua.ua import SecurityPolicy, uaerrors
 from eta_nexus.connections.connection_utils import IntervalChecker, RetryWaiter
 from eta_nexus.nodes import OpcuaNode
 from eta_nexus.subscription_handlers import SubscriptionHandler
-from eta_nexus.util import KeyCertPair, Suppressor
+from eta_nexus.util import KeyCertPair, Suppressor, check_type_mismatch
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Mapping, Sequence
@@ -149,6 +149,14 @@ class OpcuaConnection(
                 opcua_variable = self.connection.get_node(node.opc_id)
                 value = opcua_variable.read_value()
                 if node.dtype is not None:
+                    # Check for type mismatch between configured dtype and server data type
+                    try:
+                        opcua_variant_type = opcua_variable.read_data_type_as_variant_type()
+                        check_type_mismatch(node.dtype, opcua_variant_type, node.name, self.logger)
+                    except Exception:
+                        # If we can't determine the server type, log at debug level and continue
+                        self.logger.debug(f"Could not determine OPC UA data type for node '{node.name}'")
+
                     try:
                         value = node.dtype(value)
                     except ValueError as e:
@@ -440,6 +448,8 @@ class _OPCSubHandler:
     :param handler: *eta_nexus* style subscription handler.
     """
 
+    logger = getLogger(__name__)
+
     def __init__(self, handler: SubscriptionHandler, interval_check_handler: IntervalChecker) -> None:
         self.handler = handler
         self._sub_nodes: dict[str | int, OpcuaNode] = {}
@@ -458,9 +468,30 @@ class _OPCSubHandler:
         :param data: Raw data of OPC UA (not used).
         """
         _time = self.handler._assert_tz_awareness(datetime.now())
+        subscribed_node = self._sub_nodes[str(node)]
 
-        self.handler.push(self._sub_nodes[str(node)], val, _time)
-        self._node_interval_to_check.push(node=self._sub_nodes[str(node)], value=val, timestamp=_time)
+        # Check for type mismatch and convert value if dtype is configured
+        if subscribed_node.dtype is not None:
+            # Get the actual OPC UA variant type from the data notification
+            try:
+                if hasattr(data, "monitored_item") and hasattr(data.monitored_item, "Value"):
+                    opcua_variant_type = data.monitored_item.Value.Value.VariantType
+                    check_type_mismatch(subscribed_node.dtype, opcua_variant_type, subscribed_node.name, self.logger)
+            except Exception:
+                self.logger.debug(
+                    f"Could not determine OPC UA data type for node '{subscribed_node.name}' in subscription"
+                )
+
+            try:
+                val = subscribed_node.dtype(val)
+            except (ValueError, TypeError) as e:
+                dtype_name = getattr(subscribed_node.dtype, "__name__", str(subscribed_node.dtype))
+                self.logger.warning(
+                    f"Failed to convert value {val!r} to {dtype_name} for node '{subscribed_node.name}': {e}"
+                )
+
+        self.handler.push(subscribed_node, val, _time)
+        self._node_interval_to_check.push(node=subscribed_node, value=val, timestamp=_time)
 
     def status_change_notification(self, status: ua.StatusChangeNotification) -> None:
         pass
