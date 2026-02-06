@@ -8,7 +8,7 @@ from pyModbusTCP import client as mbclient
 from eta_nexus.connections.connection import Connection
 from eta_nexus.nodes import Node
 from eta_nexus.servers import OpcuaServer
-from eta_nexus.subhandlers import CsvSubHandler
+from eta_nexus.subscription_handlers import CsvSubscriptionHandler
 from test.conftest import stop_execution
 from test.utilities.pyModbusTCP.client import ModbusClient as MockModbusClient
 from test.utilities.requests.eneffco_request import request
@@ -42,7 +42,7 @@ def test_multi_connect(config_nodes_file, config_eneffco, temp_dir):
 
     connections = Connection.from_nodes(nodes, usr=config_eneffco["user"], pwd=config_eneffco["pw"])
 
-    subscription_handler = CsvSubHandler(temp_dir / "multi_connect_test_output.csv")
+    subscription_handler = CsvSubscriptionHandler(temp_dir / "multi_connect_test_output.csv")
     loop = asyncio.get_event_loop()
 
     try:

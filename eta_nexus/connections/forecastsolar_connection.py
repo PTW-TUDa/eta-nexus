@@ -30,7 +30,7 @@ import numpy as np
 import pandas as pd
 from requests_cache import DO_NOT_CACHE, CachedSession
 
-from eta_nexus.connections.connection import Readable, RESTConnection, SeriesReadable
+from eta_nexus.connections.connection import Connection, RESTConnection, SeriesReadable, StatusReadable
 from eta_nexus.nodes import ForecastsolarNode
 from eta_nexus.timeseries import df_interpolate
 from eta_nexus.util import round_timestamp
@@ -45,7 +45,8 @@ if TYPE_CHECKING:
 
 class ForecastsolarConnection(
     RESTConnection[ForecastsolarNode],
-    Readable[ForecastsolarNode],
+    Connection[ForecastsolarNode],
+    StatusReadable[ForecastsolarNode],
     SeriesReadable[ForecastsolarNode],
     protocol="forecast_solar",
 ):

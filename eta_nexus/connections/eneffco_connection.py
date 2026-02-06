@@ -11,29 +11,31 @@ import requests
 from requests_cache import CachedSession
 
 from eta_nexus.connections.connection import (
-    Readable,
+    Connection,
     RESTConnection,
     SeriesReadable,
     SeriesSubscribable,
-    Subscribable,
-    Writable,
+    StatusReadable,
+    StatusSubscribable,
+    StatusWritable,
 )
 from eta_nexus.nodes import EneffcoNode
-from eta_nexus.subhandlers import SubscriptionHandler
+from eta_nexus.subscription_handlers import SubscriptionHandler
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
     from typing import Any
 
-    from eta_nexus.subhandlers import SubscriptionHandler
+    from eta_nexus.subscription_handlers import SubscriptionHandler
     from eta_nexus.util.type_annotations import Nodes, Primitive, TimeStep
 
 
 class EneffcoConnection(
     RESTConnection[EneffcoNode],
-    Readable[EneffcoNode],
-    Writable[EneffcoNode],
-    Subscribable[EneffcoNode],
+    Connection[EneffcoNode],
+    StatusReadable[EneffcoNode],
+    StatusWritable[EneffcoNode],
+    StatusSubscribable[EneffcoNode],
     SeriesReadable[EneffcoNode],
     SeriesSubscribable[EneffcoNode],
     protocol="eneffco",

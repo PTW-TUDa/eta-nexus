@@ -23,10 +23,10 @@ from influxdb_client_3 import InfluxDBClient3
 
 from eta_nexus.connections.connection import (
     Connection,
-    Readable,
     SeriesReadable,
     SeriesWritable,
-    Writable,
+    StatusReadable,
+    StatusWritable,
 )
 from eta_nexus.nodes import InfluxNode
 from eta_nexus.util._influx_sql import build_latest_select, build_series_select
@@ -40,9 +40,9 @@ if TYPE_CHECKING:
 
 class InfluxConnection(
     Connection[InfluxNode],
-    Readable[InfluxNode],
+    StatusReadable[InfluxNode],
     SeriesReadable[InfluxNode],
-    Writable[InfluxNode],
+    StatusWritable[InfluxNode],
     SeriesWritable[InfluxNode],
     protocol="influx",
 ):
@@ -116,7 +116,7 @@ class InfluxConnection(
         """Include the database in equality/hash to distinguish same host different DBs."""
         return getattr(self, "database", None)
 
-    # ---------- Readable ----------
+    # ---------- StatusReadable ----------
     def read(self, nodes: InfluxNode | Nodes[InfluxNode] | None = None) -> pd.DataFrame:
         """
         Read the *latest* value for each requested node.
@@ -191,7 +191,7 @@ class InfluxConnection(
         # Column order by requested nodes
         return out[[n.field for n in nodes_set]]
 
-    # ---------- Writable ----------
+    # ---------- StatusWritable ----------
     def write(self, values: Mapping[InfluxNode, Any]) -> None:
         """
         Write **current** values for the provided nodes.

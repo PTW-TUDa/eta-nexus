@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from logging import getLogger
 from typing import TYPE_CHECKING
 
-from eta_nexus.connections.connection import Connection, Readable, Subscribable
+from eta_nexus.connections.connection import Connection, StatusReadable, StatusSubscribable
 from eta_nexus.connections.modbus_connection import ModbusConnection
 from eta_nexus.nodes import EmonioNode, ModbusNode
 
@@ -13,11 +13,13 @@ if TYPE_CHECKING:
 
     import pandas as pd
 
-    from eta_nexus.subhandlers import SubscriptionHandler
+    from eta_nexus.subscription_handlers import SubscriptionHandler
     from eta_nexus.util.type_annotations import Nodes, TimeStep
 
 
-class EmonioConnection(Connection[EmonioNode], Readable[EmonioNode], Subscribable[EmonioNode], protocol="emonio"):
+class EmonioConnection(
+    Connection[EmonioNode], StatusReadable[EmonioNode], StatusSubscribable[EmonioNode], protocol="emonio"
+):
     """Thin wrapper class for the Emonio that uses a modbus TCP Connection.
     Internally the Emonio nodes are converted to modbus nodes with
     fixed parameters, expect for the name, url and channel.

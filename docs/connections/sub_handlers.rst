@@ -6,17 +6,17 @@ Subscription Handlers can be used to perform operations on data which is receive
 subscription. They are required by the subscription method of each connection. Any class which has a *push* and a
 *close* function fulfills the interface.
 
-In addition to some normal subscription handlers, *eta_nexus* offers a *MultiSubHandler*, which can combine the
+In addition to some normal subscription handlers, *eta_nexus* offers a *MultiSubscriptionHandler*, which can combine the
 actions of multiple subscription handlers.
 
-.. autoclass:: eta_nexus.subhandlers::CsvSubHandler
+.. autoclass:: eta_nexus.subhandlers::CsvSubscriptionHandler
     :members:
     :noindex:
 
-.. autoclass:: eta_nexus.subhandlers::DFSubHandler
+.. autoclass:: eta_nexus.subhandlers::DFSubscriptionHandler
     :members:
     :noindex:
 
-.. autoclass:: eta_nexus.subhandlers::MultiSubHandler
+.. autoclass:: eta_nexus.subhandlers::MultiSubscriptionHandler
     :members:
     :noindex:

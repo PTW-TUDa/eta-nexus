@@ -10,14 +10,14 @@ if TYPE_CHECKING:
     from eta_nexus.nodes import Node
 
 
-from eta_nexus.subhandlers.subhandler import SubscriptionHandler
+from eta_nexus.subscription_handlers.subscription_handler import SubscriptionHandler
 
 log = getLogger(__name__)
 
 
-class MultiSubHandler(SubscriptionHandler):
-    """The MultiSubHandler can be used to distribute subscribed values to multiple different subscription handlers.
-    The handlers can be registered using the register method.
+class MultiSubscriptionHandler(SubscriptionHandler):
+    """The MultiSubscriptionHandler can be used to distribute subscribed values to multiple different subscription
+    handlers. The handlers can be registered using the register method.
     """
 
     def __init__(self) -> None:

@@ -16,12 +16,12 @@ if TYPE_CHECKING:
     from eta_nexus.nodes import Node
     from eta_nexus.util.type_annotations import TimeStep
 
-from eta_nexus.subhandlers.subhandler import SubscriptionHandler
+from eta_nexus.subscription_handlers.subscription_handler import SubscriptionHandler
 
 log = getLogger(__name__)
 
 
-class DFSubHandler(SubscriptionHandler):
+class DFSubscriptionHandler(SubscriptionHandler):
     """Subscription handler for returning pandas.DataFrames when requested.
 
     :param write_interval: Interval between index values in the data frame (value to which time is rounded).
