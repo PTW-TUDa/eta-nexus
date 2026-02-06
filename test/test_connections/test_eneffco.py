@@ -9,7 +9,7 @@ from dateutil import tz
 
 from eta_nexus.connections import EneffcoConnection
 from eta_nexus.nodes import Node
-from eta_nexus.subhandlers import DFSubHandler
+from eta_nexus.subscription_handlers import DFSubscriptionHandler
 from test.utilities.requests.eneffco_request import request
 
 # Results used for local tests
@@ -114,7 +114,7 @@ def test_eneffco_subscribe_multi(config_eneffco, eneffco_nodes):
         config_eneffco["pw"],
     )
     # changed write_interval from 10 to 1
-    handler = DFSubHandler(write_interval=1)
+    handler = DFSubscriptionHandler(write_interval=1)
     loop = asyncio.get_event_loop()
 
     try:

@@ -7,7 +7,7 @@ import pytest
 from eta_nexus.connections import OpcuaConnection
 from eta_nexus.nodes import Node
 from eta_nexus.servers import OpcuaServer
-from eta_nexus.subhandlers import DFSubHandler
+from eta_nexus.subscription_handlers import DFSubscriptionHandler
 from test.conftest import stop_execution
 
 init_tests = (
@@ -348,7 +348,7 @@ class TestConnectionSubscriptions:
 
     def test_subscribe(self, local_nodes, server):
         connection = OpcuaConnection.from_node(local_nodes, usr="admin", pwd="0")
-        handler = DFSubHandler(write_interval=0.5)
+        handler = DFSubscriptionHandler(write_interval=0.5)
         connection.subscribe(handler, interval=0.5)
 
         loop = asyncio.get_event_loop()
@@ -400,7 +400,7 @@ class TestConnectionSubscriptions:
     @pytest.mark.usefixtures("_write_nodes_interrupt")
     def test_subscribe_interrupted(self, local_nodes, caplog):
         connection: OpcuaConnection = OpcuaConnection.from_node(local_nodes, usr="admin", pwd="0")
-        handler = DFSubHandler(write_interval=1)
+        handler = DFSubscriptionHandler(write_interval=1)
         connection.subscribe(handler, interval=1)
 
         loop = asyncio.get_event_loop()
@@ -508,7 +508,7 @@ class TestConnectionSubscriptionsIntervalChecker:
     @pytest.mark.usefixtures("_write_nodes_interval_checking")
     def test_subscribe_interval_checking(self, local_nodes_interval_checking, caplog):
         connection: OpcuaConnection = OpcuaConnection.from_node(local_nodes_interval_checking, usr="admin", pwd="0")
-        handler = DFSubHandler(write_interval=1)
+        handler = DFSubscriptionHandler(write_interval=1)
         connection.subscribe(handler, interval=1)
 
         loop = asyncio.get_event_loop()

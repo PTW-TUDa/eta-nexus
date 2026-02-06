@@ -8,7 +8,7 @@ import pandas as pd
 import pytest
 
 from eta_nexus.nodes import Node
-from eta_nexus.subhandlers import CsvSubHandler, DFSubHandler, SubscriptionHandler
+from eta_nexus.subscription_handlers import CsvSubscriptionHandler, DFSubscriptionHandler, SubscriptionHandler
 
 sample_series = pd.Series(
     data=[1, 2, 3], index=pd.DatetimeIndex(["2020-11-05 10:00:00", "2020-11-05 10:00:01.1", "2020-11-05 10:00:01.7"])
@@ -43,10 +43,10 @@ async def push_values(handler: SubscriptionHandler, test_node, test_node2):
     handler.close()
 
 
-class TestCSVSubHandler:
+class TestCsvSubscriptionHandler:
     def test_push_timeseries_to_csv(self, temp_dir, test_node, test_node2):
         file = temp_dir / "csv_test_output.csv"
-        handler = CsvSubHandler(file, 0.5)
+        handler = CsvSubscriptionHandler(file, 0.5)
 
         executor = ThreadPoolExecutor(max_workers=3)
         loop = asyncio.get_event_loop()
@@ -72,26 +72,26 @@ class TestCSVSubHandler:
             assert all(read_values == check_values)
 
 
-class TestDFSubHandler:
+class TestDFSubscriptionHandler:
     @pytest.mark.parametrize(("value", "timestamp"), [(sample_series.to_numpy(), sample_series.index)])
     def test_push_timeseries_to_df(self, value, timestamp, test_node):
         """Test pushing a Series all at once"""
-        handler = DFSubHandler(write_interval=1)
+        handler = DFSubscriptionHandler(write_interval=1)
         handler.push(test_node, value, timestamp)
         data = handler.data
 
         assert (data["FirstNode"].to_numpy() == value).all()
 
     def test_housekeeping(self, test_node):
-        """Test keeping the internal data of DFSubHandler short"""
+        """Test keeping the internal data of DFSubscriptionHandler short"""
         keep_data_rows = 2
-        handler = DFSubHandler(write_interval=1, size_limit=keep_data_rows)
+        handler = DFSubscriptionHandler(write_interval=1, size_limit=keep_data_rows)
         handler.push(test_node, sample_series.values, sample_series.index)
 
         assert len(handler.data) <= keep_data_rows
 
     def test_get_latest(self, test_node):
-        handler = DFSubHandler(write_interval=1)
+        handler = DFSubscriptionHandler(write_interval=1)
         handler.push(test_node, sample_series.values, sample_series.index)
         data = handler.get_latest()
 
@@ -99,7 +99,7 @@ class TestDFSubHandler:
 
     def test_auto_fillna(self, test_node, test_node2):
         # First test default behavior: nans are filled
-        handler = DFSubHandler(write_interval=0.25)  # Double the write interval to fill gaps with nans
+        handler = DFSubscriptionHandler(write_interval=0.25)  # Double the write interval to fill gaps with nans
 
         # Push a value at time index[0] from node2, because there is no previous value for node2 to fill with
         handler.push(test_node2, sample_series.to_numpy()[0], sample_series.index[0])
@@ -108,7 +108,7 @@ class TestDFSubHandler:
         assert handler.data.notna().all().all()
 
         # Next test auto_fillna = False
-        handler = DFSubHandler(write_interval=0.25, auto_fillna=False)
+        handler = DFSubscriptionHandler(write_interval=0.25, auto_fillna=False)
         asyncio.get_event_loop().run_until_complete(push_values(handler, test_node, test_node2))
 
         assert handler.data.isna().any().any()
@@ -123,7 +123,7 @@ class TestDFSubHandler:
 
         values = [["a", "b"], [5, 6], [12.3, 23.4], [True, False], [b"hello", b"world"]]
 
-        handler = DFSubHandler(write_interval=1)
+        handler = DFSubscriptionHandler(write_interval=1)
 
         for i in range(2 * len(nodes)):
             ts = datetime(2025, 1, 1, 0, i, 0).astimezone(tz=timezone.utc)

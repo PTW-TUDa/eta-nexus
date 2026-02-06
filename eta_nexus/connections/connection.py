@@ -17,7 +17,7 @@ from requests.exceptions import HTTPError, RequestException
 from typing_extensions import deprecated
 
 from eta_nexus.nodes.node import Node
-from eta_nexus.subhandlers.subhandler import SubscriptionHandler
+from eta_nexus.subscription_handlers.subscription_handler import SubscriptionHandler
 from eta_nexus.util import ensure_timezone, round_timestamp, url_parse
 from eta_nexus.util.type_annotations import N, N_contra
 
@@ -32,12 +32,12 @@ if TYPE_CHECKING:
     from requests.auth import AuthBase
     from requests_cache import AnyResponse, CachedSession
 
-    from eta_nexus.subhandlers import SubscriptionHandler
+    from eta_nexus.subscription_handlers import SubscriptionHandler
     from eta_nexus.util.type_annotations import Nodes, Self, TimeStep
 
 
 @runtime_checkable
-class Readable(Protocol, Generic[N_contra]):
+class StatusReadable(Protocol, Generic[N_contra]):
     """Non-data Protocol for Connections with the ability to read data."""
 
     @abstractmethod
@@ -50,7 +50,7 @@ class Readable(Protocol, Generic[N_contra]):
 
 
 @runtime_checkable
-class Writable(Protocol, Generic[N]):
+class StatusWritable(Protocol, Generic[N]):
     """Non-data Protocol for Connections with the ability to write data."""
 
     @abstractmethod
@@ -61,7 +61,7 @@ class Writable(Protocol, Generic[N]):
 
 
 @runtime_checkable
-class Subscribable(Protocol, Generic[N_contra]):
+class StatusSubscribable(Protocol, Generic[N_contra]):
     """Non-data Protocol for Connections with the ability to subscribe to data."""
 
     @abstractmethod
@@ -421,9 +421,9 @@ class Connection(Generic[N], ABC):
 
 @deprecated("Use `Connection` and the appropriate protocols instead.")
 class SeriesConnection(
-    Readable[N],
-    Writable[N],
-    Subscribable[N],
+    StatusReadable[N],
+    StatusWritable[N],
+    StatusSubscribable[N],
     SeriesReadable[N],
     SeriesWritable[N],
     SeriesSubscribable[N],

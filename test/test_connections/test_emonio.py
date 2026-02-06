@@ -6,7 +6,7 @@ import pytest
 from eta_nexus.connections.emonio_connection import EmonioConnection, ModbusNodeFactory
 from eta_nexus.nodes import EmonioNode, Node
 from eta_nexus.servers.modbus_server import ModbusServer
-from eta_nexus.subhandlers import DFSubHandler
+from eta_nexus.subscription_handlers import DFSubscriptionHandler
 
 node_values = {
     "Serv.Spannung": 230,
@@ -82,7 +82,7 @@ class TestConnectionOperations:
         voltage_node = connection._prepare_modbus_nodes(local_nodes[:1])[0]
         voltage_values = [299.5, 230, 230.001]
 
-        handler = DFSubHandler()
+        handler = DFSubscriptionHandler()
         connection.subscribe(handler, interval=1)
 
         asyncio.get_event_loop().run_until_complete(self.write_loop(server, voltage_node, voltage_values))

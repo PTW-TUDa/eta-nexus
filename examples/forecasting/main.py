@@ -18,7 +18,7 @@ from eta_nexus.connections import (
 from eta_nexus.nodes import OpcuaNode
 from eta_nexus.nodes.node_utils import name_map_from_node_sequence
 from eta_nexus.servers import OpcuaServer
-from eta_nexus.subhandlers import DFSubHandler
+from eta_nexus.subscription_handlers import DFSubscriptionHandler
 
 if TYPE_CHECKING:
     from typing import Final
@@ -87,7 +87,7 @@ def forecasting() -> None:
     connection = OpcuaConnection.from_ids(
         Config.NODES, f"opc.tcp://{Config.OPC_SERVER['ip']}:{Config.OPC_SERVER['port']}"
     )
-    sub_handler = DFSubHandler(write_interval=Config.INTERVAL, size_limit=100, auto_fillna=False)
+    sub_handler = DFSubscriptionHandler(write_interval=Config.INTERVAL, size_limit=100, auto_fillna=False)
     connection.subscribe(sub_handler, interval=Config.INTERVAL)
 
     # Create loop and inference tasks
@@ -153,7 +153,7 @@ def load_normalization_params(csv_file: Path, features: list[str]) -> tuple[list
 
 
 async def read_data_loop(
-    sub_handler: DFSubHandler, data_queue: asyncio.Queue, expected_values: int, interval: TimeStep
+    sub_handler: DFSubscriptionHandler, data_queue: asyncio.Queue, expected_values: int, interval: TimeStep
 ) -> None:
     """Read data from a data subscription and adjust the format to correspond to input shape requirements.
 

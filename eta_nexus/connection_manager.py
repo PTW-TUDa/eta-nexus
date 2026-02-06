@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, cast
 
 import numpy as np
 
-from eta_nexus.connections.connection import Connection, Readable, Writable
+from eta_nexus.connections.connection import Connection, StatusReadable, StatusWritable
 from eta_nexus.nodes import Node
 from eta_nexus.nodes.node_utils import name_map_from_node_sequence
 from eta_nexus.util.io_utils import load_config
@@ -542,9 +542,9 @@ class ConnectionManager(AbstractContextManager):
         for idx, (connection_name, connection_obj) in enumerate(self._connections.items()):
             try:
                 if node_writes[connection_name]:
-                    if isinstance(connection_obj, Writable):
-                        writable_connection = cast("Writable", connection_obj)
-                        writable_connection.write(node_writes[connection_name])
+                    if isinstance(connection_obj, StatusWritable):
+                        status_writable_connection = cast("StatusWritable", connection_obj)
+                        status_writable_connection.write(node_writes[connection_name])
                         self.error_count[idx] = 0
                     else:
                         log.error(f"Connection '{connection_name}' is not writable.")
@@ -585,9 +585,9 @@ class ConnectionManager(AbstractContextManager):
         for idx, (connection_name, connection_obj) in enumerate(self._connections.items()):
             try:
                 if node_readings[connection_name]:
-                    if isinstance(connection_obj, Readable):
-                        readable_connection = cast("Readable", connection_obj)
-                        result.update(readable_connection.read(node_readings[connection_name]).iloc[0].to_dict())
+                    if isinstance(connection_obj, StatusReadable):
+                        status_readable_connection = cast("StatusReadable", connection_obj)
+                        result.update(status_readable_connection.read(node_readings[connection_name]).iloc[0].to_dict())
                         self.error_count[idx] = 0
                     else:
                         log.error(f"Connection '{connection_name}' is not readable.")

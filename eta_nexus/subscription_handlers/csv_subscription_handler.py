@@ -20,12 +20,12 @@ if TYPE_CHECKING:
     from eta_nexus.nodes import Node
     from eta_nexus.util.type_annotations import Number, Path, Self, TimeStep
 
-from eta_nexus.subhandlers.subhandler import SubscriptionHandler
+from eta_nexus.subscription_handlers.subscription_handler import SubscriptionHandler
 
 log = getLogger(__name__)
 
 
-class CsvSubHandler(SubscriptionHandler):
+class CsvSubscriptionHandler(SubscriptionHandler):
     """Handle data for a subscription and save it as a CSV file.
 
     :param output_file: CSV file to write data to.
