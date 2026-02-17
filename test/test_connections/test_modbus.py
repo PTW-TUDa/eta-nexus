@@ -419,7 +419,7 @@ nodes_interval_to_check = (
         "mb_register": "Holding",
         "mb_byteorder": "big",
         "dtype": "float",
-        "interval": 0.1,
+        "interval": 0.2,
     },
     {
         "name": "Serv.NodeName2",
@@ -428,7 +428,7 @@ nodes_interval_to_check = (
         "mb_register": "Holding",
         "mb_byteorder": "big",
         "dtype": "int",
-        "interval": 0.1,
+        "interval": 0.2,
     },
     {
         "name": "Serv.NodeName4",
@@ -438,7 +438,7 @@ nodes_interval_to_check = (
         "mb_byteorder": "big",
         "mb_bitlength": 80,
         "dtype": "str",
-        "interval": 0.1,
+        "interval": 0.2,
     },
 )
 
@@ -486,7 +486,7 @@ class TestConnectionSubscriptionsIntervalChecker:
     @pytest.mark.usefixtures("_write_nodes_interval_checking")
     def test_subscribe_interval_checking(self, local_nodes_interval_checking, caplog):
         connection = ModbusConnection.from_node(local_nodes_interval_checking, usr="admin", pwd="0")
-        handler = DFSubscriptionHandler(write_interval=0.1)
+        handler = DFSubscriptionHandler(write_interval=1)
         connection.subscribe(handler, interval=0.1)
 
         loop = asyncio.get_event_loop()
