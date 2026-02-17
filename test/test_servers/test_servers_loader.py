@@ -10,13 +10,13 @@ from eta_nexus.servers.loaders.servers_loader import from_config
 from eta_nexus.util.io_utils import load_config
 
 
-def test_mixed_from_single_config_full():
+def test_mixed_from_single_config_full(config_opcua_port, config_modbus_port):
     """Ensure a mixed config instantiates both servers and round-trips their nodes."""
     cfg_path = Path("./test/resources/connection_manager/config_mixed.yaml")
     assert cfg_path.exists()
 
-    os.environ["ETA_NEXUS_TEST_OPCUA_PORT"] = "4854"
-    os.environ["ETA_NEXUS_TEST_MODBUS_PORT"] = "5064"
+    os.environ["ETA_NEXUS_TEST_OPCUA_PORT"] = str(config_opcua_port)
+    os.environ["ETA_NEXUS_TEST_MODBUS_PORT"] = str(config_modbus_port)
     servers = from_config(cfg_path)
     try:
         # Both servers should be created and active
