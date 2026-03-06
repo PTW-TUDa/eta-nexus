@@ -485,23 +485,23 @@ class TestConnectionSubscriptionsIntervalChecker:
 class TestTypeMismatchDetection:
     """Integration tests for type mismatch detection in OPC UA operations."""
 
-    @pytest.fixture(autouse=True)
-    def server(self, config_host_ip):
-        with OpcuaServer(6, ip=config_host_ip) as server:
+    @pytest.fixture(scope="class", autouse=True)
+    def server(self, config_host_ip, config_opcua_port):
+        with OpcuaServer(6, ip=config_host_ip, port=config_opcua_port) as server:
             yield server
 
-    def test_read_with_type_mismatch_logs_warning(self, server: OpcuaServer, config_host_ip, caplog):
+    def test_read_with_type_mismatch_logs_warning(self, server: OpcuaServer, config_host_ip, config_opcua_port, caplog):
         """Verify type mismatch warning during read operation."""
         node_as_int = Node(
             "TypeMismatchNode",
-            f"opc.tcp://{config_host_ip}:4840",
+            f"opc.tcp://{config_host_ip}:{config_opcua_port}",
             "opcua",
             opc_id="ns=6;s=.TypeMismatch_Namespace.StringAsInt",
             dtype="int",
         )
         node_as_str = Node(
             "TypeMismatchNode",
-            f"opc.tcp://{config_host_ip}:4840",
+            f"opc.tcp://{config_host_ip}:{config_opcua_port}",
             "opcua",
             opc_id="ns=6;s=.TypeMismatch_Namespace.StringAsInt",
             dtype="str",
@@ -516,18 +516,20 @@ class TestTypeMismatchDetection:
             assert result.iloc[0, 0] == 123
             assert "Type mismatch for node 'TypeMismatchNode'" in caplog.text
 
-    def test_subscribe_with_type_mismatch_logs_warning(self, server: OpcuaServer, config_host_ip, caplog):
+    def test_subscribe_with_type_mismatch_logs_warning(
+        self, server: OpcuaServer, config_host_ip, config_opcua_port, caplog
+    ):
         """Verify type mismatch warning during subscription."""
         node_as_int = Node(
             "SubTypeMismatchNode",
-            f"opc.tcp://{config_host_ip}:4840",
+            f"opc.tcp://{config_host_ip}:{config_opcua_port}",
             "opcua",
             opc_id="ns=6;s=.TypeMismatch_Namespace.SubStringAsInt",
             dtype="int",
         )
         node_as_str = Node(
             "SubTypeMismatchNode",
-            f"opc.tcp://{config_host_ip}:4840",
+            f"opc.tcp://{config_host_ip}:{config_opcua_port}",
             "opcua",
             opc_id="ns=6;s=.TypeMismatch_Namespace.SubStringAsInt",
             dtype="str",

@@ -534,10 +534,21 @@ class RESTConnection(Connection[N], ABC):
         """
 
     @abstractmethod
-    def read_node(self, node: N, **kwargs: Any) -> pd.DataFrame:
+    def read_node(
+        self,
+        node: N,
+        from_time: datetime,
+        to_time: datetime,
+        interval: timedelta,
+        **kwargs: Any,
+    ) -> pd.DataFrame:
         """Read data from a REST API endpoint.
 
         :param node: Node to read data from.
+        :param from_time: Start of the time series (timezone-aware).
+        :param to_time: End of the time series (timezone-aware).
+        :param interval: Time interval between data points.
+        :param kwargs: Additional subclass-specific arguments.
         :return: DataFrame containing the data read from the API.
         """
         raise NotImplementedError(
@@ -591,16 +602,9 @@ class RESTConnection(Connection[N], ABC):
         from_time, to_time, nodes, interval = super()._preprocess_series_context(
             from_time, to_time, nodes, interval, **kwargs
         )
-        kwargs.update(
-            {
-                "from_time": from_time,
-                "to_time": to_time,
-                "interval": interval,
-            }
-        )
 
         with concurrent.futures.ThreadPoolExecutor() as executor:
-            results = executor.map(lambda node: self.read_node(node, **kwargs), nodes)
+            results = executor.map(lambda node: self.read_node(node, from_time, to_time, interval, **kwargs), nodes)
 
         # Filter out empty or all-NA DataFrames
         filtered_results = [df for df in results if not df.empty and not df.isna().all().all()]

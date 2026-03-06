@@ -36,6 +36,7 @@ Please read the development guide before starting development on *eta_nexus*: :r
     /connections/forecastsolar
     /connections/wetterdienst
     /connections/influx
+    /connections/smard
     /connections/sub_handlers
     /connections/connection_manager
     /connections/Implementing_REST_Connections
@@ -68,6 +69,13 @@ Please read the development guide before starting development on *eta_nexus*: :r
     :caption: API Documentation
 
     /_stubs/api
+
+.. toctree::
+    :maxdepth: 1
+    :hidden:
+    :caption: Authors
+
+    /authors
 
 
 Indices and tables

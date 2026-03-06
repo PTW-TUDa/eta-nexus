@@ -37,6 +37,7 @@ default_schemes = {
     "wetterdienst_prediction": "https",
     "forecast_solar": "https",
     "influx": "https",
+    "smard": "https",
 }
 
 log = getLogger(__name__)
