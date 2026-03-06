@@ -126,10 +126,23 @@ class ForecastsolarConnection(
 
         return timestamps, watts
 
-    def read_node(self, node: ForecastsolarNode, **kwargs: Any) -> pd.DataFrame:
+    def read_node(
+        self,
+        node: ForecastsolarNode,
+        from_time: datetime,
+        to_time: datetime,
+        interval: timedelta,
+        **kwargs: Any,
+    ) -> pd.DataFrame:
         """Download data from the Forecast.Solar Database.
 
+        Note: The Forecast.Solar API returns full-day data regardless of time parameters.
+        Time filtering and resampling are handled in read_series after data retrieval.
+
         :param node: Node to read values from.
+        :param from_time: Start time (used for filtering in read_series, not in API call).
+        :param to_time: End time (used for filtering in read_series, not in API call).
+        :param interval: Interval for resampling (handled in read_series via df_interpolate).
         :return: pandas.DataFrame containing the data read from the connection.
         """
         url, query_params = node.url, node._query_params

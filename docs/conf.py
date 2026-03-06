@@ -75,6 +75,7 @@ autosummary_generate = True
 linkcheck_ignore = [
     r"https://$",
     r"https://web-api.tp.entsoe.eu/",
+    r"https://smard.api.proxy.bund.dev/app",
 ]
 linkcheck_allowed_redirects = {
     r"https://eta-utility.readthedocs.io/": r"https://eta-utility.readthedocs.io/en/main/",

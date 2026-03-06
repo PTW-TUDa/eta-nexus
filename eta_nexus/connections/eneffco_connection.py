@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 from datetime import datetime, timedelta, timezone
 from logging import getLogger
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
@@ -274,10 +274,14 @@ class EneffcoConnection(
 
         return timestamps, values
 
-    def read_node(self, node: EneffcoNode, **kwargs: Any) -> pd.DataFrame:
-        from_time = cast("datetime", kwargs.get("from_time"))
-        to_time = cast("datetime", kwargs.get("to_time"))
-        interval = cast("timedelta", kwargs.get("interval"))
+    def read_node(
+        self,
+        node: EneffcoNode,
+        from_time: datetime,
+        to_time: datetime,
+        interval: timedelta,
+        **kwargs: Any,
+    ) -> pd.DataFrame:
         request_url = (
             f"{self.url}/datapoint/{self.id_from_code(node.eneffco_code)}/value?"
             f"from={self.timestr_from_datetime(from_time)}&"

@@ -224,7 +224,7 @@ convention = "pep257"
 
 [tool.codespell]
 skip = "*.js, *.html, *.lock, */Manifest.toml, ./docs/_build"
-ignore-words-list = ["Temperatur"]
+ignore-words-list = ["Temperatur", "bund"]
 quiet-level = 3
 
 [build-system]

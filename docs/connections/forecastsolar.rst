@@ -45,14 +45,14 @@ Example Usage
 
 Simple node without API key:
 
-.. literalinclude:: ../../examples/connections/read_series_forecast_solar.py
+.. literalinclude:: ../../examples/connections/read_series_forecastsolar.py
     :start-after: --begin_forecast_solar_doc_example1--
     :end-before: --end_forecast_solar_doc_example1--
     :dedent:
 
 Node with api key and multiple planes:
 
-.. literalinclude:: ../../examples/connections/read_series_forecast_solar.py
+.. literalinclude:: ../../examples/connections/read_series_forecastsolar.py
     :start-after: --begin_forecast_solar_doc_example2--
     :end-before: --end_forecast_solar_doc_example2--
     :dedent:

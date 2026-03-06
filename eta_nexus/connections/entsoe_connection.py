@@ -263,10 +263,21 @@ class EntsoeConnection(RESTConnection[EntsoeNode], SeriesReadable[EntsoeNode], p
         """
         raise NotImplementedError("ENTSO-E connection does not support REST Interface functions.")
 
-    def read_node(self, node: N, **kwargs: Any) -> pd.DataFrame:
+    def read_node(
+        self,
+        node: N,
+        from_time: datetime,
+        to_time: datetime,
+        interval: timedelta,
+        **kwargs: Any,
+    ) -> pd.DataFrame:
         """Read data from a REST API endpoint.
 
         :param node: Node to read data from.
+        :param from_time: Start of the time series (timezone-aware).
+        :param to_time: End of the time series (timezone-aware).
+        :param interval: Time interval between data points.
+        :param kwargs: Additional arguments.
         :return: DataFrame containing the data read from the API.
         """
         raise NotImplementedError("ENTSO-E connection does not support REST Interface functions.")
