@@ -38,6 +38,8 @@ class EntsoeConnection(RESTConnection[EntsoeNode], SeriesReadable[EntsoeNode], p
     :param usr: Username for login to the platform (usually not required - default: None)
     :param pwd: Password for login to the platform (usually not required - default: None)
     :param nodes: Nodes to select in connection
+    :param retry_total: Total number of retries for failed HTTP requests (default: 3).
+    :param retry_backoff_factor: Backoff factor for retries (default: 1s-> e.g. 1s, 2s, 4s for 3 retries).
     """
 
     API_PATH: str = "api"
@@ -49,9 +51,13 @@ class EntsoeConnection(RESTConnection[EntsoeNode], SeriesReadable[EntsoeNode], p
         url: str = "https://web-api.tp.entsoe.eu",
         *,
         nodes: Nodes[EntsoeNode] | None = None,
+        retry_total: int = 3,
+        retry_backoff_factor: float = 1.0,
     ) -> None:
         url = url.rstrip("/") + "/" + self.API_PATH
-        super().__init__(url, None, None, nodes=nodes)
+        super().__init__(
+            url, None, None, nodes=nodes, retry_total=retry_total, retry_backoff_factor=retry_backoff_factor
+        )
 
         if self._api_token is None:
             raise ValueError("ENTSOE_API_TOKEN environment variable is not set.")

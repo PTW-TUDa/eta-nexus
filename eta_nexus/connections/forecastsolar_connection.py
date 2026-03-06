@@ -57,6 +57,8 @@ class ForecastsolarConnection(
     :param usr: Not needed for Forecast.Solar.
     :param pwd: Not needed for Forecast.Solar.
     :param nodes: Nodes to select in connection.
+    :param retry_total: Total number of retries for failed HTTP requests (default: 3).
+    :param retry_backoff_factor: Backoff factor for retries (default: 1s-> e.g. 1s, 2s, 4s for 3 retries).
     """
 
     _baseurl: ClassVar[str] = "https://api.forecast.solar"
@@ -72,8 +74,12 @@ class ForecastsolarConnection(
         url_params: dict[str, Any] | None = None,
         query_params: dict[str, Any] | None = None,
         nodes: Nodes[ForecastsolarNode] | None = None,
+        retry_total: int = 3,
+        retry_backoff_factor: float = 1.0,
     ) -> None:
-        super().__init__(url, None, None, nodes=nodes)
+        super().__init__(
+            url, None, None, nodes=nodes, retry_total=retry_total, retry_backoff_factor=retry_backoff_factor
+        )
 
         if self._api_token is None:
             self.logger.info(

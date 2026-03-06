@@ -13,8 +13,10 @@ from typing import TYPE_CHECKING, Any, Generic, Protocol, cast, overload, runtim
 import pandas as pd
 from attr import field
 from dateutil import tz
-from requests.exceptions import HTTPError, RequestException
+from requests.adapters import HTTPAdapter
+from requests.exceptions import HTTPError, RequestException, Timeout
 from typing_extensions import deprecated
+from urllib3.util.retry import Retry
 
 from eta_nexus.nodes.node import Node
 from eta_nexus.subscription_handlers.subscription_handler import SubscriptionHandler
@@ -457,6 +459,8 @@ class RESTConnection(Connection[N], ABC):
     :param usr: Username for authentication (optional).
     :param pwd: Password for authentication (optional).
     :param nodes: List of nodes to connect to (optional).
+    :param retry_total: Total number of retries for failed HTTP requests (default: 3).
+    :param retry_backoff_factor: Backoff factor for retries (default: 1s-> e.g. 1s, 2s, 4s for 3 retries).
     """
 
     def __init__(
@@ -466,8 +470,12 @@ class RESTConnection(Connection[N], ABC):
         pwd: str | None = None,
         *,
         nodes: Nodes[N] | None = None,
+        retry_total: int = 3,
+        retry_backoff_factor: float = 1.0,
     ) -> None:
         super().__init__(url, usr, pwd, nodes=nodes)
+        self._retry_total = retry_total
+        self._retry_backoff_factor = retry_backoff_factor
 
     @property
     def _api_token(self) -> str | None:
@@ -483,7 +491,20 @@ class RESTConnection(Connection[N], ABC):
     def session(self) -> CachedSession:
         "Return the cached session."
         if not hasattr(self, "_cached_session"):
-            return self._initialize_session()
+            session = self._initialize_session()
+            retry_strategy = Retry(
+                total=self._retry_total,  # Number of total retries
+                connect=self._retry_total,  # Retry on connect timeouts
+                read=self._retry_total,  # Retry on read timeouts
+                status_forcelist=[429, 500, 502, 503, 504],  # HTTP status codes to retry on
+                allowed_methods=["HEAD", "GET", "OPTIONS", "POST"],  # Methods to retry
+                backoff_factor=self._retry_backoff_factor,
+                raise_on_status=False,
+            )
+            adapter = HTTPAdapter(max_retries=retry_strategy)
+            session.mount("https://", adapter)
+            session.mount("http://", adapter)
+            self._cached_session = session
         return self._cached_session
 
     @property
@@ -508,14 +529,16 @@ class RESTConnection(Connection[N], ABC):
         try:
             response = self.session.request(method, url, params=params, auth=self.authentication, **kwargs)
             response.raise_for_status()
-        except HTTPError:  # Bad Response
+        except HTTPError:  # Bad Response (4xx, 5xx after retries exhausted)
             self.logger.exception(f"[{self._PROTOCOL.capitalize()}] Request failed:")
             return None
-        except RequestException:  # Errors occurred during request processing
+        except Timeout:  # Timeout errors (after retries exhausted)
             self.logger.exception(
-                f"[{self._PROTOCOL.capitalize()}]"
-                "There was an ambiguous exception that occurred while handling the request"
+                f"[{self._PROTOCOL.capitalize()}] Request timed out after {kwargs.get('timeout', 10)}s"
             )
+            return None
+        except RequestException:  # Other errors (ConnectionError, SSLError, etc.)
+            self.logger.exception(f"[{self._PROTOCOL.capitalize()}] Request error occurred")
             return None
         else:
             return response

@@ -47,15 +47,26 @@ class EneffcoConnection(
     :param usr: Username in EnEffco for login.
     :param pwd: Password in EnEffco for login.
     :param nodes: Nodes to select in connection.
+    :param retry_total: Total number of retries for failed HTTP requests (default: 3).
+    :param retry_backoff_factor: Backoff factor for retries (default: 1s-> e.g. 1s, 2s, 4s for 3 retries).
     """
 
     API_PATH: str = "/API/v1.0"
 
     logger = getLogger(__name__)
 
-    def __init__(self, url: str, usr: str, pwd: str, *, nodes: Nodes[EneffcoNode] | None = None) -> None:
+    def __init__(
+        self,
+        url: str,
+        usr: str,
+        pwd: str,
+        *,
+        nodes: Nodes[EneffcoNode] | None = None,
+        retry_total: int = 3,
+        retry_backoff_factor: float = 1.0,
+    ) -> None:
         url = url + self.API_PATH
-        super().__init__(url, usr, pwd, nodes=nodes)
+        super().__init__(url, usr, pwd, nodes=nodes, retry_total=retry_total, retry_backoff_factor=retry_backoff_factor)
 
         if self.usr is None:
             raise ValueError("Username must be provided for the Eneffco connection.")

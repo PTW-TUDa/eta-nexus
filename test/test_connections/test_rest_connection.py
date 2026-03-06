@@ -5,6 +5,7 @@ from logging import getLogger
 from unittest.mock import MagicMock, patch
 
 import pytest
+from requests_cache import CachedSession
 
 from eta_nexus.connections import RESTConnection
 
@@ -109,3 +110,29 @@ class TestRESTConnectionApiToken:
             token = rest_connection._api_token
 
         assert token == expected_token
+
+
+class TestRESTConnectionRetryMechanism:
+    """Minimal test suite for RESTConnection retry mechanism."""
+
+    @pytest.fixture
+    def rest_connection(self):
+        """Create a concrete REST connection instance for testing."""
+        conn = ConcreteRESTConnection(url="http://example.com")
+        # Override _initialize_session to return a real CachedSession for these tests
+        conn._initialize_session = lambda: CachedSession()
+        return conn
+
+    def test_session_retry_configuration(self, rest_connection):
+        """Test that session has correct retry configuration."""
+        session = rest_connection.session
+        adapter = session.get_adapter("https://example.com")
+
+        assert adapter.max_retries.total == 3
+        # status_forcelist is stored as a list, not a set
+        assert set(adapter.max_retries.status_forcelist) == {429, 500, 502, 503, 504}
+        assert adapter.max_retries.backoff_factor == 1
+        # Verify allowed_methods (GET, HEAD, OPTIONS should be there by default, we added them explicitly)
+        assert "GET" in adapter.max_retries.allowed_methods
+        assert "HEAD" in adapter.max_retries.allowed_methods
+        assert "OPTIONS" in adapter.max_retries.allowed_methods
