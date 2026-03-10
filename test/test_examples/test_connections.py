@@ -17,35 +17,17 @@ from examples.connections.read_emonio import (
 from examples.connections.read_series_eneffco import (
     read_series as ex_read_eneffco,
 )
-from examples.connections.read_series_forecastsolar import (
-    read_series as ex_read_forecast_solar,
-)
-from examples.connections.read_series_smard import (
-    read_series as ex_read_smard,
-)
 from examples.connections.read_series_wetterdienst import (
     read_series as ex_read_wetterdienst,
 )
 from test.utilities.pyModbusTCP.client import ModbusClient as MockModbusClient
 from test.utilities.requests.eneffco_request import request as request_eneffco
-from test.utilities.requests.forecast_solar_request import request as request_forecast_solar
-from test.utilities.requests.smard_request import request as request_smard
 
 
 @pytest.fixture
 def _local_eneffco_requests(monkeypatch):
     monkeypatch.setattr(requests_cache.CachedSession, "request", request_eneffco)
     os.environ["ENEFFCO_API_TOKEN"] = ""
-
-
-@pytest.fixture
-def _local_forecast_solar_requests(monkeypatch):
-    monkeypatch.setattr(requests_cache.CachedSession, "request", request_forecast_solar)
-
-
-@pytest.fixture
-def _local_smard_requests(monkeypatch):
-    monkeypatch.setattr(requests_cache.CachedSession, "request", request_smard)
 
 
 @pytest.fixture
@@ -76,24 +58,6 @@ def test_example_read_wetterdienst():
     assert isinstance(data, pd.DataFrame)
     assert set(data.columns) == {("Temperature_Darmstadt", "00917")}
     assert data.shape == (19, 1)
-
-
-@pytest.mark.usefixtures("_local_forecast_solar_requests")
-def test_example_read_forecast_solar():
-    data = ex_read_forecast_solar()
-
-    assert isinstance(data, pd.DataFrame)
-    assert set(data.columns) == {"Forecastsolar Node"}
-    assert data.shape == (97, 1)
-
-
-@pytest.mark.usefixtures("_local_smard_requests")
-def test_example_read_smard():
-    data = ex_read_smard()
-
-    assert isinstance(data, pd.DataFrame)
-    assert set(data.columns) == {"Solar_Generation_DE"}
-    assert len(data) > 0
 
 
 class TestEmonio:

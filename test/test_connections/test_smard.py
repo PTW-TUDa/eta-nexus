@@ -2,16 +2,12 @@ from datetime import datetime, timedelta, timezone
 
 import pandas as pd
 import pytest
-import requests_cache
 
 from eta_nexus.connections import SmardConnection
 from eta_nexus.nodes import SmardNode
-from test.utilities.requests.smard_request import request
 
-
-@pytest.fixture(autouse=True)
-def _local_requests(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(requests_cache.CachedSession, "request", request)
+# Mark all tests in this module to use pytest-recording (VCR.py) for recording and playing HTTP interactions
+pytestmark = [pytest.mark.vcr, pytest.mark.block_network]
 
 
 @pytest.fixture

@@ -1,0 +1,54 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      User-Agent:
+      - python-requests/2.32.3
+    method: GET
+    uri: https://api.forecast.solar/check/51/10/20/0/12.34
+  response:
+    body:
+      string: "{\"result\":{\"latitude\":\"51\xB0 00' 00\\\" N\",\"longitude\":\"10\xB0
+        00' 00\\\" E\",\"declination\":\"20\xB0\",\"azimuth\":\"0\xB0\",\"power\":\"12.34
+        kWp\",\"place\":\"Geographischer Mittelpunkt Deutschlands, Blankenbacher Stra\xDFe,
+        36205 Blankenbach, Germany\",\"timezone\":\"Europe/Berlin\"},\"message\":{\"code\":0,\"type\":\"success\",\"text\":\"\",\"pid\":\"fT94IUS8\",\"info\":{\"latitude\":51,\"longitude\":10,\"distance\":0,\"place\":\"Geographischer
+        Mittelpunkt Deutschlands, Blankenbacher Stra\xDFe, 36205 Blankenbach, Germany\",\"timezone\":\"Europe/Berlin\",\"time\":\"2026-02-12T19:35:59+01:00\",\"time_utc\":\"2026-02-12T18:35:59+00:00\"},\"ratelimit\":null}}"
+    headers:
+      Access-Control-Allow-Headers:
+      - Origin,Content-Type,Authorization,X-Requested-With,X-Delimiter,X-Separator,X-No-Cache
+      Access-Control-Allow-Methods:
+      - OPTIONS,HEAD,GET,POST
+      Access-Control-Allow-Origin:
+      - '*'
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Thu, 12 Feb 2026 18:35:59 GMT
+      Keep-Alive:
+      - timeout=60
+      Server:
+      - nginx
+      Transfer-Encoding:
+      - chunked
+      X-Pid:
+      - fT94IUS8
+      X-Process-Time:
+      - 8 ms
+      X-Version:
+      - v7.36.0.2475
+    status:
+      code: 200
+      message: OK
+version: 1
