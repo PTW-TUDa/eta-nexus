@@ -56,8 +56,10 @@ def test_encode_decode(node: ModbusNode, value, byteorder, bitlength, expected):
         assert decoded_value == value
 
 
-def test_retry_waiter():
-    """Test using Retry Waiter"""
+def test_retry_waiter(monkeypatch):
+    """Test using Retry Waiter - mocking sleep to avoid real delays"""
+    # Mock sleep to avoid waiting real seconds
+    monkeypatch.setattr("eta_nexus.connections.connection_utils.sleep", lambda x: None)
 
     i = 0
     retry_waiter = RetryWaiter()

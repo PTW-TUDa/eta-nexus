@@ -8,10 +8,12 @@ Active Contributors
 -------------------
 These individuals have contributed to this repository (eta_nexus) through development, design, testing, or documentation.
 
-- *Andreas Clement*
 - *Jerome Stock*
+- *Andreas Clement*
 - *Julius Balzer*
 - *Mikael Hailu*
+- *Jiale Chen*
+- *Md Shadman Hasan*
 
 Legacy Contributors
 --------------------

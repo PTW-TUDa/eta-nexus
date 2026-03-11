@@ -26,19 +26,19 @@ from asyncua import ua
 from asyncua.crypto.security_policies import SecurityPolicyBasic256Sha256
 
 # Synchronous imports
-from asyncua.sync import Client, Subscription
+from asyncua.sync import Client, Subscription, ThreadLoopNotRunning
 from asyncua.ua import SecurityPolicy, uaerrors
 
 from eta_nexus.connections.connection_utils import IntervalChecker, RetryWaiter
 from eta_nexus.nodes import OpcuaNode
-from eta_nexus.subhandlers import SubscriptionHandler
-from eta_nexus.util import KeyCertPair, Suppressor
+from eta_nexus.subscription_handlers import SubscriptionHandler
+from eta_nexus.util import KeyCertPair, Suppressor, check_type_mismatch
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Mapping, Sequence
     from typing import Any
 
-    from eta_nexus.subhandlers import SubscriptionHandler
+    from eta_nexus.subscription_handlers import SubscriptionHandler
 
     # Sync import
     # Async import
@@ -47,13 +47,15 @@ if TYPE_CHECKING:
     from eta_nexus.util.type_annotations import Nodes, Primitive, TimeStep
 
 
-from eta_nexus.connections.connection import Connection, Readable, Subscribable, Writable
-
-log = getLogger(__name__)
+from eta_nexus.connections.connection import Connection, StatusReadable, StatusSubscribable, StatusWritable
 
 
 class OpcuaConnection(
-    Connection[OpcuaNode], Readable[OpcuaNode], Writable[OpcuaNode], Subscribable[OpcuaNode], protocol="opcua"
+    Connection[OpcuaNode],
+    StatusReadable[OpcuaNode],
+    StatusWritable[OpcuaNode],
+    StatusSubscribable[OpcuaNode],
+    protocol="opcua",
 ):
     """The OPC UA Connection class allows reading and writing from and to OPC UA servers. Additionally,
     it implements a subscription method, which reads continuously in a specified interval.
@@ -63,6 +65,8 @@ class OpcuaConnection(
     :param pwd: Password in OPC UA for login.
     :param nodes: List of nodes to use for all operations.
     """
+
+    logger = getLogger(__name__)
 
     def __init__(
         self,
@@ -76,7 +80,7 @@ class OpcuaConnection(
     ) -> None:
         super().__init__(url, usr, pwd, nodes=nodes)
 
-        if self._url.scheme != "opc.tcp":
+        if self.url_parsed.scheme != "opc.tcp":
             raise ValueError("Given URL is not a valid OPC url (scheme: opc.tcp).")
 
         self.connection: Client
@@ -145,6 +149,14 @@ class OpcuaConnection(
                 opcua_variable = self.connection.get_node(node.opc_id)
                 value = opcua_variable.read_value()
                 if node.dtype is not None:
+                    # Check for type mismatch between configured dtype and server data type
+                    try:
+                        opcua_variant_type = opcua_variable.read_data_type_as_variant_type()
+                        check_type_mismatch(node.dtype, opcua_variant_type, node.name, self.logger)
+                    except Exception:
+                        # If we can't determine the server type, log at debug level and continue
+                        self.logger.debug(f"Could not determine OPC UA data type for node '{node.name}'")
+
                     try:
                         value = node.dtype(value)
                     except ValueError as e:
@@ -237,7 +249,7 @@ class OpcuaConnection(
                     try:
                         self._connect()
                     except ConnectionError:
-                        log.error(f"Retrying to connect to {self.url}.")  # noqa: TRY400
+                        self.logger.error(f"Retrying to connect to {self.url}.")  # noqa: TRY400
                         continue
 
                 elif self._connected and not subscribed:
@@ -246,7 +258,7 @@ class OpcuaConnection(
                         subscribed = True
                     except RuntimeError:
                         subscribed = False
-                        log.error(f"Unable to subscribe to server {self.url} - Retrying.")  # noqa: TRY400
+                        self.logger.error(f"Unable to subscribe to server {self.url} - Retrying.")  # noqa: TRY400
                         self._disconnect()
                         continue
 
@@ -257,9 +269,15 @@ class OpcuaConnection(
                                 self._sub.subscribe_data_change(self.connection.get_node(node.opc_id))
                             )
                         except RuntimeError as e:
-                            log.warning(f"Could not subscribe to node '{node.name}' on server {self.url}, error: {e}")
+                            self.logger.warning(
+                                f"Could not subscribe to node '{node.name}' on server {self.url}, error: {e}"
+                            )
 
             except (ConnectionAbortedError, ConnectionResetError, TimeoutError, ConCancelledError, BaseException) as e:
+                if isinstance(e, asyncio.CancelledError):
+                    self.logger.debug(f"Subscription loop for {self.url} was cancelled.")
+                    break
+                msg = None
                 if isinstance(e, (ConnectionAbortedError, ConnectionResetError)):
                     msg = f"Subscription to the OPC UA server {self.url} is unexpectedly terminated."
                 if isinstance(e, TimeoutError):
@@ -269,10 +287,10 @@ class OpcuaConnection(
                         f"Connection to OPC UA-Server {self.url} was terminated "
                         "during connection establishment or maintenance."
                     )
-                log.exception(f"Handling exception for server {self.url}.")
+                self.logger.exception(f"Handling exception for server {self.url}.")
                 if msg:
                     msg += " Trying to reconnect."
-                    log.info(msg)
+                    self.logger.info(msg)
                 subscribed = False
                 self._connected = False
 
@@ -291,7 +309,7 @@ class OpcuaConnection(
                 if not _changed_within_interval:
                     subscribed = False
                     self._connected = False
-                    log.warning(
+                    self.logger.warning(
                         f"The subscription connection for {self.url} doesn't change the values "
                         "anymore. Trying to reconnect."
                     )
@@ -308,9 +326,13 @@ class OpcuaConnection(
         try:
             self._sub.unsubscribe(self._subbed_nodes)
         except AttributeError:
+            # Occurs only if subscription did not exist and can be ignored.
+            pass
+        except ThreadLoopNotRunning:
+            # Occurs only if subscription was already stopped (and therefore the ThreadLoop as well) and can be ignored.
             pass
         except Exception:
-            log.exception("Canceling OpcUA subscription failed.")
+            self.logger.exception("Canceling OpcUA subscription failed.")
         finally:
             self._subbed_nodes = []
 
@@ -318,10 +340,10 @@ class OpcuaConnection(
             self._sub_task.cancel()
             self._sub.delete()
         except (OSError, RuntimeError) as e:
-            log.debug(f"Deleting subscription for server {self.url} failed.")
-            log.debug(f"Server {self.url} returned error: {e}.")
+            self.logger.debug(f"Deleting subscription for server {self.url} failed.")
+            self.logger.debug(f"Server {self.url} returned error: {e}.")
         except (TimeoutError, ConTimeoutError):
-            log.debug(f"Timeout occurred while trying to close the subscription to server {self.url}.")
+            self.logger.debug(f"Timeout occurred while trying to close the subscription to server {self.url}.")
         except AttributeError:
             # Occurs if the subscription did not exist and can be ignored.
             pass
@@ -382,7 +404,7 @@ class OpcuaConnection(
         except (RuntimeError, ConnectionError) as e:
             raise ConnectionError(f"OPC Connection Error: {self.url}: {e!s}") from e
         else:
-            log.debug(f"Connected to OPC UA server: {self.url}")
+            self.logger.debug(f"Connected to OPC UA server: {self.url}")
             self._connected = True
             self._retry.success()
 
@@ -392,10 +414,10 @@ class OpcuaConnection(
                 self.connection.get_node(ua.FourByteNodeId(ua.ObjectIds.Server_ServerStatus_State)).read_value()
             except AttributeError:
                 self._connected = False
-                log.debug(f"Connection to server {self.url} did not exist - connection check failed.")
+                self.logger.debug(f"Connection to server {self.url} did not exist - connection check failed.")
             except Exception:
                 self._connected = False
-                log.error(f"Error while checking connection to server {self.url}.")  # noqa: TRY400
+                self.logger.error(f"Error while checking connection to server {self.url}.")  # noqa: TRY400
             else:
                 self._connected = True
 
@@ -410,12 +432,12 @@ class OpcuaConnection(
         try:
             self.connection.disconnect()
         except (ConCancelledError, ConnectionAbortedError):
-            log.debug(f"Connection to {self.url} already closed by server.")
+            self.logger.debug(f"Connection to {self.url} already closed by server.")
         except (OSError, RuntimeError) as e:
-            log.debug(f"Closing connection to server {self.url} failed")
-            log.debug(f"Connection to {self.url} returned an error while closing the connection: {e}")
+            self.logger.debug(f"Closing connection to server {self.url} failed")
+            self.logger.debug(f"Connection to {self.url} returned an error while closing the connection: {e}")
         except AttributeError:
-            log.debug(f"Connection to server {self.url} already closed.")
+            self.logger.debug(f"Connection to server {self.url} already closed.")
 
     @contextmanager
     def _connection(self) -> Generator:
@@ -433,6 +455,8 @@ class _OPCSubHandler:
 
     :param handler: *eta_nexus* style subscription handler.
     """
+
+    logger = getLogger(__name__)
 
     def __init__(self, handler: SubscriptionHandler, interval_check_handler: IntervalChecker) -> None:
         self.handler = handler
@@ -452,9 +476,30 @@ class _OPCSubHandler:
         :param data: Raw data of OPC UA (not used).
         """
         _time = self.handler._assert_tz_awareness(datetime.now())
+        subscribed_node = self._sub_nodes[str(node)]
 
-        self.handler.push(self._sub_nodes[str(node)], val, _time)
-        self._node_interval_to_check.push(node=self._sub_nodes[str(node)], value=val, timestamp=_time)
+        # Check for type mismatch and convert value if dtype is configured
+        if subscribed_node.dtype is not None:
+            # Get the actual OPC UA variant type from the data notification
+            try:
+                if hasattr(data, "monitored_item") and hasattr(data.monitored_item, "Value"):
+                    opcua_variant_type = data.monitored_item.Value.Value.VariantType
+                    check_type_mismatch(subscribed_node.dtype, opcua_variant_type, subscribed_node.name, self.logger)
+            except Exception:
+                self.logger.debug(
+                    f"Could not determine OPC UA data type for node '{subscribed_node.name}' in subscription"
+                )
+
+            try:
+                val = subscribed_node.dtype(val)
+            except (ValueError, TypeError) as e:
+                dtype_name = getattr(subscribed_node.dtype, "__name__", str(subscribed_node.dtype))
+                self.logger.warning(
+                    f"Failed to convert value {val!r} to {dtype_name} for node '{subscribed_node.name}': {e}"
+                )
+
+        self.handler.push(subscribed_node, val, _time)
+        self._node_interval_to_check.push(node=subscribed_node, value=val, timestamp=_time)
 
     def status_change_notification(self, status: ua.StatusChangeNotification) -> None:
         pass

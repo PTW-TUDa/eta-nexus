@@ -77,7 +77,7 @@ def test_eneffco_json_error_handled(monkeypatch, caplog):
         result = conn.read_series(from_time, to_time)
 
     assert result is not None
-    assert any("JSON parse error" in msg or "Failed to parse JSON" in msg for msg in caplog.messages)
+    assert any("JSON parse failed" in msg or "Failed to load" in msg for msg in caplog.messages)
 
 
 def test_eneffco_http_error_handled(monkeypatch, caplog):
@@ -94,9 +94,9 @@ def test_eneffco_http_error_handled(monkeypatch, caplog):
     mock_response.raise_for_status.side_effect = HTTPError("401 Client Error: Unauthorized")
     mock_response.status_code = 401
 
-    with patch.object(conn._session, "request", return_value=mock_response):
+    with patch.object(conn.session, "request", return_value=mock_response):
         with caplog.at_level("WARNING"):
             result = conn.read_series(datetime(2024, 5, 1), datetime(2024, 5, 2))
 
         assert result is not None
-        assert any("401 Client Error" in msg for msg in caplog.messages)
+        assert any("401 Client Error" in record.exc_text for record in caplog.records)

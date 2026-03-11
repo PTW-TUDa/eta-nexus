@@ -82,13 +82,13 @@ fail_nodes = (
             "name": "Serv.NodeName",
             "url": "",
             "protocol": "wetterdienst_observation",
-            "parameter": "temperature_air_mean_200",
+            "parameter": "temperature_air_mean_2m",
             "station_id": "0",
             "interval": "60",
         },
         re.escape(
-            "Parameter TEMPERATURE_AIR_MEAN_200 is not valid for the given resolution. "
-            "Valid resolutions for parameter TEMPERATURE_AIR_MEAN_200 are: "
+            "Parameter TEMPERATURE_AIR_MEAN_2M is not valid for the given resolution. "
+            "Valid resolutions for parameter TEMPERATURE_AIR_MEAN_2M are: "
             "['MINUTE_10', 'HOURLY', 'SUBDAILY', 'DAILY', 'MONTHLY', 'ANNUAL']"
         ),
     ),
@@ -97,7 +97,7 @@ fail_nodes = (
             "name": "Serv.NodeName",
             "url": "",
             "protocol": "wetterdienst_observation",
-            "parameter": "temperature_air_mean_200",
+            "parameter": "temperature_air_mean_2m",
             "station_id": "0",
             "interval": "200",
         },
@@ -293,6 +293,62 @@ fail_nodes = (
             "horizon": [1, 2, 3, 4, 5, 100],
         },
         re.escape("'horizon' values must be between 0 and 90."),
+    ),
+    # SMARD
+    (
+        {
+            "name": "Serv.SmardNode",
+            "url": "https://smard.api.proxy.bund.dev/app",
+            "protocol": "smard",
+            "filter": 9999,  # Invalid filter ID
+            "region": "DE",
+            "resolution": "hour",
+        },
+        "Invalid filter 9999. Must be one of the documented filter IDs.",
+    ),
+    (
+        {
+            "name": "Serv.SmardNode",
+            "url": "https://smard.api.proxy.bund.dev/app",
+            "protocol": "smard",
+            "filter": 4068,  # solar
+            "region": "INVALID",  # Invalid region
+            "resolution": "hour",
+        },
+        re.escape("'region' must be in"),
+    ),
+    (
+        {
+            "name": "Serv.SmardNode",
+            "url": "https://smard.api.proxy.bund.dev/app",
+            "protocol": "smard",
+            "filter": 4068,  # solar
+            "region": "DE",
+            "resolution": "invalid_resolution",  # Invalid resolution
+        },
+        re.escape("'resolution' must be in"),
+    ),
+    (
+        {
+            "name": "Serv.SmardNode",
+            "url": "https://smard.api.proxy.bund.dev/app",
+            "protocol": "smard",
+            "filter": 410,  # total_load (power consumption filter)
+            "region": "AT",  # Power consumption not available for AT
+            "resolution": "hour",
+        },
+        re.escape("Power consumption filters not available for region AT"),
+    ),
+    (
+        {
+            "name": "Serv.SmardNode",
+            "url": "https://smard.api.proxy.bund.dev/app",
+            "protocol": "smard",
+            "filter": 4359,  # residual_load (power consumption filter)
+            "region": "LU",  # Power consumption not available for LU
+            "resolution": "hour",
+        },
+        re.escape("Power consumption filters not available for region LU"),
     ),
 )
 
@@ -503,13 +559,13 @@ nodes = (
             "name": "Serv.NodeName",
             "url": "https://some_url.de/path",
             "protocol": "wetterdienst_observation",
-            "parameter": "temperature_air_mean_200",
+            "parameter": "temperature_air_mean_2m",
             "interval": "3600",
             "station_id": "00917",
         },
         {
             "url": "https://opendata.dwd.de",
-            "parameter": "TEMPERATURE_AIR_MEAN_200",
+            "parameter": "TEMPERATURE_AIR_MEAN_2M",
             "interval": 3600,
             "station_id": "00917",
         },
@@ -519,13 +575,13 @@ nodes = (
             "name": "Serv.NodeName",
             "url": "https://some_url.de/path",
             "protocol": "wetterdienst_prediction",
-            "parameter": "temperature_air_mean_200",
+            "parameter": "temperature_air_mean_2m",
             "mosmix_type": "SMALL",
             "station_id": "K2596",
         },
         {
             "url": "https://opendata.dwd.de",
-            "parameter": "TEMPERATURE_AIR_MEAN_200",
+            "parameter": "TEMPERATURE_AIR_MEAN_2M",
             "mosmix_type": "SMALL",
             "station_id": "K2596",
         },
@@ -702,6 +758,99 @@ nodes = (
             "declination": [0, 1, 2],
             "azimuth": [0, 1, 2],
             "kwp": [0.0, 1.0, 2.0],
+        },
+    ),
+    # SMARD
+    (
+        {
+            "name": "Serv.SmardSolar",
+            "url": "https://smard.api.proxy.bund.dev/app",
+            "protocol": "smard",
+            "filter": 4068,  # solar
+            "region": "DE",
+            "resolution": "hour",
+        },
+        {
+            "name": "Serv.SmardSolar",
+            "url": "https://smard.api.proxy.bund.dev/app",
+            "protocol": "smard",
+            "filter": 4068,
+            "region": "DE",
+            "resolution": "hour",
+        },
+    ),
+    (
+        {
+            "name": "Serv.SmardWind",
+            "url": "https://smard.api.proxy.bund.dev/app",
+            "protocol": "smard",
+            "filter": 4067,  # wind_onshore
+            "region": "50Hertz",
+            "resolution": "quarterhour",
+        },
+        {
+            "name": "Serv.SmardWind",
+            "url": "https://smard.api.proxy.bund.dev/app",
+            "protocol": "smard",
+            "filter": 4067,
+            "region": "50Hertz",
+            "resolution": "quarterhour",
+        },
+    ),
+    (
+        {
+            "name": "Serv.SmardLoad",
+            "url": "https://smard.api.proxy.bund.dev/app",
+            "protocol": "smard",
+            "filter": 410,  # total_load
+            "region": "DE",  # Power consumption available for DE
+            "resolution": "hour",
+        },
+        {
+            "name": "Serv.SmardLoad",
+            "url": "https://smard.api.proxy.bund.dev/app",
+            "protocol": "smard",
+            "filter": 410,
+            "region": "DE",
+            "resolution": "hour",
+        },
+    ),
+    (
+        {
+            "name": "Serv.SmardPrice",
+            "url": "https://smard.api.proxy.bund.dev/app",
+            "protocol": "smard",
+            "filter": 4169,  # de_lu market price
+            "region": "DE-LU",
+            "resolution": "day",
+        },
+        {
+            "name": "Serv.SmardPrice",
+            "url": "https://smard.api.proxy.bund.dev/app",
+            "protocol": "smard",
+            "filter": 4169,
+            "region": "DE-LU",
+            "resolution": "day",
+        },
+    ),
+    (
+        {
+            "name": "Serv.SmardForecast",
+            "url": "https://smard.api.proxy.bund.dev/app",
+            "protocol": "smard",
+            "filter": 125,  # solar_forecast
+            "region": "DE",
+            "resolution": "week",
+            "interval": "3600",
+        },
+        {
+            "name": "Serv.SmardForecast",
+            "url": "https://smard.api.proxy.bund.dev/app",
+            "protocol": "smard",
+            "filter": 125,
+            "region": "DE",
+            "resolution": "week",
+            "interval": 3600,
         },
     ),
 )

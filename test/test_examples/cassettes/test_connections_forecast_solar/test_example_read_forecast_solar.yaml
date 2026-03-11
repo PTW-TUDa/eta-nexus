@@ -1,0 +1,98 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      User-Agent:
+      - python-requests/2.32.3
+    method: GET
+    uri: https://api.forecast.solar/estimate/watts/49/8/14/90/23.31?time=utc
+  response:
+    body:
+      string: '{"result":{"2026-03-06T05:59:42+00:00":0,"2026-03-06T06:00:00+00:00":588,"2026-03-06T07:00:00+00:00":2100,"2026-03-06T08:00:00+00:00":5001,"2026-03-06T09:00:00+00:00":8571,"2026-03-06T10:00:00+00:00":11572,"2026-03-06T11:00:00+00:00":12660,"2026-03-06T12:00:00+00:00":12483,"2026-03-06T13:00:00+00:00":13557,"2026-03-06T14:00:00+00:00":11961,"2026-03-06T15:00:00+00:00":7789,"2026-03-06T16:00:00+00:00":2733,"2026-03-06T17:00:00+00:00":756,"2026-03-06T17:18:46+00:00":0,"2026-03-07T05:57:39+00:00":0,"2026-03-07T06:00:00+00:00":581,"2026-03-07T07:00:00+00:00":1631,"2026-03-07T08:00:00+00:00":3298,"2026-03-07T09:00:00+00:00":5545,"2026-03-07T10:00:00+00:00":7816,"2026-03-07T11:00:00+00:00":9607,"2026-03-07T12:00:00+00:00":10610,"2026-03-07T13:00:00+00:00":10643,"2026-03-07T14:00:00+00:00":9534,"2026-03-07T15:00:00+00:00":7244,"2026-03-07T16:00:00+00:00":4148,"2026-03-07T17:00:00+00:00":2015,"2026-03-07T17:20:20+00:00":0},"message":{"code":0,"type":"success","text":"","pid":"4fU5gSTK","info":{"latitude":49,"longitude":8,"distance":0,"place":"D
+        244, 67160 Wissembourg, France","timezone":"Europe/Paris","time":"2026-03-06T18:53:52+01:00","time_utc":"2026-03-06T17:53:52+00:00"},"ratelimit":{"zone":"IP
+        2001:41b8:83c:fa00:354a:715c:4c08:a265","period":3600,"limit":12,"remaining":8}}}'
+    headers:
+      Access-Control-Allow-Headers:
+      - Origin,Content-Type,Authorization,X-Requested-With,X-Delimiter,X-Separator,X-No-Cache
+      Access-Control-Allow-Methods:
+      - OPTIONS,HEAD,GET,POST
+      Access-Control-Allow-Origin:
+      - '*'
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Fri, 06 Mar 2026 17:53:52 GMT
+      Keep-Alive:
+      - timeout=60
+      Server:
+      - nginx
+      Transfer-Encoding:
+      - chunked
+      X-Pid:
+      - 4fU5gSTK
+      X-Process-Time:
+      - 34 ms
+      X-Ratelimit-Limit:
+      - '12'
+      X-Ratelimit-Period:
+      - '3600'
+      X-Ratelimit-Remaining:
+      - '8'
+      X-Version:
+      - v7.36.0.2482
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      User-Agent:
+      - python-requests/2.32.3
+    method: GET
+    uri: https://api.forecast.solar/estimate/watts/49/8/14/90/23.31/10/-90/23.31/10/90/23.31?time=utc
+  response:
+    body:
+      string: Unauthorized, you provided an invalid API key
+    headers:
+      Access-Control-Allow-Headers:
+      - Origin,Content-Type,Authorization,X-Requested-With,X-Delimiter,X-Separator,X-No-Cache
+      Access-Control-Allow-Methods:
+      - OPTIONS,HEAD,GET,POST
+      Access-Control-Allow-Origin:
+      - '*'
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '45'
+      Content-Type:
+      - text/html; charset=iso-8859-1
+      Date:
+      - Fri, 06 Mar 2026 17:53:53 GMT
+      Keep-Alive:
+      - timeout=60
+      Server:
+      - nginx
+    status:
+      code: 401
+      message: Unauthorized
+version: 1

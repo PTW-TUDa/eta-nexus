@@ -1,10 +1,10 @@
 [project]
 name = "eta-nexus"
-version = "0.1.1"
+version = "0.2.0"
 description = "Provides a standardized way to connect to machines and devices in a factory or other factory systems"
 license = "BSD-2-Clause"
 readme = "README.rst"
-requires-python = ">=3.10.16, <3.12.0"
+requires-python = ">=3.10.16, <3.13.0"
 dynamic = ["classifiers"]
 authors = [
     {name = "Technical University of Darmstadt, Institute for Production Management, Technology and Machine Tools (PTW)", email="info@ptw.tu-darmstadt.de"}
@@ -19,19 +19,21 @@ keywords = [
 ]
 
 dependencies = [
-    "attrs >=23.1.0,<24.0.0",
+    "attrs >=25.3.0,<26.0.0",
     "python-dateutil >=2.8.2,<3.0.0",
-    "numpy >=1.26.0,<2.0.0",
+    "numpy >=2.0.0,<3.0.0",
     "pandas[excel, xml] >=2.2.2,<2.3.0",
     "asyncua-fork-for-eta-utility ==1.0.7",
     "requests >=2.31.0,<3.0.0",
-    "pymodbustcp >=0.2.0,<0.4.0",
-    "cryptography >=41.0.4,<42.0.0",
-    "wetterdienst >=0.88.0,<0.89.0",  # breaking changes expected
+    "pymodbustcp >=0.3.0,<0.4.0",
+    "cryptography >=44.0.2,<45.0.0",
+    "wetterdienst >=0.97.0,<0.98.0",  # breaking changes expected
+    "pint ==0.24.4",
     "requests-cache >=1.2.0,<2.0.0",
     "pyyaml >=6.0.2,<7.0.0",
     "toml >=0.10.2,<0.11.0",
     "python-dotenv >=1.0.1,<2.0.0",
+    "influxdb3-python (>=0.16.0,<0.17.0)",
 ]
 
 [project.optional-dependencies]
@@ -67,7 +69,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 include = [
-    {path="examples/", format=["sdist", "wheel"]}
+    {path="examples/", format=["sdist"]}
 ]
 
 [tool.poetry.group.examples.dependencies]
@@ -99,6 +101,8 @@ mypy = "~1.15"
 types-python-dateutil = "^2.8.19.14"
 types-requests = "^2.31.0.10"
 types-pytz = "^2025.2.0.20250326"
+pytest-xdist = {extras = ["psutil"], version = "^3.8.0"}
+pytest-recording = "^0.13.4"
 
 [tool.mypy]
 python_version = "3.10"
@@ -128,6 +132,7 @@ module = [
     "requests_cache.*",
     "toml.*",
     "yaml.*",
+    "influxdb_client_3.*"
 ]
 ignore_missing_imports = true
 
@@ -146,6 +151,9 @@ testpaths = [
 ]
 markers = [
     "disable_logging: Disable logging for the marked test",
+    "vcr: record/replay HTTP requests with VCR.py",
+    "cache_enabled: Enable requests_cache for the marked test (opt-out from VCR cache disabling)",
+    "live: allow real network access (no VCR replay/record enforcement)",
 ]
 
 # Configuration for pytest-cov
@@ -220,7 +228,7 @@ convention = "pep257"
 
 [tool.codespell]
 skip = "*.js, *.html, *.lock, */Manifest.toml, ./docs/_build"
-ignore-words-list = ["Temperatur"]
+ignore-words-list = ["Temperatur", "bund"]
 quiet-level = 3
 
 [build-system]

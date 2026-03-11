@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pathlib
+from abc import abstractmethod
 from collections.abc import Mapping
 from logging import getLogger
 from typing import TYPE_CHECKING
@@ -35,6 +36,8 @@ default_schemes = {
     "wetterdienst_observation": "https",
     "wetterdienst_prediction": "https",
     "forecast_solar": "https",
+    "influx": "https",
+    "smard": "https",
 }
 
 log = getLogger(__name__)
@@ -110,6 +113,22 @@ class Node(metaclass=MetaNode):
 
         object.__setattr__(self, "url", url.geturl())
         object.__setattr__(self, "url_parsed", url)
+
+    def connection_identifier(self) -> str:
+        """Unique identifier for the connection that is associated with the node
+        (i.e. would be created by Connection.from_node())
+        """
+        extra_key = self._extra_equality_key()
+        if extra_key:
+            return f"{self.url_parsed.netloc}, {extra_key}"
+        return self.url_parsed.netloc
+
+    def _extra_equality_key(self) -> Any | None:
+        """Additional attributes that are relevant for deciding if nodes belong to a connection.
+        Override this in case extra keys are necessary, don't forget to also set this in the connection class.
+        Enforce presence of attributes used in this method!
+        """
+        return None
 
     def evolve(self, **kwargs: Any) -> Self:
         """Returns a new node instance
@@ -214,7 +233,7 @@ class Node(metaclass=MetaNode):
         """Read general info about a node from a dictionary.
 
         :param node: dictionary containing node information.
-        :return: name, pwd, url, usr of the node
+        :return: name, pwd, url, usr, interval of the node
         """
         # Read name first
         try:
@@ -255,6 +274,11 @@ class Node(metaclass=MetaNode):
             raise
 
         return value
+
+    @classmethod
+    @abstractmethod
+    def _from_dict(cls, dikt: dict[str, Any]) -> Self:
+        raise NotImplementedError
 
     @classmethod
     def from_excel(cls, path: Path, sheet_name: str, *, fail: bool = True) -> list[Self]:

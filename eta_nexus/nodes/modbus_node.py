@@ -177,6 +177,8 @@ class ModbusNode(Node, protocol="modbus"):
             except UnicodeDecodeError:
                 log.exception(f"Could not convert value {val} to string")
                 val = ""
+            else:
+                val = val.rstrip("\x00")
         elif self.dtype is not None:
             val = self.dtype(val)
         else:
