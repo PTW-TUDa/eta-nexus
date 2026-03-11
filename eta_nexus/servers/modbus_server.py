@@ -46,9 +46,10 @@ class ModbusServer:
             self.url = f"modbus.tcp://{ip}:{port}"
         log.info(f"Server Address is {self.url}")
 
-        self._url, _, _ = url_parse(self.url)
+        self.url_parsed, _, _ = url_parse(self.url)
+        self._url = self.url_parsed  # For compatibility with tests that expect _url
 
-        self._server: BaseModbusServer = BaseModbusServer(self._url.hostname, self._url.port, no_block=True)
+        self._server: BaseModbusServer = BaseModbusServer(self.url_parsed.hostname, self.url_parsed.port, no_block=True)
         self.start()
 
     def write(self, values: Mapping[ModbusNode, Any]) -> None:
@@ -61,6 +62,7 @@ class ModbusServer:
         srv_info = BaseModbusServer.ServerInfo()
 
         for node in nodes:
+            self._ensure_databank_capacity(node)
             bits = node.encode_bits(values[node]) if not isinstance(values[node], list) else values[node]
 
             if node.mb_register == "coils":
@@ -85,6 +87,7 @@ class ModbusServer:
         results = {}
 
         for node in _nodes:
+            self._ensure_databank_capacity(node)
             if node.mb_register == "holding":
                 val = self._server.data_hdl.read_h_regs(node.mb_channel, node.mb_bit_length // 16, srv_info)
             elif node.mb_register == "coils":
@@ -110,6 +113,39 @@ class ModbusServer:
                 raise RuntimeError("Could not decode bits from ModbusServer.")
 
         return pd.DataFrame(results, index=[ensure_timezone(datetime.now())])
+
+    def _ensure_databank_capacity(self, node: ModbusNode) -> None:
+        """Make sure the underlying pyModbusTCP data bank can cover the node's address range."""
+
+        data_bank = getattr(self._server, "data_bank", None)
+        if data_bank is None:
+            return
+
+        register = node.mb_register
+        channel = int(node.mb_channel)
+        bit_length = int(node.mb_bit_length)
+
+        if register in ("holding", "input"):
+            registers = max(1, (bit_length + 15) // 16)
+            attr = "_h_regs" if register == "holding" else "_i_regs"
+            required = channel + registers
+        elif register == "coils":
+            attr = "_coils"
+            required = channel + max(1, bit_length)
+        elif register == "discrete_input":
+            attr = "_d_inputs"
+            required = channel + max(1, bit_length)
+        else:
+            return
+
+        store = getattr(data_bank, attr, None)
+        if store is None:
+            return
+
+        if len(store) >= required:
+            return
+
+        store.extend([0] * (required - len(store)))
 
     def start(self) -> None:
         """Restart the server after it was stopped."""
@@ -138,7 +174,7 @@ class ModbusServer:
             _nodes = {
                 node
                 for node in nodes
-                if isinstance(node, ModbusNode) and node.url_parsed.hostname == self._url.hostname
+                if isinstance(node, ModbusNode) and node.url_parsed.hostname == self.url_parsed.hostname
             }
 
         # Make sure that some nodes remain after the checks and raise an error if there are none.

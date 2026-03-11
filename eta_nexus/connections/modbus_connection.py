@@ -13,30 +13,27 @@ import pandas as pd
 from pyModbusTCP import constants as mb_const
 from pyModbusTCP.client import ModbusClient
 
-from eta_nexus.connections.connection import Connection, Readable, Subscribable, Writable
+from eta_nexus.connections.connection import Connection, StatusReadable, StatusSubscribable, StatusWritable
 from eta_nexus.connections.connection_utils import (
     IntervalChecker,
     RetryWaiter,
 )
 from eta_nexus.nodes.modbus_node import ModbusNode, bitarray_to_registers
-from eta_nexus.subhandlers import SubscriptionHandler
+from eta_nexus.subscription_handlers import SubscriptionHandler
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Mapping
     from typing import Any
 
-    from eta_nexus.subhandlers import SubscriptionHandler
+    from eta_nexus.subscription_handlers import SubscriptionHandler
     from eta_nexus.util.type_annotations import Nodes, Primitive, TimeStep
-
-
-log = getLogger(__name__)
 
 
 class ModbusConnection(
     Connection[ModbusNode],
-    Readable[ModbusNode],
-    Writable[ModbusNode],
-    Subscribable[ModbusNode],
+    StatusReadable[ModbusNode],
+    StatusWritable[ModbusNode],
+    StatusSubscribable[ModbusNode],
     protocol="modbus",
 ):
     """The Modbus Connection class allows reading and writing from and to Modbus servers and clients. Additionally,
@@ -48,15 +45,19 @@ class ModbusConnection(
     :param nodes: List of nodes to use for all operations.
     """
 
+    logger = getLogger(__name__)
+
     def __init__(
         self, url: str, usr: str | None = None, pwd: str | None = None, *, nodes: Nodes[ModbusNode] | None = None
     ) -> None:
         super().__init__(url, usr, pwd, nodes=nodes)
 
-        if self._url.scheme != "modbus.tcp":
+        if self.url_parsed.scheme != "modbus.tcp":
             raise ValueError("Given URL is not a valid Modbus url (scheme: modbus.tcp)")
 
-        self.connection: ModbusClient = ModbusClient(host=self._url.hostname, port=self._url.port, timeout=2)
+        self.connection: ModbusClient = ModbusClient(
+            host=self.url_parsed.hostname, port=self.url_parsed.port, timeout=2
+        )
 
         self._subscription_open: bool = False
         self._subscription_nodes: set[ModbusNode] = set()
@@ -153,7 +154,7 @@ class ModbusConnection(
             if self._sub.done() is False:
                 self._sub.cancel()
         except Exception:
-            log.exception("Canceling Modbus subscription failed.")
+            self.logger.exception("Canceling Modbus subscription failed.")
 
         if self.connection.is_open:
             self._disconnect()
@@ -170,7 +171,7 @@ class ModbusConnection(
                     await self._retry.wait_async()
                     self._connect()
                 except ConnectionError as e:
-                    log.warning(str(e))
+                    self.logger.warning(str(e))
                     continue
 
                 for node in self._subscription_nodes:
@@ -178,7 +179,7 @@ class ModbusConnection(
                     try:
                         result = self._read_mb_value(node)
                     except ValueError as e:
-                        log.warning(str(e))
+                        self.logger.warning(str(e))
                     except ConnectionError:
                         handler.push(node, pd.NA, self._assert_tz_awareness(datetime.now()))
                         continue
@@ -196,7 +197,7 @@ class ModbusConnection(
                     _changed_within_interval = self._connection_interval_checker.check_interval_connection()
 
                     if not _changed_within_interval:
-                        log.warning(
+                        self.logger.warning(
                             f"The subscription connection for {self.url} doesn't change the values "
                             "anymore. Trying to reconnect."
                         )
@@ -275,9 +276,9 @@ class ModbusConnection(
         try:
             self.connection.close()
         except (OSError, RuntimeError):
-            log.exception(f"Closing connection to server {self.url} failed")
+            self.logger.exception(f"Closing connection to server {self.url} failed")
         except AttributeError:
-            log.info(f"Connection to server {self.url} already closed.")
+            self.logger.info(f"Connection to server {self.url} already closed.")
 
     @contextmanager
     def _connection(self) -> Generator:

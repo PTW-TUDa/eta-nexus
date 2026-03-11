@@ -10,7 +10,7 @@ from dateutil import tz
 from eta_nexus.connections import EntsoeConnection
 from eta_nexus.nodes import Node
 from eta_nexus.util import round_timestamp
-from test.utilities.requests.entsoe_request import mock_get
+from test.utilities.requests.entsoe_request import mock_request
 
 USE_API_TOKEN = False
 
@@ -29,7 +29,7 @@ def create_node(endpoint: str, name: str = "Node1") -> Node:
 def _local_requests(monkeypatch, config_entsoe):
     if USE_API_TOKEN:
         return
-    monkeypatch.setattr(requests_cache.CachedSession, "get", mock_get(config_entsoe["path"]))
+    monkeypatch.setattr(requests_cache.CachedSession, "request", mock_request(config_entsoe["path"]))
     os.environ["ENTSOE_API_TOKEN"] = ""
 
 
@@ -149,7 +149,7 @@ def test_different_intervals(monkeypatch, connection: EntsoeConnection, endpoint
     """
     # Mock the response path for the endpoint
     _response_path = pathlib.Path("test/utilities/requests/entso_e_samples")
-    monkeypatch.setattr(requests_cache.CachedSession, "get", mock_get(_response_path))
+    monkeypatch.setattr(requests_cache.CachedSession, "request", mock_request(_response_path))
 
     node = create_node("Price")
 

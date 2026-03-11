@@ -45,7 +45,10 @@ default:
 
   # Cache gets invalidated when poetry.lock changes
   cache:
-    key: "global-deps-$(checksum poetry.lock)"
+    key:
+      files:
+        - poetry.lock
+      prefix: "global-deps"
     paths:
       - ${POETRY_CACHE_DIR}
       - ${PIP_CACHE_DIR}
@@ -66,6 +69,7 @@ update-cache:
 
 ruff:
   stage: check
+  before_script: []  # Skip poetry sync
   script:
     - ruff --version
     - ruff check
@@ -73,6 +77,7 @@ ruff:
 
 codespell:
   stage: check
+  before_script: []  # Skip poetry sync
   script:
     - codespell --version
     - codespell
@@ -85,6 +90,7 @@ mypy:
 
 poetry:
   stage: check
+  before_script: []  # Skip poetry sync
   script:
     - poetry --version
     - poetry check
@@ -106,7 +112,8 @@ linkcheck-docs:
 .test:
   stage: test
   script:
-  - pytest
+  # Run tests with pytest in parallel through pytest-xdist
+  - pytest -n logical --dist loadscope -o log_cli=0 --disable-warnings --record-mode=none # -n logical uses logical CPU count, --dist loadscope groups tests by module
   retry:
     max: 1
     when: script_failure
@@ -115,7 +122,7 @@ linkcheck-docs:
   extends: .test
   coverage: '/TOTAL.*\s+(\d+%)$/'
   script:
-  - pytest --cov --junitxml=./junit.xml --cov-report term --cov-report xml:coverage.xml
+  - pytest -n logical --dist loadscope -o log_cli=0 --cov --junitxml=./junit.xml --cov-report term --cov-report xml:coverage.xml --disable-warnings --record-mode=none
   artifacts:
     paths:
       - junit.xml
@@ -129,10 +136,32 @@ linkcheck-docs:
 test3.10:
   extends: .coverage
 
-
 test3.11:
   extends: .test
+  script:
+  - pytest --record-mode=none # Run tests without parallelization
   image: ${REGISTRY_IMAGE}:py3.11
+
+test3.12:
+  extends: .test
+  image: ${REGISTRY_IMAGE}:py3.12
+
+# test3.12_updated_deps:
+#   extends: .test
+#   image: ${REGISTRY_IMAGE}:py3.12
+#   needs:
+#     - test3.12
+#   cache: []
+#   script:
+#     - cp poetry.lock poetry.lock.bak  # Backup the lockfile
+#     - poetry update
+#     - |
+#       if ! cmp -s poetry.lock poetry.lock.bak; then
+#         echo "Dependencies were updated! poetry.lock has changed."
+#         pytest --cov --cov-report term --junitxml=./junit.xml
+#       else
+#         echo "No dependencies changed. Skipping tests."
+#       fi
 
 
 .deploy:
@@ -157,6 +186,7 @@ deploy-pages:
 
 deploy-local:
   extends: .deploy
+  before_script: [] # Skip poetry sync
   # Credentials for local repository
   variables:
     PASSWORD: '${CI_JOB_TOKEN}'
@@ -169,6 +199,7 @@ deploy-local:
 # build the sources
 deploy-pypi:
   extends: .deploy
+  before_script: [] # Skip poetry sync
   # Credentials for pypi repository
   variables:
     PASSWORD: '${PYPI_UPLOAD_TOKEN}'
@@ -195,3 +226,57 @@ deploy-readthedocs:
   script:
     - echo $CI_COMMIT_TAG
     - curl -X POST -d "branches=main" -d "token=$READTHEDOCS_TOKEN" https://readthedocs.org/api/v2/webhook/eta-nexus/294118/
+
+build-docker-images:
+  stage: setup
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]  # allow shell
+
+  variables:
+    PYTHON_VERSIONS: "3.10 3.11 3.12"
+    DOCKERFILE_PATH: ".gitlab/docker/dockerfile"
+    CONTEXT: "$CI_PROJECT_DIR"
+
+  rules:
+    # Only run on development branch when poetry.lock or dockerfile changes
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes:
+        - poetry.lock
+        - .gitlab/docker/dockerfile
+    # Or run manually from GitLab UI
+    - when: manual
+      allow_failure: true
+  before_script:
+    # Configure Kaniko / Docker auth for GitLab registry
+    - mkdir -p /kaniko/.docker
+    - |
+      cat > /kaniko/.docker/config.json <<EOF
+      {
+        "auths": {
+          "${CI_REGISTRY}": {
+            "username": "${CI_REGISTRY_USER}",
+            "password": "${CI_REGISTRY_PASSWORD}"
+          }
+        }
+      }
+      EOF
+
+  script:
+    - |
+      for PYTHON_VERSION in $PYTHON_VERSIONS; do
+        IMAGE_NAME="${REGISTRY_IMAGE}:py${PYTHON_VERSION}"
+        echo "Building and pushing ${IMAGE_NAME} with Kaniko..."
+
+        /kaniko/executor \
+          --context "${CONTEXT}" \
+          --dockerfile "${CONTEXT}/${DOCKERFILE_PATH}" \
+          --destination "${IMAGE_NAME}" \
+          --build-arg "PYTHON_VERSION=${PYTHON_VERSION}" \
+          --build-arg "POETRY_VERSION=${POETRY_VERSION}" \
+          --cache=true \
+          --cache-repo "${REGISTRY_IMAGE}/cache" \
+          --cleanup
+
+        echo "Pushed ${IMAGE_NAME}"
+      done

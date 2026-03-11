@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, cast
 
 import numpy as np
 
-from eta_nexus.connections.connection import Connection, Readable, Writable
+from eta_nexus.connections.connection import Connection, StatusReadable, StatusWritable
 from eta_nexus.nodes import Node
 from eta_nexus.nodes.node_utils import name_map_from_node_sequence
 from eta_nexus.util.io_utils import load_config
@@ -139,7 +139,7 @@ class ConnectionManager(AbstractContextManager):
         self._connection_map: dict[str, str] = {}
         for node in self._nodes.values():
             if node.url_parsed.netloc is not None:
-                self._connection_map[node.name] = node.url_parsed.netloc
+                self._connection_map[node.name] = node.connection_identifier()
             else:
                 raise ValueError(f"Node without netloc supplied: {node.name}")
         #: Start time of initialisation.
@@ -507,7 +507,7 @@ class ConnectionManager(AbstractContextManager):
             log.exception("Step_size between write and read function is too small")
 
         if self._observe_vals is not None:
-            return self.read(*self._observe_vals)
+            return self.read()
         return {}
 
     def write(self, nodes: Mapping[str, Any] | Sequence[str], values: Sequence[Any] | None = None) -> None:
@@ -542,9 +542,9 @@ class ConnectionManager(AbstractContextManager):
         for idx, (connection_name, connection_obj) in enumerate(self._connections.items()):
             try:
                 if node_writes[connection_name]:
-                    if isinstance(connection_obj, Writable):
-                        writable_connection = cast("Writable", connection_obj)
-                        writable_connection.write(node_writes[connection_name])
+                    if isinstance(connection_obj, StatusWritable):
+                        status_writable_connection = cast("StatusWritable", connection_obj)
+                        status_writable_connection.write(node_writes[connection_name])
                         self.error_count[idx] = 0
                     else:
                         log.error(f"Connection '{connection_name}' is not writable.")
@@ -558,13 +558,20 @@ class ConnectionManager(AbstractContextManager):
     def read(self, *nodes: str) -> dict[str, Any]:
         """Take a list of nodes and return their names and most recent values.
 
+        If no nodes are passed, default to reading the observe nodes defined in the config.
+
         :param nodes: One or more nodes to read.
         :return: Dictionary of the most current node values.
         """
         # Sort nodes to be read by connection
         node_readings: dict[str, list[Node]] = {url: [] for url in self._connections}
+        input_nodes = nodes or self._observe_vals
+
+        if input_nodes is None:
+            return {}
+
         _error = False
-        for name in nodes:
+        for name in input_nodes:
             n = f"{self.name}.{name}" if "." not in name and self.name is not None else name
             if n not in self._nodes:
                 log.error(f"Node {n} not found in node list")
@@ -578,9 +585,9 @@ class ConnectionManager(AbstractContextManager):
         for idx, (connection_name, connection_obj) in enumerate(self._connections.items()):
             try:
                 if node_readings[connection_name]:
-                    if isinstance(connection_obj, Readable):
-                        readable_connection = cast("Readable", connection_obj)
-                        result.update(readable_connection.read(node_readings[connection_name]).iloc[0].to_dict())
+                    if isinstance(connection_obj, StatusReadable):
+                        status_readable_connection = cast("StatusReadable", connection_obj)
+                        result.update(status_readable_connection.read(node_readings[connection_name]).iloc[0].to_dict())
                         self.error_count[idx] = 0
                     else:
                         log.error(f"Connection '{connection_name}' is not readable.")

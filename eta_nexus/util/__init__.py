@@ -25,6 +25,10 @@ from eta_nexus.util.time_utils import (
     ensure_timezone as ensure_timezone,
     round_timestamp as round_timestamp,
 )
+from eta_nexus.util.type_utils import (
+    DTYPE_TO_VARIANT_TYPE as DTYPE_TO_VARIANT_TYPE,
+    check_type_mismatch as check_type_mismatch,
+)
 from eta_nexus.util.utils import (
     dict_get_any as dict_get_any,
     dict_pop_any as dict_pop_any,

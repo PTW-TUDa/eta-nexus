@@ -8,6 +8,10 @@ ARG POETRY_VERSION=2.1.1
 
 FROM python:${PYTHON_VERSION}-slim-bullseye
 
+# Repass the python version as a build argument
+ARG PYTHON_VERSION=3.10
+ARG POETRY_VERSION=2.1.1
+
 # Environment variables
 ENV APP_PATH="/usr/src/app" \
     POETRY_HOME="/usr/local/poetry" \
@@ -28,12 +32,22 @@ RUN set -eux && \
     apt-get install -y --no-install-recommends git make curl && \
     rm -rf /var/lib/apt/lists/*
 
-COPY pyproject.toml poetry.lock LICENSE README.rst ${APP_PATH}
-COPY eta_nexus ${APP_PATH}/eta_nexus
+COPY pyproject.toml poetry.lock LICENSE README.rst ${APP_PATH}/
+COPY eta_nexus ${APP_PATH}/eta_nexus/
+COPY docs ${APP_PATH}/docs/
+COPY examples ${APP_PATH}/examples/
+COPY test ${APP_PATH}/test/
 
+RUN pwd && ls -laF
 
 # Install poetry and dependencies
 RUN curl -sSL https://install.python-poetry.org | POETRY_VERSION=${POETRY_VERSION} python3 - && \
-    # Remove torch and add torch+cpu because nvidia packages (cuda) are not needed
+    poetry --version && \
     poetry sync && \
+    # Run commands initially to warm up caches
+    mypy --version || true && \
+    mypy --config-file pyproject.toml || true && \
+    pytest -q --disable-warnings -o log_cli=0 || true && \
+    pytest -q --disable-warnings -o log_cli=0 -n logical --dist loadscope || true && \
+    # Clean up paths to reduce image size
     rm -rf ${APP_PATH}/* ${POETRY_CACHE_DIR}/*

@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from logging import getLogger
 from typing import TYPE_CHECKING
 
-from eta_nexus.connections.connection import Connection, Readable, Subscribable
+from eta_nexus.connections.connection import Connection, StatusReadable, StatusSubscribable
 from eta_nexus.connections.modbus_connection import ModbusConnection
 from eta_nexus.nodes import EmonioNode, ModbusNode
 
@@ -13,13 +13,13 @@ if TYPE_CHECKING:
 
     import pandas as pd
 
-    from eta_nexus.subhandlers import SubscriptionHandler
+    from eta_nexus.subscription_handlers import SubscriptionHandler
     from eta_nexus.util.type_annotations import Nodes, TimeStep
 
-log = getLogger(__name__)
 
-
-class EmonioConnection(Connection[EmonioNode], Readable[EmonioNode], Subscribable[EmonioNode], protocol="emonio"):
+class EmonioConnection(
+    Connection[EmonioNode], StatusReadable[EmonioNode], StatusSubscribable[EmonioNode], protocol="emonio"
+):
     """Thin wrapper class for the Emonio that uses a modbus TCP Connection.
     Internally the Emonio nodes are converted to modbus nodes with
     fixed parameters, expect for the name, url and channel.
@@ -34,6 +34,8 @@ class EmonioConnection(Connection[EmonioNode], Readable[EmonioNode], Subscribabl
     The phase is set by the :attr:`~node.EmonioNode.phase` attribute of the node.
     Possible values are ``a``, ``b``, ``c`` or ``abc``, with ``abc`` being the default.
     """
+
+    logger = getLogger(__name__)
 
     def __init__(self, url: str, *, nodes: Nodes[EmonioNode] | None = None, check_error: bool = True) -> None:
         """Initialize the Emonio connection.
@@ -123,7 +125,7 @@ class EmonioConnection(Connection[EmonioNode], Readable[EmonioNode], Subscribabl
         result = self._connection.read(nodes)
         # Convert the result to a dictionary
         result = result.iloc[0].to_dict()
-        log.debug("Connected phases: %s", result)
+        self.logger.debug("Connected phases: %s", result)
         return result
 
     def _check_phases(self, nodes: Nodes[EmonioNode]) -> None:
@@ -170,9 +172,9 @@ class EmonioConnection(Connection[EmonioNode], Readable[EmonioNode], Subscribabl
                         f"See https://wiki.emonio.de/de/Emonio_P3 for more information."
                     )
                     if name == "Warning":
-                        log.warning(msg)
+                        self.logger.warning(msg)
                     else:
-                        log.error(msg)
+                        self.logger.error(msg)
                         raise ValueError(msg)
 
 

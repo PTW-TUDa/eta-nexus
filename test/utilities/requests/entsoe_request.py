@@ -11,11 +11,11 @@ class MockResponse(requests_cache.CachedResponse):
         self._content = content.encode()
 
 
-def mock_get(path):
-    def get(*args, params: dict[str, str], **kwargs):
+def mock_request(path):
+    def request(*args, params: dict[str, str], **kwargs):
         endpoint = dict_search(_ConnectionConfiguration().doc_types, params["documentType"])
         file_path = path / f"{endpoint}_sample.xml"
         with file_path.open() as file:
             return MockResponse(file.read())
 
-    return get
+    return request

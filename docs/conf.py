@@ -54,7 +54,14 @@ html_static_path = ["_static"]
 copybutton_exclude = ".linenos, .gp"
 
 
-autodoc_mock_imports = ["opcua", "numpy.random", "pandas", "wetterdienst"]
+autodoc_mock_imports = [
+    "opcua",
+    "numpy.random",
+    "pandas",
+    "wetterdienst",
+    "influxdb_client_3",
+    "influxdb_client",
+]
 autodoc_default_options = {"undoc-members": True, "member-order": "bysource"}
 
 intersphinx_mapping = {
@@ -65,7 +72,11 @@ intersphinx_mapping = {
 
 autosummary_generate = True
 
-linkcheck_ignore = [r"https://$", r"https://web-api.tp.entsoe.eu/"]
+linkcheck_ignore = [
+    r"https://$",
+    r"https://web-api.tp.entsoe.eu/",
+    r"https://smard.api.proxy.bund.dev/app",
+]
 linkcheck_allowed_redirects = {
     r"https://eta-utility.readthedocs.io/": r"https://eta-utility.readthedocs.io/en/main/",
     r"https://stable-baselines3.readthedocs.io/": r"https://stable-baselines3.readthedocs.io/en/master/",
