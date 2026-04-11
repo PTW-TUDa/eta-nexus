@@ -1,9 +1,13 @@
+from typing import Any
+
 import pytest
 
 from eta_nexus import json_import
 from eta_nexus.connection_manager import ConnectionManager
 from eta_nexus.nodes import Node
 from eta_nexus.servers import OpcuaServer
+from eta_nexus.util import load_config
+from eta_nexus.util.type_annotations import Path, TimeStep
 
 
 @pytest.fixture(scope="module")
@@ -23,10 +27,17 @@ def nodes_from_config(config_connection_manager, config_host_ip):
 
 
 @pytest.fixture(scope="module")
-def setup_connection_manager(config_connection_manager, nodes_from_config, config_host_ip):
-    server = OpcuaServer(6)
-    server.create_nodes(nodes_from_config)
-    server.allow_remote_admin(allow=True)
+def opcua_test_server(nodes_from_config):
+    with OpcuaServer(6, port=4840) as server:
+        server.create_nodes(nodes_from_config)
+        yield server
+
+
+@pytest.fixture(scope="module")
+def setup_connection_manager(opcua_test_server, config_connection_manager, nodes_from_config, config_host_ip):
+    if not opcua_test_server.active:
+        opcua_test_server.start()
+    opcua_test_server.allow_remote_admin(allow=True)
 
     config = json_import(config_connection_manager["file"])
     config["system"][0]["servers"]["glt"]["url"] = f"{config_host_ip}:4840"
@@ -36,12 +47,41 @@ def setup_connection_manager(config_connection_manager, nodes_from_config, confi
     connection.step({"CHP.u": 0})
     connection.deactivate()
     yield connection
-    server.stop()
+    opcua_test_server.stop()
 
 
-def test_from_string_config(config_connection_manager):
+def test_from_string_config(config_connection_manager, opcua_test_server, config_host_ip, monkeypatch):
+    def _from_config_patched(
+        *files: Path,
+        step_size: TimeStep = 1,
+        max_error_count: int = 10,
+    ) -> ConnectionManager:
+        """
+        Patched version of ConnectionManager.from_config(). The patch replaces the OPCUA-Server URL
+        specified in the config.json with the actual URL from the Test-Runtime.
+        """
+        main_config: dict[str, list[Any]] = {"system": []}
+        for file_path in files:
+            config = load_config(file_path)
+            if not isinstance(config, dict):
+                raise TypeError("Config file must define a dictionary of options.")
+            if "system" in config:
+                main_config["system"].extend(config["system"])
+            else:
+                main_config["system"].append(config)
+
+        # Patching: Replace config Server URL with actual URL.
+        main_config["system"][0]["servers"]["glt"]["url"] = f"{config_host_ip}:4840"
+
+        return ConnectionManager.from_dict(**main_config, step_size=step_size, max_error_count=max_error_count)
+
     path = config_connection_manager["file"]
+    # Monkey-Patch ConnectionManager config loading mechanism to adapt Server URL to current host
+    monkeypatch.setattr(ConnectionManager, "from_config", _from_config_patched, raising=True)
+    if not opcua_test_server.active:
+        opcua_test_server.start()
     ConnectionManager.from_config(str(path))
+    opcua_test_server.stop()
 
 
 read_values = (
