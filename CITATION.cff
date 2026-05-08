@@ -1,0 +1,88 @@
+# This CITATION.cff file follows the cffinit style.
+# Visit https://bit.ly/cffinit to generate yours today.
+
+cff-version: 1.2.0
+title: eta-nexus
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - family-names: Stock
+    given-names: Jerome
+    email: j.stock@ptw.tu-darmstadt.de
+    orcid: "https://orcid.org/0009-0006-7908-069X"
+    affiliation: Technical University of Darmstadt
+  - family-names: Clement
+    given-names: Andreas
+    email: a.clement@ptw.tu-darmstadt.de
+    orcid: "https://orcid.org/0009-0005-6675-1223"
+    affiliation: Technical University of Darmstadt
+  - family-names: Grosch
+    given-names: Benedikt
+    email: /
+    orcid: "https://orcid.org/0000-0003-1092-5560"
+    affiliation: Technical University of Darmstadt
+  - family-names: Balzer
+    given-names: Julius Nicholas
+    email: julius.balzer@stud.tu-darmstadt.de
+    orcid: "https://orcid.org/0009-0001-7249-2150"
+    affiliation: Technical University of Darmstadt
+  - family-names: Weigold
+    given-names: Matthias
+    email: m.weigold@ptw.tu-darmstadt.de
+    orcid: "https://orcid.org/0000-0002-7820-8544"
+    affiliation: Technical University of Darmstadt
+identifiers:
+  - type: doi
+    value: xxx
+    description: Repository
+repository-code: "https://git.ptw.maschinenbau.tu-darmstadt.de/eta-fabrik/public/eta-nexus"
+url: "https://eta-nexus.readthedocs.io/"
+abstract: >-
+  A Python package for managing inbound and outbound connections to PLC
+  controllers, field devices, and API services through a standardized
+  multi-protocol interface. Eta-nexus supports industrial and data-service
+  connectivity workflows including OPC UA, Modbus TCP, REST APIs, InfluxDB,
+  SMARD, ENTSO-E, Forecast.Solar, Wetterdienst, EnEffCo, and Emonio.
+keywords:
+  - connectivity
+  - industrial connectivity
+  - multi-protocol
+  - OPC UA
+  - Modbus TCP
+  - REST API
+  - InfluxDB
+  - time series
+  - PLC
+  - field devices
+  - industrial energy systems
+  - eta factory
+license: BSD-2-Clause
+version: 0.2.0
+references:
+  - type: article
+    authors:
+      - family-names: Grosch
+        given-names: Benedikt Emanuel
+      - family-names: Ranzau
+        given-names: Heiko
+      - family-names: Dietrich
+        given-names: Bastian
+      - family-names: Kohne
+        given-names: Thomas
+      - family-names: Fuhrlaender-Voelker
+        given-names: Daniel
+      - family-names: Sossenheimer
+        given-names: Johannes
+      - family-names: Lindner
+        given-names: Martin
+      - family-names: Weigold
+        given-names: Matthias
+    title: A framework for researching energy optimization of factory operations
+    journal: Energy Informatics
+    year: 2022
+    volume: 5
+    issue: Suppl 1
+    article-number: 29
+    doi: 10.1186/s42162-022-00207-6

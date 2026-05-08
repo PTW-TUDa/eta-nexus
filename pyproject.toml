@@ -1,6 +1,6 @@
 [project]
 name = "eta-nexus"
-version = "0.2.0"
+version = "0.2.1"
 description = "Provides a standardized way to connect to machines and devices in a factory or other factory systems"
 license = "BSD-2-Clause"
 readme = "README.rst"
@@ -228,7 +228,7 @@ convention = "pep257"
 
 [tool.codespell]
 skip = "*.js, *.html, *.lock, */Manifest.toml, ./docs/_build"
-ignore-words-list = ["Temperatur", "bund"]
+ignore-words-list = ["OT", "Temperatur", "bund"]
 quiet-level = 3
 
 [build-system]
