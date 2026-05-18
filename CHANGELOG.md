@@ -1,4 +1,15 @@
-# Release 0.2.0
+# Release 0.2.1 (2026-05-08)
+
+Small patch for ETA Nexus to include citation metadata in a release.
+
+### New Features
+* Added citation metadata via `CITATION.cff`. (MR !87 by @J.Stock)
+* Added repository agent guidance via `AGENTS.md`. (MR !87 by @J.Stock)
+
+### Bug Fixes
+- Patched OPC-UA tests to prevent error messages (MR !75 by @N.Finger)
+
+# Release 0.2.0 (2026-04-14)
 
 This release brings REST API connections to eta-nexus! The first implemented REST API connection class is to
 the [SMARD API](https://smard.api.bund.dev/). Additionally, connections to [InfluxDB](https://www.influxdata.com/)
@@ -74,7 +85,7 @@ are now possible. Of course this releases also brings bug-fixes, test-optimizati
 
 ---
 
-# Release 0.1.1
+# Release 0.1.1 (2025-08-21)
 
 This is minor hotfix-release to make ETA Nexus compatible
 with [ETA Utility](https://git.ptw.maschinenbau.tu-darmstadt.de/eta-fabrik/public/eta-utility).
@@ -87,7 +98,7 @@ with [ETA Utility](https://git.ptw.maschinenbau.tu-darmstadt.de/eta-fabrik/publi
 
 ---
 
-# Release 0.1.0
+# Release 0.1.0 (2025-08-21)
 
 Besides bug-fixes and changes under the hood, this release brings three major changes to the package:
 
