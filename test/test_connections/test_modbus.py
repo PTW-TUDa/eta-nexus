@@ -8,6 +8,7 @@ from eta_nexus.nodes import Node
 from eta_nexus.servers import ModbusServer
 from eta_nexus.subscription_handlers import DFSubscriptionHandler
 from test.conftest import stop_execution
+from test.utilities.pyModbusTCP.client import ModbusClient as MockModbusClient
 
 init_tests = (
     (("modbus.tcp://someurl:48050", None, None), {}, {"url": "modbus.tcp://someurl:48050"}),
@@ -155,7 +156,6 @@ def test_init_fail(args, kwargs, expected):
 
 def test_modbus_connection_fail(monkeypatch):
     """Test modbus failures - mock client to fail immediately"""
-    from test.utilities.pyModbusTCP.client import ModbusClient as MockModbusClient
 
     # Create a failing version of the mock client
     class FailingModbusClient(MockModbusClient):

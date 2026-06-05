@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from logging import getLogger
 from typing import TYPE_CHECKING
 
@@ -177,7 +177,7 @@ class EneffcoConnection(
             for time, val in data.items():
                 # Only write values if they are not nan
                 if not np.isnan(val):
-                    aware_time = self._assert_tz_awareness(time).astimezone(timezone.utc)
+                    aware_time = self._assert_tz_awareness(time).astimezone(UTC)
                     upload_data["Values"].append(
                         {
                             "Value": float(val),

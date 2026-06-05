@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pandas as pd
 import pytest
@@ -18,7 +18,7 @@ class FakeClient:
     def query(self, *, query, language, mode, database=None):
         self.queries.append({"query": query, "language": language, "mode": mode, "database": database})
         if query.startswith("LATEST:"):
-            _, table, fields_csv = query.split(":")
+            _, _, fields_csv = query.split(":")
             fields = fields_csv.split(",") if fields_csv else []
             row = {"time": pd.Timestamp("2024-01-01T00:00:00Z")}
             row.update(dict.fromkeys(fields, 1))
@@ -26,7 +26,7 @@ class FakeClient:
 
         if query.startswith("SERIES:"):
             payload = query[len("SERIES:") :]
-            table, fields_csv, _rest = payload.split(":", 2)
+            _, fields_csv, _ = payload.split(":", 2)
             fields = fields_csv.split(",") if fields_csv else []
             times = pd.date_range("2024-01-01T00:00:00Z", periods=3, freq="1h")
             frame = pd.DataFrame({"time": times})
@@ -140,7 +140,7 @@ def test_read_series_uses_utc_z_and_time_index(two_nodes_same_table, patch_clien
     n1, n2 = two_nodes_same_table
     conn = influx_mod.InfluxConnection.from_node({n1, n2})
 
-    start = datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc)
+    start = datetime(2024, 1, 1, 0, 0, tzinfo=UTC)
     end = start + timedelta(hours=2, minutes=59)
     series_frame = conn.read_series(start, end, {n1, n2})
 
@@ -215,5 +215,5 @@ def test_write_series_dataframe_unknown_column_raises(two_nodes_same_table, env_
     idx = pd.date_range("2024-01-01T00:00:00Z", periods=1, freq="1h")
     bad_frame = pd.DataFrame({"unknown": [1]}, index=idx)
 
-    with pytest.raises(ValueError, match="unknown|column"):
+    with pytest.raises(ValueError, match=r"unknown|column"):
         conn.write_series(bad_frame)

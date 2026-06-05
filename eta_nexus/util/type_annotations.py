@@ -3,7 +3,7 @@ from __future__ import annotations
 import datetime
 from collections.abc import Sequence
 from os import PathLike
-from typing import Literal, SupportsFloat, TypeVar
+from typing import Literal, Self, SupportsFloat, TypeVar
 
 import numpy as np
 from cryptography.hazmat.primitives.asymmetric import (
@@ -18,13 +18,6 @@ from cryptography.hazmat.primitives.asymmetric import (
 )
 
 from eta_nexus.nodes.node import Node
-
-try:
-    # For Python 3.11+
-    from typing import Self  # type: ignore[attr-defined]
-except ImportError:
-    # For Python < 3.11, Self is not available, so we import it from typing_extensions
-    from typing_extensions import Self
 
 __all__ = [
     "FillMethod",

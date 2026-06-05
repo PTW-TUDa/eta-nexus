@@ -209,7 +209,7 @@ class ModbusNode(Node, protocol="modbus"):
         except struct.error as e:
             raise ValueError(f"Could not convert value {value!r} to bits.") from e
 
-        bitstrings = [f"{bin(x)[2:]:0>8}" for x in byte]
+        bitstrings = [f"{x:08b}" for x in byte]
         return [int(z) for z in "".join(bitstrings)]
 
     def _get_encode_params(self, value: Primitive) -> tuple[str, int]:

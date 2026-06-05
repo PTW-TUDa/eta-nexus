@@ -6,7 +6,7 @@ import pathlib
 from abc import abstractmethod
 from collections.abc import Mapping
 from logging import getLogger
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast, overload
 
 import attrs
 import pandas as pd
@@ -24,6 +24,8 @@ if TYPE_CHECKING:
     from typing import Any, ClassVar
     from urllib.parse import ParseResult
 
+    from eta_nexus.nodes.modbus_node import ModbusNode
+    from eta_nexus.nodes.opcua_node import OpcuaNode
     from eta_nexus.util.type_annotations import Path, Self
 
 default_schemes = {
@@ -77,7 +79,7 @@ class Node(metaclass=MetaNode):
         default=None, converter=converters.optional(_dtype_converter), kw_only=True, repr=False, eq=False, order=False
     )
 
-    _registry: ClassVar = {}
+    _registry: ClassVar[dict[str, type[Node]]] = {}
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         """Store subclass definitions to instantiate based on protocol."""
@@ -95,7 +97,7 @@ class Node(metaclass=MetaNode):
             raise ValueError(f"Specified an unsupported protocol: {protocol}.") from error
 
         # Return the correct subclass for the specified protocol
-        return object.__new__(subclass)
+        return cast("Self", object.__new__(subclass))
 
     def __attrs_post_init__(self) -> None:
         """Add post-processing to the url, username and password information. Username and password specified during
@@ -167,7 +169,23 @@ class Node(metaclass=MetaNode):
         return attrs.filters.exclude(*non_values.keys())
 
     @classmethod
-    def from_dict(cls, dikt: Sequence[Mapping] | Mapping[str, Any], *, fail: bool = True) -> list[Self]:
+    @overload
+    def from_dict(  # type: ignore[misc]
+        cls: type[OpcuaNode], dikt: Sequence[Mapping] | Mapping[str, Any], *, fail: bool = True
+    ) -> list[OpcuaNode]: ...
+
+    @classmethod
+    @overload
+    def from_dict(  # type: ignore[misc]
+        cls: type[ModbusNode], dikt: Sequence[Mapping] | Mapping[str, Any], *, fail: bool = True
+    ) -> list[ModbusNode]: ...
+
+    @classmethod
+    @overload
+    def from_dict(cls, dikt: Sequence[Mapping] | Mapping[str, Any], *, fail: bool = True) -> list[Node]: ...
+
+    @classmethod  # type: ignore[misc]
+    def from_dict(cls, dikt: Sequence[Mapping] | Mapping[str, Any], *, fail: bool = True) -> list[Node]:
         """Create nodes from a dictionary of node configurations. The configuration must specify the following
         fields for each node:
 
@@ -195,7 +213,7 @@ class Node(metaclass=MetaNode):
         :param fail: Set this to false, if you would like to log errors instead of raising them.
         :return: List of Node objects.
         """
-        nodes = []
+        nodes: list[Node] = []
 
         iter_ = [dikt] if isinstance(dikt, Mapping) else dikt
         for idx, lnode in enumerate(iter_):
@@ -281,7 +299,7 @@ class Node(metaclass=MetaNode):
         raise NotImplementedError
 
     @classmethod
-    def from_excel(cls, path: Path, sheet_name: str, *, fail: bool = True) -> list[Self]:
+    def from_excel(cls, path: Path, sheet_name: str, *, fail: bool = True) -> list[Node]:
         """Method to read out nodes from an Excel document. The document must specify the following fields:
 
             * Code, IP, Port, Protocol (modbus or opcua or eneffco).

@@ -110,7 +110,7 @@ class TestServerOperations:
         server.create_nodes(local_nodes)
         server.delete_nodes(local_nodes)
 
-        with pytest.raises(RuntimeError, match=".*BadNodeIdUnknown.*"):
+        with pytest.raises(RuntimeError, match=r".*BadNodeIdUnknown.*"):
             server.read(local_nodes)
 
 
@@ -165,5 +165,5 @@ class TestOpcuaServerFromConfigFile:
     def test_delete_nodes(self, servers_from_config):
         for s in servers_from_config:
             s.delete_nodes(s.nodes)
-            with pytest.raises(RuntimeError, match=".*BadNodeIdUnknown.*"):
+            with pytest.raises(RuntimeError, match=r".*BadNodeIdUnknown.*"):
                 s.read(s.nodes)

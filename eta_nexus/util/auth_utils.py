@@ -7,7 +7,7 @@ from contextlib import contextmanager
 from datetime import datetime, timedelta
 from logging import getLogger
 from tempfile import NamedTemporaryFile
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import pytz
 from cryptography import x509
@@ -224,7 +224,7 @@ class PEMKeyCertPair(KeyCertPair):
         _passphrase = bytes(passphrase, "utf-8") if passphrase is not None else None
 
         with self._key_path.open("rb") as _k:
-            key = serialization.load_pem_private_key(_k.read(), password=_passphrase)
+            key = cast("PrivateKey", serialization.load_pem_private_key(_k.read(), password=_passphrase))
 
         super().__init__(key, cert)
 

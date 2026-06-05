@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import concurrent.futures
 from contextlib import suppress
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from logging import getLogger
 from typing import TYPE_CHECKING
 
@@ -552,10 +552,10 @@ class _ConnectionConfiguration:
 
         # Round down at from_time and up at to_time to receive all necessary values from entsoe
         # entsoe uses always a full hour
-        rounded_from_time_utc = round_timestamp(from_time.astimezone(timezone.utc), 3600)
-        rounded_to_time_utc = round_timestamp(to_time.astimezone(timezone.utc), 3600)
+        rounded_from_time_utc = round_timestamp(from_time.astimezone(UTC), 3600)
+        rounded_to_time_utc = round_timestamp(to_time.astimezone(UTC), 3600)
 
-        if rounded_to_time_utc < to_time.astimezone(timezone.utc):
+        if rounded_to_time_utc < to_time.astimezone(UTC):
             rounded_to_time_utc += timedelta(hours=1)
 
         params["periodStart"] = rounded_from_time_utc.strftime("%Y%m%d%H%M")  # yyyyMMddHHmm

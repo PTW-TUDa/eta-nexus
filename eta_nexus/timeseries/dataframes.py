@@ -105,7 +105,7 @@ def df_time_slice(
     :return: Sliced data frame.
     """
     slice_begin, slice_end = find_time_slice(time_begin, time_end, total_time, round_to_interval, random=random)
-    return df[slice_begin:slice_end].copy()  # type: ignore[misc]
+    return df[slice_begin:slice_end].copy()
 
 
 def df_resample(

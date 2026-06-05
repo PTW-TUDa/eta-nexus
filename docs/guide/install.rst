@@ -64,7 +64,7 @@ It's recommended to install the package in a virtual environment. See :ref:`crea
 
 .. note::
 
-   eta-nexus supports Python versions between 3.9 and 3.11 (inclusive).
+   eta-nexus supports Python versions between 3.11 and 3.13 (inclusive).
 
 There are multiple classes of optional requirements. If you would like to use some of the optional components, please install one or more of the following:
 

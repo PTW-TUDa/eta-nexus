@@ -3,6 +3,7 @@ import logging
 
 import pandas as pd
 import pytest
+from asyncua.server.user_managers import UserManager
 
 from eta_nexus.connections import OpcuaConnection
 from eta_nexus.nodes import Node
@@ -228,21 +229,18 @@ class TestConnectionOperations:
     def test_read_fail(self, server, connection: OpcuaConnection, local_nodes):
         n = local_nodes[0]
         fail_node = Node(n.name, n.url, n.protocol, usr=n.usr, pwd=n.pwd, opc_id="ns=6;s=AnotherNamespace.DoesNotExist")
-        with pytest.raises(ConnectionError, match=".*BadNodeIdUnknown.*"):
+        with pytest.raises(ConnectionError, match=r".*BadNodeIdUnknown.*"):
             connection.read(fail_node)
 
     def test_login_fail_write(self, server, local_nodes):
         n = local_nodes[0]
         connection = OpcuaConnection.from_node(n, usr="another", pwd="something")
-        with pytest.raises(ConnectionError, match=".*BadUserAccessDenied.*"):
+        with pytest.raises(ConnectionError, match=r".*BadUserAccessDenied.*"):
             connection.write({n: 123})
 
     def test_login_fail_read(self, server: OpcuaServer, local_nodes):
         n = local_nodes[0]
         connection = OpcuaConnection.from_node(n, usr="another", pwd="something")
-
-        # Create a new user manager that rejects all users
-        from asyncua.server.user_managers import UserManager
 
         class BadUserManager(UserManager):
             # Reject all users and return None instead of a user object
@@ -252,7 +250,7 @@ class TestConnectionOperations:
         # Set the user manager
         server._server.aio_obj.iserver.set_user_manager(user_manager=BadUserManager())
 
-        with pytest.raises(ConnectionError, match=".*BadUserAccessDenied.*"):
+        with pytest.raises(ConnectionError, match=r".*BadUserAccessDenied.*"):
             connection.read(n)
 
     def test_validate_nodes_inheritance(self, connection: OpcuaConnection, local_nodes):

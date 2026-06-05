@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pandas as pd
 import pytest
@@ -143,7 +143,7 @@ def test_read_latest_value(solar_node_daily: SmardNode):
 def test_read_series_integration(connection: SmardConnection, solar_node: SmardNode):
     """Integration test: Read actual data from SMARD API."""
     # Request last 2 days of data
-    to_time = datetime(2025, 11, 11, 14, 19, 0, tzinfo=timezone.utc)
+    to_time = datetime(2025, 11, 11, 14, 19, 0, tzinfo=UTC)
     from_time = to_time - timedelta(days=2)
 
     result = connection.read_series(
@@ -185,7 +185,7 @@ def test_multiple_nodes_integration():
     conn = SmardConnection(nodes=nodes)
 
     # Request last week
-    to_time = datetime(2025, 11, 11, 14, 19, 0, tzinfo=timezone.utc)
+    to_time = datetime(2025, 11, 11, 14, 19, 0, tzinfo=UTC)
     from_time = to_time - timedelta(days=7)
 
     result = conn.read_series(

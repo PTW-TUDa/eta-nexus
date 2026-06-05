@@ -14,7 +14,7 @@ is attempted for convenience.
 from __future__ import annotations
 
 import os
-from datetime import timezone
+from datetime import UTC
 from logging import getLogger
 from typing import TYPE_CHECKING, Any, cast
 
@@ -170,8 +170,8 @@ class InfluxConnection(
             fields = [n.field for n in table_nodes]
 
             # Convert to strict UTC 'Z' form expected by our helper
-            start_iso_z = from_time.astimezone(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-            end_iso_z = to_time.astimezone(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+            start_iso_z = from_time.astimezone(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+            end_iso_z = to_time.astimezone(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
             sql_statement = build_series_select(table, fields, start_iso_z, end_iso_z)
 

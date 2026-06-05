@@ -193,7 +193,7 @@ class SeriesSubscribable(Protocol, Generic[N_contra]):
         """Closes an open subscription. This should gracefully handle non-existent subscriptions."""
 
 
-class Connection(Generic[N], ABC):
+class Connection(ABC, Generic[N]):
     """Common connection interface class.
 
     The URL (netloc) may contain the username and password. (schema://username:password@hostname:port/path)
