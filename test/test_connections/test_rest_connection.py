@@ -120,7 +120,7 @@ class TestRESTConnectionRetryMechanism:
         """Create a concrete REST connection instance for testing."""
         conn = ConcreteRESTConnection(url="http://example.com")
         # Override _initialize_session to return a real CachedSession for these tests
-        conn._initialize_session = lambda: CachedSession()
+        conn._initialize_session = CachedSession
         return conn
 
     def test_session_retry_configuration(self, rest_connection):

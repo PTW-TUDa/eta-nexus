@@ -143,10 +143,10 @@ class EmonioConnection(
     def check_warnings_and_errors(self) -> None:
         """Calls the error and warning check if the last check was more than a minute ago."""
         now = datetime.now()
-        if self._last_error_check is None:
-            pass
-        elif now - self._last_error_check < timedelta(minutes=1):
+
+        if now - self._last_error_check < timedelta(minutes=1):
             return
+
         self._last_error_check = now
         self._check_warnings_and_errors()
 

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pandas as pd
 
@@ -30,7 +30,7 @@ def read_series() -> pd.DataFrame:
 
     # Define time interval as datetime values
     # SMARD has data from 2015 onwards
-    to_datetime = datetime(2025, 11, 11, 14, 19, 0, tzinfo=timezone.utc)
+    to_datetime = datetime(2025, 11, 11, 14, 19, 0, tzinfo=UTC)
     from_datetime = to_datetime - timedelta(days=2)
 
     # read_series will request data from specified connection and time interval

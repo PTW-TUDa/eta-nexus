@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from eta_nexus.connections import InfluxConnection
 from eta_nexus.nodes.influx_node import InfluxNode
@@ -11,6 +11,6 @@ if not url:
     raise ValueError("Set INFLUX_HOST env variable.")
 node = InfluxNode(name="hum", url=url, protocol="influx", database="foo", table="home")
 conn = InfluxConnection.from_node(node)
-now = datetime.now(timezone.utc)
+now = datetime.now(UTC)
 from_time = now - timedelta(hours=1)
 res = conn.read_series(from_time=from_time, to_time=now)

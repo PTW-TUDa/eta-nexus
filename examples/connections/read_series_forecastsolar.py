@@ -2,6 +2,9 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 
+from eta_nexus.connections import ForecastsolarConnection
+from eta_nexus.nodes import ForecastsolarNode
+
 
 def main() -> None:
     read_series()
@@ -9,9 +12,6 @@ def main() -> None:
 
 def read_series() -> pd.DataFrame:
     # --begin_forecast_solar_doc_example1--
-    from eta_nexus.connections import ForecastsolarConnection
-    from eta_nexus.nodes import ForecastsolarNode
-
     # ------------------------------
     # Simple node without API key:
     # ------------------------------

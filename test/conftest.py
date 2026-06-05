@@ -7,6 +7,7 @@ import shutil
 import socket
 
 import pytest
+from requests_cache import CachedSession
 
 
 def get_free_port():
@@ -167,8 +168,6 @@ def disable_requests_cache_for_vcr(monkeypatch, request):
     # Allow override
     if request.node.get_closest_marker("cache_enabled"):
         return
-
-    from requests_cache import CachedSession
 
     original_init = CachedSession.__init__
 

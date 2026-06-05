@@ -6,32 +6,23 @@ import json
 import pathlib
 import re
 import sys
+import tomllib
 from collections.abc import Mapping, Sequence
 from logging import getLogger
 from typing import TYPE_CHECKING
 
 import pandas as pd
-import toml
 import yaml
 from dotenv import find_dotenv, load_dotenv
 
 if TYPE_CHECKING:
     import types
-    from collections.abc import Callable
     from typing import Any
 
     from eta_nexus.util.type_annotations import Path, Self
 
 
 log = getLogger(__name__)
-
-# Configuration file loaders by extension
-_CONFIG_LOADERS: dict[str, Callable[[Path], list[Any] | dict[str, Any]]] = {
-    ".json": lambda p: json_import(p),
-    ".toml": lambda p: toml_import(p),
-    ".yml": lambda p: yaml_import(p),
-    ".yaml": lambda p: yaml_import(p),
-}
 
 
 def json_import(path: Path) -> list[Any] | dict[str, Any]:
@@ -64,10 +55,10 @@ def toml_import(path: Path) -> dict[str, Any]:
     path = pathlib.Path(path)
 
     try:
-        with path.open("r", encoding="utf-8") as f:
-            result = toml.load(f)
+        with path.open("rb") as f:
+            result = tomllib.load(f)
         log.info(f"TOML file {path} loaded successfully.")
-    except (OSError, Exception, toml.TomlDecodeError):
+    except (OSError, tomllib.TOMLDecodeError):
         log.exception(f"Failed to load TOML file: {path}")
         raise
 
@@ -91,6 +82,15 @@ def yaml_import(path: Path) -> dict[str, Any]:
         raise
 
     return result
+
+
+# Configuration file loaders by extension
+_CONFIG_LOADERS = {
+    ".json": json_import,
+    ".toml": toml_import,
+    ".yml": yaml_import,
+    ".yaml": yaml_import,
+}
 
 
 def load_config(file: Path) -> dict[str, Any]:

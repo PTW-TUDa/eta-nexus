@@ -3,14 +3,10 @@
 # Run build_and_push_docker to build and push all images
 
 # Pass the python version as a build argument
-ARG PYTHON_VERSION=3.10
-ARG POETRY_VERSION=2.1.1
+ARG PYTHON_VERSION=3.12
+ARG POETRY_VERSION=2.4.1
 
 FROM python:${PYTHON_VERSION}-slim-bullseye
-
-# Repass the python version as a build argument
-ARG PYTHON_VERSION=3.10
-ARG POETRY_VERSION=2.1.1
 
 # Environment variables
 ENV APP_PATH="/usr/src/app" \

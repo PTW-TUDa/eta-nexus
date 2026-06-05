@@ -1,7 +1,7 @@
 import asyncio
 import pathlib
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import numpy as np
 import pandas as pd
@@ -126,14 +126,14 @@ class TestDFSubscriptionHandler:
         handler = DFSubscriptionHandler(write_interval=1)
 
         for i in range(2 * len(nodes)):
-            ts = datetime(2025, 1, 1, 0, i, 0).astimezone(tz=timezone.utc)
+            ts = datetime(2025, 1, 1, 0, i, 0).astimezone(tz=UTC)
             index = i % len(nodes)
             handler.push(nodes[index], values[index][i // len(nodes)], ts)
 
-        ts0 = datetime(2025, 1, 1, 0, 2, 0).astimezone(tz=timezone.utc)
+        ts0 = datetime(2025, 1, 1, 0, 2, 0).astimezone(tz=UTC)
         handler.push(int_node, float("nan"), ts0)
 
-        ts01 = datetime(2025, 1, 1, 0, 5, 0).astimezone(tz=timezone.utc)
+        ts01 = datetime(2025, 1, 1, 0, 5, 0).astimezone(tz=UTC)
         handler.push(bytes_node, float("nan"), ts01)
 
         data = handler.data

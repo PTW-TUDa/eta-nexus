@@ -75,7 +75,7 @@ def test_mixed_from_single_config_full(config_opcua_port, config_modbus_port):
         assert opc_df[int_node.name].iloc[0] == 11
         assert opc_df[str_node.name].iloc[0] == "abc"
         opc.delete_nodes({float_node, int_node, str_node})
-        with pytest.raises(RuntimeError, match=".*BadNodeIdUnknown.*"):
+        with pytest.raises(RuntimeError, match=r".*BadNodeIdUnknown.*"):
             opc.read({float_node, int_node, str_node})
 
         # Modbus write/read

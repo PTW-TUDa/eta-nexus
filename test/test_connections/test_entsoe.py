@@ -1,6 +1,6 @@
 import os
 import pathlib
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 
 import pandas as pd
 import pytest
@@ -64,8 +64,8 @@ def test_entsoe_naive_timezone(connection: EntsoeConnection):
 def test_entsoe_timezone(connection: EntsoeConnection):
     node = create_node("Price")
 
-    from_datetime = datetime(2022, 2, 15, 13, 18, 12, tzinfo=timezone.utc)
-    to_datetime = datetime(2022, 2, 15, 14, 15, 31, tzinfo=timezone.utc)
+    from_datetime = datetime(2022, 2, 15, 13, 18, 12, tzinfo=UTC)
+    to_datetime = datetime(2022, 2, 15, 14, 15, 31, tzinfo=UTC)
     res = connection.read_series(nodes=node, from_time=from_datetime, to_time=to_datetime)
     # Compare with correct reference values from entso-e
     assert res.iloc[0, 0] == 126.93

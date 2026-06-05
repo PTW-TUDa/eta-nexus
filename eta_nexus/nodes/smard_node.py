@@ -96,7 +96,7 @@ class SmardNode(Node, protocol="smard"):
         default="quarterhour", kw_only=True, converter=str, validator=validators.in_(VALID_RESOLUTIONS)
     )
 
-    @filter.validator  # type: ignore[attr-defined]
+    @filter.validator  # type: ignore[attr-defined] # noqa: A003
     def _validate_filter(self, attribute, value: int) -> None:  # type: ignore[no-untyped-def]
         """Validate filter is a known filter ID."""
         if value not in ALL_FILTERS.values():

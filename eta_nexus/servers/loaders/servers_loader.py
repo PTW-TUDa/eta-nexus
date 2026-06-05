@@ -6,7 +6,7 @@ from contextlib import suppress
 from logging import getLogger
 from typing import Any, cast
 
-from eta_nexus.nodes import Node
+from eta_nexus.nodes import OpcuaNode
 from eta_nexus.servers import ModbusServer, OpcuaServer
 from eta_nexus.util.io_utils import load_config
 from eta_nexus.util.utils import dict_get_any, url_parse
@@ -40,7 +40,7 @@ def _server_host_port_and_netloc(srv_cfg: Mapping[str, Any], protocol: str) -> t
             with suppress(ValueError):
                 port = int(override)
 
-    netloc = parsed.netloc if parsed.netloc else host if port is None else f"{host}:{port}"
+    netloc = parsed.netloc or (host if port is None else f"{host}:{port}")
     return host, port, netloc
 
 
@@ -138,7 +138,7 @@ def from_dict(**config: Any) -> dict[str, Any]:
 
                 opc_nodes_cfg = nodes_by_alias.get(alias, [])
                 if opc_nodes_cfg:
-                    opc_nodes = Node.from_dict(
+                    opc_nodes = OpcuaNode.from_dict(
                         [
                             {
                                 "name": f"{sys_name}.{node['name']}",

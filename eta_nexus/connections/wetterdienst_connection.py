@@ -27,7 +27,7 @@ from eta_nexus.nodes.wetterdienst_node import (
 WN = TypeVar("WN", bound=WetterdienstNode)
 
 
-class WetterdienstConnection(Generic[WN], Connection[WN], SeriesReadable[WN], ABC):
+class WetterdienstConnection(Connection[WN], SeriesReadable[WN], ABC, Generic[WN]):
     """The WetterdienstConnection class is a connection to the Wetterdienst API for retrieving weather data.
     This class is an abstract base class and should not be used directly. Instead, use the subclasses
     :class:`WetterdienstObservationConnection` and :class:`WetterdienstPredictionConnection`.

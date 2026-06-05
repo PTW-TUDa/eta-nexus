@@ -4,11 +4,11 @@ import os
 import pathlib
 import sys
 import textwrap
-from datetime import datetime, timezone
+import tomllib
+from datetime import UTC, datetime
 
 import pandas as pd
 import pytest
-import toml
 import yaml
 from asyncua import ua
 from dateutil import tz
@@ -207,9 +207,9 @@ def test_round_timestamp(datetime_str, interval, expected):
     ("datetime_str", "interval", "timezone", "expected", "expected_timezone"),
     [
         ("2016-01-01T02:02:02", 1, None, "2016-01-01T02:02:02", tz.tzlocal()),
-        ("2016-01-01T02:02:02", 1, timezone.utc, "2016-01-01T02:02:02", timezone.utc),
-        ("2016-01-01T02:02:02", 60, timezone.utc, "2016-01-01T02:03:00", timezone.utc),
-        ("2016-01-01T02:02:02", 60 * 60, timezone.utc, "2016-01-01T03:00:00", timezone.utc),
+        ("2016-01-01T02:02:02", 1, UTC, "2016-01-01T02:02:02", UTC),
+        ("2016-01-01T02:02:02", 60, UTC, "2016-01-01T02:03:00", UTC),
+        ("2016-01-01T02:02:02", 60 * 60, UTC, "2016-01-01T03:00:00", UTC),
     ],
 )
 def test_round_timestamp_with_timezone(datetime_str, interval, timezone, expected, expected_timezone):
@@ -514,7 +514,7 @@ class TestTomlImport:
         toml_file = tmp_path / "bad.toml"
         toml_file.write_text("[unclosed section")
 
-        with pytest.raises(toml.TomlDecodeError):
+        with pytest.raises(tomllib.TOMLDecodeError):
             toml_import(toml_file)
 
 

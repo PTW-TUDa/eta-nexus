@@ -94,9 +94,9 @@ class WetterdienstObservationNode(WetterdienstNode, protocol="wetterdienst_obser
         if self.parameter not in available_params:
             available_resolutions = []
             for resolution in DwdObservationResolution:
-                params = DwdObservationParameter[resolution.name]  # type: ignore[attr-defined]
+                params = DwdObservationParameter[resolution.name]
                 if self.parameter in [param.name for param in params if type(param) is not enum.EnumMeta]:
-                    available_resolutions.append(resolution.name)  # type: ignore[attr-defined]
+                    available_resolutions.append(resolution.name)
             if len(available_resolutions) == 0:
                 raise ValueError(f"Parameter {self.parameter} is not a valid observation parameter.")
             raise ValueError(

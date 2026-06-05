@@ -173,7 +173,7 @@ class ForecastsolarConnection(
 
         # Sort the DataFrame and return the selected range
         results = results.sort_index()
-        return results.loc[start:end], now  # type: ignore[misc]  # mypy doesn't recognize DatetimeIndex
+        return results.loc[start:end], now
 
     def _process_watts(self, values: pd.DataFrame, nodes: set[ForecastsolarNode]) -> pd.DataFrame:
         """Process the watt values from the Forecast.Solar API.
@@ -245,7 +245,7 @@ class ForecastsolarConnection(
         )
         values = self._get_data(from_time, to_time, nodes, interval, **kwargs)
         values, _ = self._select_data(values, from_time, to_time)
-        values = df_interpolate(values, interval).loc[from_time:to_time]  # type: ignore[misc] # mypy doesn't recognize DatetimeIndex
+        values = df_interpolate(values, interval).loc[from_time:to_time]
         return self._process_watts(values, nodes)
 
     def timestr_from_datetime(self, dt: datetime) -> str:

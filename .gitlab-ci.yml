@@ -26,7 +26,7 @@ include:
 
 variables:
   # Poetry settings
-  POETRY_VERSION: 2.1.1
+  POETRY_VERSION: 2.4.1
   REGISTRY_IMAGE: $CI_REGISTRY/$CI_PROJECT_PATH/poetry${POETRY_VERSION}
 
 default:
@@ -34,7 +34,7 @@ default:
     - python
     - docker
   interruptible: true
-  image: ${REGISTRY_IMAGE}:py3.10
+  image: ${REGISTRY_IMAGE}:py3.11
   before_script:
     - python --version
     - rm -rf dist doc eta_nexus.egg-info build
@@ -133,36 +133,16 @@ linkcheck-docs:
         path: coverage.xml
 
 # This job has test coverage report
-test3.10:
-  extends: .coverage
-
 test3.11:
-  extends: .test
-  script:
-  - pytest --record-mode=none # Run tests without parallelization
-  image: ${REGISTRY_IMAGE}:py3.11
+  extends: .coverage
 
 test3.12:
   extends: .test
   image: ${REGISTRY_IMAGE}:py3.12
 
-# test3.12_updated_deps:
-#   extends: .test
-#   image: ${REGISTRY_IMAGE}:py3.12
-#   needs:
-#     - test3.12
-#   cache: []
-#   script:
-#     - cp poetry.lock poetry.lock.bak  # Backup the lockfile
-#     - poetry update
-#     - |
-#       if ! cmp -s poetry.lock poetry.lock.bak; then
-#         echo "Dependencies were updated! poetry.lock has changed."
-#         pytest --cov --cov-report term --junitxml=./junit.xml
-#       else
-#         echo "No dependencies changed. Skipping tests."
-#       fi
-
+test3.13:
+  extends: .test
+  image: ${REGISTRY_IMAGE}:py3.13
 
 .deploy:
   stage: deploy
@@ -208,8 +188,8 @@ build-docker-images:
     entrypoint: [""]  # allow shell
 
   variables:
-    PYTHON_VERSIONS: "3.10 3.11 3.12"
-    DOCKERFILE_PATH: ".gitlab/docker/dockerfile"
+    PYTHON_VERSIONS: "3.11 3.12 3.13"
+    DOCKERFILE_PATH: ".gitlab/docker/Dockerfile"
     CONTEXT: "$CI_PROJECT_DIR"
 
   rules:
@@ -217,7 +197,7 @@ build-docker-images:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       changes:
         - poetry.lock
-        - .gitlab/docker/dockerfile
+        - .gitlab/docker/Dockerfile
     # Or run manually from GitLab UI
     - when: manual
       allow_failure: true

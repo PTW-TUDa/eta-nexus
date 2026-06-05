@@ -183,7 +183,7 @@ class _CSVFileDB(AbstractContextManager):
     def _check_valid_csv(self) -> None:
         """Check whether the file is a valid csv file."""
         # If the file is not empty, go to the beginning and try to figure out, whether existing data could be extended.
-        if self._file.readline() in "":
+        if self._file.readline() == "":
             valid = True
             self._header = ["Timestamp"]
             self._write_file(self._header)

@@ -478,7 +478,7 @@ class ConnectionManager(AbstractContextManager):
         for name, val in value.items():
             n = f"{self.name}.{name}" if "." not in name and self.name is not None else name
             if self._set_values is not None and n in self._set_values:
-                system, node = n.split(".")
+                system, _ = n.split(".")
 
                 if (self._set_values[n]["min"] is not None and self._set_values[n]["min"] > val) or (
                     self._set_values[n]["max"] is not None and val > self._set_values[n]["max"]

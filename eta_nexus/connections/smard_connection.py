@@ -266,7 +266,7 @@ class SmardConnection(
 
         # Filter to requested time range
         if not result.empty:
-            result = result.loc[from_time:to_time]  # type: ignore[misc]
+            result = result.loc[from_time:to_time]
 
         return result
 

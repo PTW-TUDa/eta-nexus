@@ -48,7 +48,7 @@ Then install Poetry with pipx:
 
 .. code-block:: console
 
-    $ pipx install poetry==2.1.2
+    $ pipx install poetry==2.4.1
 
 
 .. note::
@@ -301,19 +301,18 @@ To update the containers, first you need to log in to GitLab through docker.
     $ docker login git-reg.ptw.maschinenbau.tu-darmstadt.de
 
 
-Then you build and upload the image from the dockerfile. For example, for the pyjulia image use the following command
-inside the project folder:
+Then you build and upload the image from the dockerfile. To build an image for e.g. Python version 3.12, execute::
 
 .. code-block:: console
 
-    $ docker build -t git-reg.ptw.maschinenbau.tu-darmstadt.de/eta-fabrik/public/eta-nexus/pyjulia:py3.9-jl1.9 -f .gitlab/docker/pyjulia-39-19.dockerfile .
+    $ docker build -t git-reg.ptw.maschinenbau.tu-darmstadt.de/eta-fabrik/public/eta-nexus/poetry2.4.1:py3.12 -f .gitlab/docker/Dockerfile --build-arg="PYTHON_VERSION=3.12" .
 
 Using tags for the images is a good practice to differentiate image versions, in case it's not used, it's automatically
 labeled as *latest*. Currently there are three images for Python environments called *python*, with Python versions
-differentiated by tags (py3.9, py3.10 and py3.11) and there is an image with combined Python and Julia installations.
+differentiated by tags (py3.11, py3.12 and py3.13).
 
 The last step is to upload the images to the private docker registry.
 
 .. code-block:: console
 
-    $ docker push git-reg.ptw.maschinenbau.tu-darmstadt.de/eta-fabrik/public/eta-nexus/pyjulia:py3.9-jl1.9
+    $ docker push git-reg.ptw.maschinenbau.tu-darmstadt.de/eta-fabrik/public/eta-nexus/poetry2.4.1:py3.12

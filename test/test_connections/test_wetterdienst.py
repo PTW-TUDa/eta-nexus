@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from dateutil import tz
@@ -61,8 +61,8 @@ class TestWetterdienstConnection:
     def test_observation(self):
         connection = WetterdienstConnection.from_node(obsv_nodes)
 
-        from_datetime = datetime(2024, 1, 16, 15, 00).replace(tzinfo=timezone.utc)
-        to_datetime = datetime(2024, 1, 16, 20, 00).replace(tzinfo=timezone.utc)
+        from_datetime = datetime(2024, 1, 16, 15, 00).replace(tzinfo=UTC)
+        to_datetime = datetime(2024, 1, 16, 20, 00).replace(tzinfo=UTC)
 
         result = connection.read_series(from_time=from_datetime, to_time=to_datetime, interval=timedelta(minutes=20))
 
