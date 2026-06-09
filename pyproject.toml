@@ -180,7 +180,7 @@ exclude_lines = [
 [tool.ruff]
 line-length = 120
 indent-width = 4
-required-version = ">=0.11.2"
+required-version = ">=0.15.14"
 target-version= "py311"
 output-format = "concise"
 # Only fix with $ruff check --fix
