@@ -138,6 +138,7 @@ def test_read_latest_value(solar_node_daily: SmardNode):
     assert result.index.tzinfo is not None  # Timezone aware
     # Should have exactly one data point (the latest)
     assert len(result) == 1
+    assert pd.notna(result[solar_node_daily.name].iloc[0])
 
 
 def test_read_series_integration(connection: SmardConnection, solar_node: SmardNode):

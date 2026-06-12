@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 from logging import getLogger
 from typing import TYPE_CHECKING
 
-import numpy as np
 import pandas as pd
 from requests_cache import CachedSession
 
@@ -99,30 +98,41 @@ class SmardConnection(
         """
         nodes = self._validate_nodes(nodes)
         results: list[pd.DataFrame] = []
+        now = pd.Timestamp.now(tz="UTC")
+        now_ms = self._datetime_to_timestamp_ms(now.to_pydatetime())
 
         for node in nodes:
             # Get available chunk timestamps from index
             available_timestamps = self._get_available_timestamps(node)
 
             if not available_timestamps:
-                self.logger.warning(f"[SMARD] No available data for {node.name}")
+                self.logger.warning(f"[SMARD] No available timestamps found for {node.name}")
                 continue
 
-            # Get the most recent chunk (last timestamp in index)
-            latest_chunk_ts = max(available_timestamps)
+            candidate_timestamps = sorted((ts for ts in available_timestamps if ts <= now_ms), reverse=True)
 
-            # Build URL for the latest chunk
-            request_url = (
-                f"{self.url}/chart_data/{node.filter}/{node.region}/"
-                f"{node.filter}_{node.region}_{node.resolution}_{latest_chunk_ts}.json"
-            )
+            for chunk_ts in candidate_timestamps:
+                # Build URL for the current chunk
+                request_url = (
+                    f"{self.url}/chart_data/{node.filter}/{node.region}/"
+                    f"{node.filter}_{node.region}_{node.resolution}_{chunk_ts}.json"
+                )
 
-            # Fetch the chunk data
-            chunk_data = super()._read_node(node, request_url)
+                # Fetch the chunk data
+                chunk_data = super()._read_node(node, request_url)
 
-            if not chunk_data.empty:
-                # Return only the last row (most recent data point)
-                results.append(chunk_data.iloc[[-1]])
+                if chunk_data.empty:
+                    continue
+
+                current_time = now.tz_convert(chunk_data.index.tz) if chunk_data.index.tz else now.tz_localize(None)
+                current_data = chunk_data.loc[:current_time].dropna()
+
+                if not current_data.empty:
+                    # Return only the last valid row at or before the current time
+                    results.append(current_data.iloc[[-1]])
+                    break
+            else:
+                self.logger.warning(f"[SMARD] No valid current value found for {node.name}")
 
         if not results:
             self.logger.warning("[SMARD] No data retrieved from any node")
@@ -153,7 +163,7 @@ class SmardConnection(
 
         # Split [timestamp, value] pairs
         timestamps_ms = [item[0] for item in series if item[0] is not None]
-        values = [item[1] if item[1] is not None else np.nan for item in series]
+        values = [item[1] if item[1] is not None else float("nan") for item in series]
 
         # Convert millisecond timestamps to datetime
         timestamps = pd.to_datetime(timestamps_ms, unit="ms", utc=True)
