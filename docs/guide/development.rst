@@ -250,6 +250,29 @@ You can combine coverage with parallel execution:
 
 For more coverage options, see the `pytest-cov documentation <https://pytest-cov.readthedocs.io/en/stable/>`_.
 
+(Re-)Recording API-Requests
+^^^^^^^^^^^^^^^^^^^^^^^^
+We use `pytest-recording <https://github.com/kiwicom/pytest-recording>`_, a pytest-native VCR Wrapper to record
+API-requests and run later tests against the prerecorded
+cassettes. You will inevitably run into the issue where you need to re-record the VCR cassettes to adapt them
+to new features or changed behavior of existing features. For this, the recording behaviour is controlled via
+the ``--record-mode`` CLI flag passed to pytest:
+
+.. code-block:: bash
+
+    # Record new cassettes against real API
+    pytest --record-mode=all test/test_connections/test_smard.py
+
+    # Replay only: fail if cassette missing (default / CI mode)
+    pytest --record-mode=none test/test_connections/test_smard.py
+
+
+The default record mode is ``none``, enforced in CI to guarantee VCR marked tests never make real network requests.
+
+You can find more detailed information in the `original MR <https://git.ptw.maschinenbau.tu-darmstadt.de/eta-fabrik/public/eta-nexus/-/merge_requests/76>`_
+and in the `README <https://github.com/kiwicom/pytest-recording>`_ of pytest-recording as well as the
+`official VRC documentation <https://vcrpy.readthedocs.io/en/latest/usage.html#record-modes>`_.
+
 Editing this documentation
 -----------------------------
 
