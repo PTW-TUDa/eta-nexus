@@ -26,8 +26,8 @@ dependencies = [
     "asyncua-fork-for-eta-utility ==1.0.7",
     "requests >=2.31.0,<3.0.0",
     "pymodbustcp >=0.3.0,<0.4.0",
-    "cryptography (>=44.0.2,<=48.0.0)",
-    "wetterdienst >=0.97.0,<0.98.0",  # breaking changes expected
+    "cryptography >=44.0.2,<=49.0.0",
+    "wetterdienst >=0.119.0",
     "pint ==0.24.4",
     "requests-cache >=1.2.0,<2.0.0",
     "pyyaml >=6.0.2,<7.0.0",
@@ -72,10 +72,6 @@ include = [
     {path="examples/", format=["sdist"]}
 ]
 
-[tool.poetry.group.examples.dependencies]
-# Versions defined above to ensure pip compatibility
-onnxruntime= "*"
-
 [tool.poetry.group.docs.dependencies]
 # Versions defined above to ensure pip compatibility
 sphinx = "*"
@@ -103,6 +99,7 @@ types-requests = "^2.31.0.10"
 types-pytz = "^2025.2.0.20250326"
 pytest-xdist = {version = "^3.8.0", extras = ["psutil"]}
 pytest-recording = "^0.13.4"
+aiohttp = ">=3.13.2, <3.14"
 
 [tool.mypy]
 python_version = "3.11"

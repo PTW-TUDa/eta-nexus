@@ -46,9 +46,8 @@ class WetterdienstConnection(Connection[WN], SeriesReadable[WN], ABC, Generic[WN
         settings: Settings | None = None,
         **kwargs: Any,
     ) -> None:
-        self.settings = Settings(settings=settings)
+        self.settings = settings or Settings()
         self.settings.ts_skip_empty = True
-        self.settings.ts_si_units = False
         self.settings.ts_humanize = True
         super().__init__("https://opendata.dwd.de/", nodes=nodes)  # dummy url
 
@@ -138,10 +137,11 @@ class WetterdienstObservationConnection(
         def _read_node(node: WetterdienstObservationNode) -> pd.Dataframe:
             # Get the resolution for the node from the interval
             resolution = WetterdienstObservationNode.convert_interval_to_resolution(node.interval)
+
+            parameters = f"{resolution}/{node.find_dataset(resolution)}/{node.parameter}"
             # Create a request object for the node
             request: DwdObservationRequest = DwdObservationRequest(
-                parameter=node.parameter,
-                resolution=resolution,
+                parameters=parameters,
                 start_date=from_time,
                 end_date=to_time,
                 settings=self.settings,
