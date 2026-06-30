@@ -49,6 +49,10 @@ class ModbusServer:
         self.url_parsed, _, _ = url_parse(self.url)
         self._url = self.url_parsed  # For compatibility with tests that expect _url
 
+        #: Nodes configured for this server (e.g. attached by the servers loader). Modbus does not require
+        #: pre-registration of nodes, so this is purely informational/introspective.
+        self.nodes: list[ModbusNode] | None = None
+
         self._server: BaseModbusServer = BaseModbusServer(self.url_parsed.hostname, self.url_parsed.port, no_block=True)
         self.start()
 

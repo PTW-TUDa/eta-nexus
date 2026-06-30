@@ -6,7 +6,7 @@ from contextlib import suppress
 from logging import getLogger
 from typing import Any, cast
 
-from eta_nexus.nodes import OpcuaNode
+from eta_nexus.nodes import ModbusNode, OpcuaNode
 from eta_nexus.servers import ModbusServer, OpcuaServer
 from eta_nexus.util.io_utils import load_config
 from eta_nexus.util.utils import dict_get_any, url_parse
@@ -161,9 +161,34 @@ def from_dict(**config: Any) -> dict[str, Any]:
 
                 servers[key] = opc_server
 
-            else:
-                host, port, _ = _server_host_port_and_netloc(srv_dict, protocol)
+            elif protocol == "modbus":
+                host, port, netloc = _server_host_port_and_netloc(srv_dict, protocol)
                 modbus_server = ModbusServer(ip=host, port=port or 502)
+
+                # Unlike OPC UA, Modbus needs no node pre-registration: the databank auto-expands on
+                # read/write (see ModbusServer._ensure_databank_capacity). The nodes are instantiated and
+                # attached purely for introspection/symmetry with the OPC UA branch.
+                mb_nodes_cfg = nodes_by_alias.get(alias, [])
+                if mb_nodes_cfg:
+                    mb_nodes = ModbusNode.from_dict(
+                        [
+                            {
+                                "name": f"{sys_name}.{node['name']}",
+                                "url": netloc,
+                                "protocol": protocol,
+                                "usr": usr,
+                                "pwd": pwd,
+                                "mb_byteorder": dict_get_any(
+                                    dict(node), "mb_byteorder", "modbusbyteorder", fail=False, default="big"
+                                ),
+                                **{k: v for k, v in node.items() if k not in {"server", "name"}},
+                            }
+                            for node in mb_nodes_cfg
+                        ]
+                    )
+                    with suppress(AttributeError, TypeError):
+                        cast("Any", modbus_server).nodes = mb_nodes
+
                 servers[key] = modbus_server
 
     return servers

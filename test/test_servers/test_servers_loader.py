@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from eta_nexus.nodes import Node
+from eta_nexus.nodes import ModbusNode, Node, OpcuaNode
 from eta_nexus.servers import ModbusServer, OpcuaServer
 from eta_nexus.servers.loaders.servers_loader import from_config
 from eta_nexus.util.io_utils import load_config
@@ -103,6 +103,42 @@ def test_mixed_from_single_config_full(config_opcua_port, config_modbus_port):
                     assert res[name].iloc[0] == val
             else:
                 assert res[name].iloc[0] == pytest.approx(val)
+    finally:
+        for server in servers.values():
+            with suppress(Exception):
+                server.stop()
+        os.environ.pop("ETA_NEXUS_TEST_OPCUA_PORT", None)
+        os.environ.pop("ETA_NEXUS_TEST_MODBUS_PORT", None)
+
+
+def test_loader_attaches_nodes_to_both_servers(config_opcua_port, config_modbus_port):
+    """The loader should instantiate and attach the configured nodes to both server types."""
+    cfg_path = Path("./test/resources/connection_manager/config_mixed.yaml")
+    assert cfg_path.exists()
+
+    os.environ["ETA_NEXUS_TEST_OPCUA_PORT"] = str(config_opcua_port)
+    os.environ["ETA_NEXUS_TEST_MODBUS_PORT"] = str(config_modbus_port)
+    servers = from_config(cfg_path)
+    try:
+        opc = servers["MIX.glt"]
+        mb = servers["MIX.mb1"]
+
+        # OPC UA nodes are attached (existing behavior).
+        assert opc.nodes is not None
+        assert all(isinstance(n, OpcuaNode) for n in opc.nodes)
+        assert {n.name for n in opc.nodes} == {"MIX.NodeFloat", "MIX.NodeInt", "MIX.NodeStr"}
+
+        # Modbus nodes are now also instantiated and attached (mb_byteorder defaulted to "big").
+        assert mb.nodes is not None
+        assert all(isinstance(n, ModbusNode) for n in mb.nodes)
+        assert {n.name for n in mb.nodes} == {
+            "MIX.int_val",
+            "MIX.float_val",
+            "MIX.str_val",
+            "MIX.coil1",
+            "MIX.coil4",
+        }
+        assert all(n.mb_byteorder == "big" for n in mb.nodes)
     finally:
         for server in servers.values():
             with suppress(Exception):
