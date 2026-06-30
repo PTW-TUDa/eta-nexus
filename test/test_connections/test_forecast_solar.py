@@ -1,5 +1,6 @@
 import os
 from datetime import datetime, timedelta
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
@@ -10,9 +11,6 @@ from dateutil import tz
 from eta_nexus.connections import ForecastsolarConnection
 from eta_nexus.nodes import ForecastsolarNode
 from test.utilities.vcr.forecast_solar import _scrub_request, _scrub_response, custom_matcher
-
-DUMMY_TOKEN = "A1B2C3D4E5F6G7H8"
-API_KEY = os.getenv("FORECAST_SOLAR_API_TOKEN", DUMMY_TOKEN)  # Use dummy token if not set
 
 
 # Sample node
@@ -34,7 +32,6 @@ def forecast_solar_nodes(config_forecast_solar: dict[str, str]) -> dict[str, For
             name="node_forecast_solar2",
             url=config_forecast_solar["url"],
             protocol="forecast_solar",
-            api_key=API_KEY,
             latitude=51.15,
             longitude=10.45,
             declination=20,
@@ -45,7 +42,6 @@ def forecast_solar_nodes(config_forecast_solar: dict[str, str]) -> dict[str, For
             name="node_forecast_solar3",
             url=config_forecast_solar["url"],
             protocol="forecast_solar",
-            api_key=API_KEY,
             latitude=51.15,
             longitude=10.45,
             declination=20,
@@ -56,7 +52,6 @@ def forecast_solar_nodes(config_forecast_solar: dict[str, str]) -> dict[str, For
             name="node_forecast_solar3",
             url=config_forecast_solar["url"],
             protocol="forecast_solar",
-            api_key=API_KEY,
             latitude=49.86381,
             longitude=8.68105,
             declination=[14, 10, 10],
@@ -70,6 +65,12 @@ def forecast_solar_nodes(config_forecast_solar: dict[str, str]) -> dict[str, For
 def connection(scope="module"):
     with ForecastsolarConnection() as connection:
         yield connection
+
+
+@pytest.fixture
+def api_token_in_environment(api_token="A1B2C3D4E5F6G7H8"):
+    with patch.dict(os.environ, {"FORECAST_SOLAR_API_TOKEN": api_token}) as env_patch:
+        yield env_patch
 
 
 def test_node_from_dict():
@@ -103,6 +104,26 @@ def test_node_from_dict():
         assert node.endpoint == "estimate", (
             "Invalid endpoint for the forecastsolar.api, default endpoint is 'estimate'."
         )
+
+
+def test_api_key_from_environment(forecast_solar_nodes, api_token_in_environment):
+    connection = ForecastsolarConnection.from_node(forecast_solar_nodes["node2"])
+    # Check that env api token is overwritten with hardcoded keyword argument
+    assert connection._api_token == "A1B2C3D4E5F6G7H8", "API Token was not taken from environment!"
+    # Check if connection correctly grabs env api token,
+
+
+def test_api_key_from_keyword(forecast_solar_nodes, api_token_in_environment):
+    connection = ForecastsolarConnection.from_node(forecast_solar_nodes["node"], api_token="A9B9C9D9E9F9G9H9")
+    assert connection._api_token == "A9B9C9D9E9F9G9H9", (
+        "Keyword argument '_api_token' does not overwrite environment variable!"
+    )
+
+
+def test_no_api_key_in_environment(forecast_solar_nodes):
+    # Check that key is None, if env-variable is none.
+    connection = ForecastsolarConnection.from_node(forecast_solar_nodes["node3"])
+    assert connection._api_token is None
 
 
 @pytest.mark.live
@@ -230,12 +251,13 @@ class TestConnectionOperations:
     def test_read_multiple_nodes(
         self, forecast_solar_nodes: dict[str, ForecastsolarNode], connection: ForecastsolarConnection
     ):
-        api_key = API_KEY
-        n = forecast_solar_nodes["node"].evolve(api_key=api_key)
-        nodes = [n]
-        nodes.append(n.evolve(declination=30, azimuth=90, kwp=10))
-        nodes.append(n.evolve(declination=10, azimuth=60, kwp=40))
-        nodes.append(n.evolve(latitude=37.6, longitude=-116.8))
+        n = forecast_solar_nodes["node"]
+        nodes = [
+            n,
+            n.evolve(declination=30, azimuth=90, kwp=10),
+            n.evolve(declination=10, azimuth=60, kwp=40),
+            n.evolve(latitude=37.6, longitude=-116.8),
+        ]
 
         # Range of possible values for query parameters (except horizon)
         query_params = {
@@ -260,8 +282,9 @@ class TestConnectionOperations:
         assert len(result.columns) == len(nodes), "The result has the wrong number of columns"
         assert result.shape == (121, len(nodes)), "The result has the wrong size of data"
 
-    def test_connection_from_node(self, forecast_solar_nodes: dict[str, ForecastsolarNode]):
+    def test_connection_from_node(self, forecast_solar_nodes: dict[str, ForecastsolarNode], api_token_in_environment):
         # Test connection from node
+        # api token for connection of node 4 (multiple planes) is passed via env)
         nodes = [forecast_solar_nodes["node3"], forecast_solar_nodes["node4"]]
         start = datetime(2024, 9, 18, 12, 0)
         end = start + timedelta(hours=2)

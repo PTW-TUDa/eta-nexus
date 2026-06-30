@@ -19,15 +19,14 @@ def test_forecastsolar_invalid_token_real_http_error(caplog):
         name="Forecastsolar Node",
         url="https://api.forecast.solar",
         protocol="forecast_solar",
-        api_key="A1B2C3D4E5F6G7H8",
         latitude=49.86381,
         longitude=8.68105,
-        declination=[14],
-        azimuth=[90],
-        kwp=[23.31],
+        declination=[14, 23],
+        azimuth=[90, -90],
+        kwp=[23.31, 10.5],
     )
 
-    conn = ForecastsolarConnection.from_node(node)
+    conn = ForecastsolarConnection.from_node(node, api_token="A1B2C3D4E5F6G7H8")
 
     result = conn.read_series(
         from_time=datetime(2024, 5, 7), to_time=datetime(2024, 5, 7, 1), interval=timedelta(minutes=15)

@@ -21,10 +21,11 @@ For more information, visit the `forecast.solar API documentation <https://doc.f
 
 from __future__ import annotations
 
+import re
 import traceback
 from datetime import datetime, timedelta
 from logging import getLogger
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 import pandas as pd
@@ -41,6 +42,21 @@ if TYPE_CHECKING:
     from typing import Any, ClassVar
 
     from eta_nexus.util.type_annotations import Nodes, Self, TimeStep
+
+
+def _check_api_key(value: str) -> None:
+    """Attrs validator to check if the API key is set."""
+    if re.match(r"[A-Za-z0-9]{16}", value) is None:
+        raise ValueError("'api_key' must be a 16 character long alphanumeric string.")
+
+
+def timestr_from_datetime(dt: datetime) -> str:
+    """Create an Forecast.Solar compatible time string.
+
+    :param dt: Datetime object to convert to string.
+    :return: Forecast.Solar compatible time string.
+    """
+    return dt.isoformat(sep="T", timespec="seconds").replace(":", "%3A").replace("+", "%2B")
 
 
 class ForecastsolarConnection(
@@ -76,15 +92,35 @@ class ForecastsolarConnection(
         nodes: Nodes[ForecastsolarNode] | None = None,
         retry_total: int = 3,
         retry_backoff_factor: float = 1.0,
+        **kwargs: Any,
     ) -> None:
-        super().__init__(
-            url, None, None, nodes=nodes, retry_total=retry_total, retry_backoff_factor=retry_backoff_factor
-        )
+        super().__init__(url, nodes=nodes, retry_total=retry_total, retry_backoff_factor=retry_backoff_factor, **kwargs)
 
-        if self._api_token is None:
+        _display_api_token_warning = False
+        if nodes:
+            for node in nodes:
+                if (
+                    any(
+                        isinstance(_feat, list) and len(_feat) > 1
+                        for _feat in [node.declination, node.azimuth, node.kwp]
+                    )
+                    and not self._api_token
+                ):
+                    raise ValueError(
+                        f"For node '{node.connection_identifier()}' a valid API key is needed for multiple planes"
+                    )
+                if self._api_token is None and (node.endpoint not in ["estimate", "check"]):
+                    raise ValueError(
+                        f"Valid API key is needed for endpoint: "
+                        f"{node.endpoint} of node '{node.connection_identifier()}'."
+                    )
+                if self._api_token is None and (node.endpoint in ["estimate", "check"]):
+                    _display_api_token_warning = True
+
+        if _display_api_token_warning:
             self.logger.info(
                 """FORECAST_SOLAR_API_TOKEN environment variable is not set.
-                Only public functions of the Forecast.Solar API are available."""
+                    Only public functions of the Forecast.Solar API are available."""
             )
         #: Url parameters for the forecast.Solar API
         self.url_params: dict[str, Any] | None = url_params
@@ -113,7 +149,20 @@ class ForecastsolarConnection(
         :param node: Node to initialize from.
         :return: ForecastsolarConnection object.
         """
-        return super()._from_node(node)
+        return cast("ForecastsolarConnection", super()._from_node(node, **kwargs))
+
+    @classmethod
+    def from_node(
+        cls,
+        node: Nodes[ForecastsolarNode] | ForecastsolarNode,
+        usr: str | None = None,
+        pwd: str | None = None,
+        **kwargs: Any,
+    ) -> ForecastsolarConnection:
+        return cast(
+            "ForecastsolarConnection",
+            super().from_node(node, usr, pwd, **kwargs),
+        )
 
     def _parse_response(self, json_data: dict[Any, Any]) -> tuple[pd.DatetimeIndex, np.ndarray]:
         """Parse the response from the Forecast.Solar API into a DataFrame.
@@ -146,6 +195,9 @@ class ForecastsolarConnection(
         :return: pandas.DataFrame containing the data read from the connection.
         """
         url, query_params = node.url, node._query_params
+        # Inject API-Token into URL
+        if self.api_token:
+            url = url.replace(self._baseurl, self._baseurl + "/" + self.api_token)
         query_params["time"] = "utc"
 
         return super()._read_node(node, url, params=query_params)
@@ -247,14 +299,6 @@ class ForecastsolarConnection(
         values, _ = self._select_data(values, from_time, to_time)
         values = df_interpolate(values, interval).loc[from_time:to_time]
         return self._process_watts(values, nodes)
-
-    def timestr_from_datetime(self, dt: datetime) -> str:
-        """Create an Forecast.Solar compatible time string.
-
-        :param dt: Datetime object to convert to string.
-        :return: Forecast.Solar compatible time string.
-        """
-        return dt.isoformat(sep="T", timespec="seconds").replace(":", "%3A").replace("+", "%2B")
 
     @classmethod
     def route_valid(cls, nodes: Nodes, **kwargs: Any) -> bool:
