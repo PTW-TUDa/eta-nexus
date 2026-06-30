@@ -472,14 +472,18 @@ class RESTConnection(Connection[N], ABC):
         nodes: Nodes[N] | None = None,
         retry_total: int = 3,
         retry_backoff_factor: float = 1.0,
+        api_token: str | None = None,
     ) -> None:
         super().__init__(url, usr, pwd, nodes=nodes)
         self._retry_total = retry_total
         self._retry_backoff_factor = retry_backoff_factor
+        self.api_token = api_token
 
     @property
     def _api_token(self) -> str | None:
         """Return the API token from the environment variable if set."""
+        if self.api_token:
+            return self.api_token
         token = os.getenv(self._PROTOCOL.upper() + "_API_TOKEN")
         if token is None:
             self.logger.warning(

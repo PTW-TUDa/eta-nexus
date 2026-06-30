@@ -43,7 +43,6 @@ def read_series() -> pd.DataFrame:
         name="Forecastsolar Node",
         url="https://api.forecast.solar",
         protocol="forecast_solar",
-        api_key="A1B2C3D4E5F6G7H8",  # Your API key
         latitude=49.86381,
         longitude=8.68105,
         declination=[14, 10, 10],
@@ -52,7 +51,7 @@ def read_series() -> pd.DataFrame:
     )
 
     # Create a connection instance from the node_eta using the from_node method
-    conn_eta = ForecastsolarConnection.from_node(node_eta)
+    conn_eta = ForecastsolarConnection.from_node(node_eta, api_token="A1B2C3D4E5F6G7H8")
 
     if isinstance(conn_eta, ForecastsolarConnection):
         # Get a series of estimations for a specified time interval

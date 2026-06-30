@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import ast
-import re
 from logging import getLogger
 from sys import maxsize
 from typing import TYPE_CHECKING
@@ -14,12 +13,10 @@ from attrs import (
 )
 
 from eta_nexus.nodes.node import Node, _dtype_converter
-from eta_nexus.util import dict_get_any
 
 if TYPE_CHECKING:
     from collections.abc import Callable
     from typing import Any, TypeAlias
-
 
 log = getLogger(__name__)
 
@@ -43,12 +40,6 @@ def _convert_list(_type: TypeAlias) -> Callable:
             raise ValueError(f"Could not convert value to {_type} ({value}).") from e
 
     return converter
-
-
-def _check_api_key(instance, attribute, value) -> None:  # type: ignore[no-untyped-def]
-    """Attrs validator to check if the API key is set."""
-    if re.match(r"[A-Za-z0-9]{16}", value) is None:
-        raise ValueError("'api_key' must be a 16 character long alphanumeric string.")
 
 
 def _check_plane(_type: TypeAlias, lower: int, upper: int) -> Callable:
@@ -133,9 +124,6 @@ class ForecastsolarNode(Node, protocol="forecast_solar", attrs_args=attrs_args):
     * The location of the forecast solar plane(s): **latitude**, **longitude**,
     * Plane parameters: **declination**, **azimuth** and **kwp**.
 
-    Additionally **api_key** must be set for endpoints other than 'estimate',
-    multiple planes or if requests capacity is exceeded.
-
     For multiple planes, the parameters shall be passed as lists of the same length
     (e.g. [0, 30], [180, 180], [5, 5]).
 
@@ -146,9 +134,6 @@ class ForecastsolarNode(Node, protocol="forecast_solar", attrs_args=attrs_args):
 
     # URL PARAMETERS
     # ----------------
-
-    #: API key for the Forecast.Solar API; string
-    api_key: str | None = field(repr=False, converter=str, validator=_check_api_key, metadata={"QUERY_PARAM": False})
     #: Endpoint in (estimate, history, clearsky), defaults to estimate; string
     endpoint: str = field(
         default="estimate",
@@ -229,15 +214,11 @@ class ForecastsolarNode(Node, protocol="forecast_solar", attrs_args=attrs_args):
             if isinstance(self.declination, list) and isinstance(self.azimuth, list) and isinstance(self.kwp, list):
                 if not len(self.declination) == len(self.azimuth) == len(self.kwp):
                     raise ValueError("'declination', 'azimuth' and 'kwp' must be passed for all planes")
-                if self.api_key is None:
-                    raise ValueError("Valid API key is needed for multiple planes")
             else:
                 raise TypeError(
                     "'declination', 'azimuth' and 'kwp' must be passed either as lists or as single values."
                 )
 
-        if self.api_key is None and (self.endpoint not in ["estimate", "check"]):
-            raise ValueError(f"Valid API key is needed for endpoint: {self.endpoint}")
         # Collect all url parameters and query parameters
         url_params = {}
         query_params = {}
@@ -266,10 +247,6 @@ class ForecastsolarNode(Node, protocol="forecast_solar", attrs_args=attrs_args):
         url = "https://api.forecast.solar"
         keys = ["endpoint", "latitude", "longitude"]
 
-        # Check if the API key is set and add it to the URL
-        if url_params["api_key"] is not None:
-            keys.insert(0, "api_key")
-
         for key in keys:
             url += f"/{url_params[key]}"
             if key == "endpoint":
@@ -291,10 +268,10 @@ class ForecastsolarNode(Node, protocol="forecast_solar", attrs_args=attrs_args):
         """Get the common parameters for a Forecast Solar node.
 
         :param dikt: dictionary with node information.
-        :return: dict with: api_key, endpoint, latitude, longitude, declination, azimuth, kwp
+        :return: dict with: endpoint, latitude, longitude, declination, azimuth, kwp
         """
         attr_names = ForecastsolarNode.__annotations__.keys()
-        discard_keys = ["api_key", "_url_params", "_query_params"]
+        discard_keys = ["_url_params", "_query_params"]
         attributes = {key: dikt.get(key) for key in attr_names if key not in discard_keys}
         # return only non-"nan" values
         return {key: value for key, value in attributes.items() if str(value) not in ["None", "nan"]}
@@ -309,16 +286,6 @@ class ForecastsolarNode(Node, protocol="forecast_solar", attrs_args=attrs_args):
         name, _, url, _, _ = cls._read_dict_info(dikt)
 
         params = cls._get_params(dikt)
-
-        dict_key = str(dict_get_any(dikt, "api_key", "apikey", fail=False))
-        if dict_key not in ["None", "nan"]:
-            params["api_key"] = dict_key
-        else:
-            log.info(
-                """'api_key' is None.
-                Make sure to pass a valid API key to use the personal or the professional functions of forecastsolar.api
-                otherwise the public functions are only available."""
-            )
 
         # Convert lists given as strings to their literal values
         for key in ["declination", "azimuth", "kwp"]:
