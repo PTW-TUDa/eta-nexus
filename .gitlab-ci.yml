@@ -1,4 +1,5 @@
 stages:
+  - image-build
   - setup
   - check
   - test
@@ -246,23 +247,31 @@ deploy-pypi:
       - eta_nexus.egg-info/
 
 build-docker-images:
-  stage: setup
+  # Build dependency images before setup jobs pull ${REGISTRY_IMAGE} after dependency image inputs change.
+  stage: image-build
   image:
     name: gcr.io/kaniko-project/executor:debug
-    entrypoint: [""]  # allow shell
+    entrypoint: [""]
+  cache: []
+
+  # Run one Kaniko executor per job container; repeated executor calls in one container are fragile.
+  parallel:
+    matrix:
+      - PYTHON_VERSION: ["3.11", "3.12", "3.13"]
 
   variables:
-    PYTHON_VERSIONS: "3.11 3.12 3.13"
     DOCKERFILE_PATH: ".gitlab/docker/Dockerfile"
     CONTEXT: "$CI_PROJECT_DIR"
 
   rules:
-    # Only run on development branch when poetry.lock or dockerfile changes
+    # Only run automatically on the default branch when dependency image inputs change.
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       changes:
         - poetry.lock
+        - pyproject.toml
         - .gitlab/docker/Dockerfile
-    # Or run manually from GitLab UI
+        - .gitlab-ci.yml
+    # Or run manually from GitLab UI.
     - when: manual
       allow_failure: true
   before_script:
@@ -281,20 +290,16 @@ build-docker-images:
       EOF
 
   script:
+    - IMAGE_NAME="${REGISTRY_IMAGE}:py${PYTHON_VERSION}"
+    - echo "Building and pushing ${IMAGE_NAME} with Kaniko..."
     - |
-      for PYTHON_VERSION in $PYTHON_VERSIONS; do
-        IMAGE_NAME="${REGISTRY_IMAGE}:py${PYTHON_VERSION}"
-        echo "Building and pushing ${IMAGE_NAME} with Kaniko..."
-
-        /kaniko/executor \
-          --context "${CONTEXT}" \
-          --dockerfile "${CONTEXT}/${DOCKERFILE_PATH}" \
-          --destination "${IMAGE_NAME}" \
-          --build-arg "PYTHON_VERSION=${PYTHON_VERSION}" \
-          --build-arg "POETRY_VERSION=${POETRY_VERSION}" \
-          --cache=true \
-          --cache-repo "${REGISTRY_IMAGE}/cache" \
-          --cleanup
-
-        echo "Pushed ${IMAGE_NAME}"
-      done
+      /kaniko/executor \
+        --context "${CONTEXT}" \
+        --dockerfile "${CONTEXT}/${DOCKERFILE_PATH}" \
+        --destination "${IMAGE_NAME}" \
+        --build-arg "PYTHON_VERSION=${PYTHON_VERSION}" \
+        --build-arg "POETRY_VERSION=${POETRY_VERSION}" \
+        --cache=true \
+        --cache-repo "${REGISTRY_IMAGE}/cache" \
+        --cleanup
+    - echo "Pushed ${IMAGE_NAME}"
