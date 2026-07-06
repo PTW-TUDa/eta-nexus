@@ -11,6 +11,8 @@ We further acknowledge the contributions of the following individuals to this pa
 - *Hannes Albert*
 - *Nick Finger*
 - *Tobias Lademann*
+- *Robin Zink*
+- *Borys Ioshchikhes*
 - *Jiale Chen*
 - *Md Shadman Hasan*
 - *Nina Strobel* — Initial implementation of the connectors
@@ -26,3 +28,5 @@ We further acknowledge the contributions of the following individuals to this pa
 - *Tobias Koch*
 - *Saahil Nayyer*
 - *Magdalena Patyna*
+- *Oliver Griess*
+- *Palina Severyna*
