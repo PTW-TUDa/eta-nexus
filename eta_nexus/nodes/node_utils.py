@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import Counter
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -19,9 +20,11 @@ def name_map_from_node_sequence(nodes: Nodes[N]) -> dict[str, N]:
     :param nodes: Sequence of Node objects.
     :return: Dictionary of Node objects (format: {node.name: Node}).
     """
-    if len({node.name for node in nodes}) != len([node.name for node in nodes]):
-        raise ValueError("Not all node names are unique. Cannot safely convert to named dictionary.")
+    counts = Counter(node.name for node in nodes)
+    duplicates = [name for name, count in counts.items() if count > 1]
 
+    if duplicates:
+        raise ValueError(f"Node names are not unique. The following duplicates exist: {duplicates}")
     return {node.name: node for node in nodes}
 
 
