@@ -9,8 +9,11 @@ autoload_env()
 url = os.getenv("INFLUX_HOST")
 if not url:
     raise ValueError("Set INFLUX_HOST env variable.")
+
+# --begin_influx_doc_example--
 node = InfluxNode(name="hum", url=url, protocol="influx", database="foo", table="home")
 conn = InfluxConnection.from_node(node)
 now = datetime.now(UTC)
 from_time = now - timedelta(hours=1)
 res = conn.read_series(from_time=from_time, to_time=now)
+# --end_influx_doc_example--

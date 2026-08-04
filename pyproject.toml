@@ -74,10 +74,11 @@ include = [
 
 [tool.poetry.group.docs.dependencies]
 # Versions defined above to ensure pip compatibility
-sphinx = "*"
-sphinx-rtd-theme = "*"
-sphinx-copybutton = "*"
-esbonio = "*"
+sphinx = ">=8.0.0,<9.0.0"
+sphinx-rtd-theme = ">=3.0.0,<4.0.0"
+sphinx-copybutton = ">=0.5.2,<0.6.0"
+esbonio = ">=0.16.5,<0.17.0"
+roman-numerals = ">=4.1.0,<5.0.0"
 
 #  '^' limits to the next major version, '~' limits to the next minor version
 # e.g. ^3.9.0: 3.9.0 <= x < 4.0.0 and ~3.9.0: 3.9.0 <= x < 3.10.0

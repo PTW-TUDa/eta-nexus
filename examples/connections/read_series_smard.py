@@ -12,7 +12,6 @@ def main() -> None:
 
 def read_series() -> pd.DataFrame:
     # --begin_smard_doc_example--
-
     # Construct a node with the necessary information to request data from the SMARD API
     # SMARD provides German electricity market data from Bundesnetzagentur
     node = SmardNode(
