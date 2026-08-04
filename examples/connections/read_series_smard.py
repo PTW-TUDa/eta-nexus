@@ -17,7 +17,7 @@ def read_series() -> pd.DataFrame:
     # SMARD provides German electricity market data from Bundesnetzagentur
     node = SmardNode(
         name="Solar_Generation_DE",
-        url="https://smard.api.proxy.bund.dev/app",
+        url="https://smard.de/app",
         protocol="smard",
         filter=4068,  # Solar power generation (can also use string name "solar")
         region="DE",  # Germany

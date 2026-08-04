@@ -152,7 +152,7 @@ class SmardNode(Node, protocol="smard"):
         try:
             return cls(
                 name=name,
-                url=url or "https://smard.api.proxy.bund.dev/app",
+                url=url or "https://smard.de/app",
                 protocol="smard",
                 usr=usr,
                 pwd=pwd,
