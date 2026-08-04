@@ -217,6 +217,9 @@ class ForecastsolarConnection(
         # Determine start and end times
         start = round_timestamp(from_time or now, 900, method="floor")
         end = round_timestamp(to_time or start, 900, method="ceil")
+        if isinstance(results.index, pd.DatetimeIndex) and results.index.tz is not None:
+            start = pd.Timestamp(start).tz_convert(results.index.tz)
+            end = pd.Timestamp(end).tz_convert(results.index.tz)
 
         # Ensure start and end indices exist in the DataFrame
         for timestamp in [start, end]:

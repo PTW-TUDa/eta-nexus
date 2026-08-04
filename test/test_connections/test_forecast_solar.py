@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
 
 import numpy as np
@@ -216,6 +216,19 @@ class TestConnectionOperations:
         assert isinstance(res, pd.DataFrame)
         assert res.index.tzinfo == tz.tzlocal(), "The index should be timezone aware"
         assert res.shape == (385, 2), "The result has the wrong size of data"
+
+    def test_select_data_keeps_datetime_index_for_utc_bounds(self, connection: ForecastsolarConnection):
+        index = pd.date_range("2026-02-17 07:00", periods=3, freq="1h", tz=connection._local_tz)
+        values = pd.DataFrame({"pv": [0.0, 1.0, 2.0]}, index=index)
+
+        selected, _ = connection._select_data(
+            values,
+            datetime(2026, 2, 17, 6, tzinfo=UTC),
+            datetime(2026, 2, 17, 8, tzinfo=UTC),
+        )
+
+        assert isinstance(selected.index, pd.DatetimeIndex)
+        assert selected.index.tz == connection._local_tz
 
     def test_read_data_types(
         self, forecast_solar_nodes: dict[str, ForecastsolarNode], connection: ForecastsolarConnection

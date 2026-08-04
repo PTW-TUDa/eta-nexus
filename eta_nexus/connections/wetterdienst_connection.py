@@ -169,7 +169,7 @@ class WetterdienstPredictionConnection(
         from_time: datetime,
         to_time: datetime,
         nodes: WetterdienstPredictionNode | Nodes[WetterdienstPredictionNode] | None = None,
-        interval: TimeStep = 0,
+        interval: TimeStep = 3600,
         **kwargs: Any,
     ) -> pd.DataFrame:
         """Read weather prediction data from the Wetterdienst API for the given nodes.
