@@ -253,7 +253,7 @@ fail_nodes = (
     (
         {
             "name": "Serv.SmardNode",
-            "url": "https://smard.api.proxy.bund.dev/app",
+            "url": "https://smard.de/app",
             "protocol": "smard",
             "filter": 9999,  # Invalid filter ID
             "region": "DE",
@@ -264,7 +264,7 @@ fail_nodes = (
     (
         {
             "name": "Serv.SmardNode",
-            "url": "https://smard.api.proxy.bund.dev/app",
+            "url": "https://smard.de/app",
             "protocol": "smard",
             "filter": 4068,  # solar
             "region": "INVALID",  # Invalid region
@@ -275,7 +275,7 @@ fail_nodes = (
     (
         {
             "name": "Serv.SmardNode",
-            "url": "https://smard.api.proxy.bund.dev/app",
+            "url": "https://smard.de/app",
             "protocol": "smard",
             "filter": 4068,  # solar
             "region": "DE",
@@ -286,7 +286,7 @@ fail_nodes = (
     (
         {
             "name": "Serv.SmardNode",
-            "url": "https://smard.api.proxy.bund.dev/app",
+            "url": "https://smard.de/app",
             "protocol": "smard",
             "filter": 410,  # total_load (power consumption filter)
             "region": "AT",  # Power consumption not available for AT
@@ -297,7 +297,7 @@ fail_nodes = (
     (
         {
             "name": "Serv.SmardNode",
-            "url": "https://smard.api.proxy.bund.dev/app",
+            "url": "https://smard.de/app",
             "protocol": "smard",
             "filter": 4359,  # residual_load (power consumption filter)
             "region": "LU",  # Power consumption not available for LU
@@ -713,7 +713,7 @@ nodes = (
     (
         {
             "name": "Serv.SmardSolar",
-            "url": "https://smard.api.proxy.bund.dev/app",
+            "url": "https://smard.de/app",
             "protocol": "smard",
             "filter": 4068,  # solar
             "region": "DE",
@@ -721,7 +721,7 @@ nodes = (
         },
         {
             "name": "Serv.SmardSolar",
-            "url": "https://smard.api.proxy.bund.dev/app",
+            "url": "https://smard.de/app",
             "protocol": "smard",
             "filter": 4068,
             "region": "DE",
@@ -731,7 +731,7 @@ nodes = (
     (
         {
             "name": "Serv.SmardWind",
-            "url": "https://smard.api.proxy.bund.dev/app",
+            "url": "https://smard.de/app",
             "protocol": "smard",
             "filter": 4067,  # wind_onshore
             "region": "50Hertz",
@@ -739,7 +739,7 @@ nodes = (
         },
         {
             "name": "Serv.SmardWind",
-            "url": "https://smard.api.proxy.bund.dev/app",
+            "url": "https://smard.de/app",
             "protocol": "smard",
             "filter": 4067,
             "region": "50Hertz",
@@ -749,7 +749,7 @@ nodes = (
     (
         {
             "name": "Serv.SmardLoad",
-            "url": "https://smard.api.proxy.bund.dev/app",
+            "url": "https://smard.de/app",
             "protocol": "smard",
             "filter": 410,  # total_load
             "region": "DE",  # Power consumption available for DE
@@ -757,7 +757,7 @@ nodes = (
         },
         {
             "name": "Serv.SmardLoad",
-            "url": "https://smard.api.proxy.bund.dev/app",
+            "url": "https://smard.de/app",
             "protocol": "smard",
             "filter": 410,
             "region": "DE",
@@ -767,7 +767,7 @@ nodes = (
     (
         {
             "name": "Serv.SmardPrice",
-            "url": "https://smard.api.proxy.bund.dev/app",
+            "url": "https://smard.de/app",
             "protocol": "smard",
             "filter": 4169,  # de_lu market price
             "region": "DE-LU",
@@ -775,7 +775,7 @@ nodes = (
         },
         {
             "name": "Serv.SmardPrice",
-            "url": "https://smard.api.proxy.bund.dev/app",
+            "url": "https://smard.de/app",
             "protocol": "smard",
             "filter": 4169,
             "region": "DE-LU",
@@ -785,7 +785,7 @@ nodes = (
     (
         {
             "name": "Serv.SmardForecast",
-            "url": "https://smard.api.proxy.bund.dev/app",
+            "url": "https://smard.de/app",
             "protocol": "smard",
             "filter": 125,  # solar_forecast
             "region": "DE",
@@ -794,7 +794,7 @@ nodes = (
         },
         {
             "name": "Serv.SmardForecast",
-            "url": "https://smard.api.proxy.bund.dev/app",
+            "url": "https://smard.de/app",
             "protocol": "smard",
             "filter": 125,
             "region": "DE",

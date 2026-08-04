@@ -29,7 +29,7 @@ class SmardConnection(
     Provides access to German electricity market data including power generation by source,
     consumption, market prices, and generation forecasts. No authentication required.
 
-    :param url: Base URL (default: https://smard.api.proxy.bund.dev/app)
+    :param url: Base URL (default: https://smard.de/app)
     :param nodes: Nodes to select in connection
 
     For detailed documentation including available filters, regions, time resolutions, and usage examples,
@@ -40,7 +40,7 @@ class SmardConnection(
 
     def __init__(
         self,
-        url: str = "https://smard.api.proxy.bund.dev/app",
+        url: str = "https://smard.de/app",
         *,
         nodes: Nodes[SmardNode] | None = None,
     ) -> None:
@@ -227,6 +227,30 @@ class SmardConnection(
         valid = [ts for ts in available_timestamps if ts >= target_ms]
         return min(valid) if valid else None
 
+    def _collect_chunk_timestamps(
+        self,
+        available_timestamps: list[int],
+        from_time: datetime,
+        to_time: datetime,
+    ) -> list[int]:
+        """Collect all needed chunk-timestamps for the requested time interval.
+        This is needed, because SMARD-API only delivers data chunk-wize.
+        """
+
+        from_time_ms = self._datetime_to_timestamp_ms(from_time)
+        to_time_ms = self._datetime_to_timestamp_ms(to_time)
+        start_timestamp = self._find_closest_timestamp(from_time_ms, available_timestamps, direction="before")
+        end_timestamp = self._find_closest_timestamp(to_time_ms, available_timestamps, direction="before")
+
+        if start_timestamp is None:
+            self.logger.warning("[SMARD] Could not find given start-timestamp in available timestamps")
+            return []
+        if end_timestamp is None:
+            self.logger.warning("[SMARD] Could not find given end-timestamp in available timestamps")
+            return []
+
+        return [ts for ts in available_timestamps if ts is not None and start_timestamp <= ts <= end_timestamp]
+
     def read_node(
         self,
         node: SmardNode,
@@ -239,8 +263,8 @@ class SmardConnection(
 
         Due to SMARD API design, we need to:
         1. Get available timestamps from index endpoint
-        2. Find appropriate starting timestamp for our time range
-        3. Request time series data from that timestamp
+        2. Find all appropriate chunk starting timestamps
+        3. Request time series data from all chunks
 
         :param node: Node to read from
         :param from_time: Start of the time series (timezone-aware).
@@ -252,7 +276,6 @@ class SmardConnection(
 
         # Get available timestamps
         available_timestamps = self._get_available_timestamps(node)
-
         if not available_timestamps:
             self.logger.warning(f"[SMARD] No available timestamps for {node.name}")
             return pd.DataFrame(columns=[node.name], index=pd.DatetimeIndex([], name="Time (with timezone)"))
@@ -265,20 +288,29 @@ class SmardConnection(
             self.logger.warning(f"[SMARD] No data available before {from_time} for {node.name}")
             return pd.DataFrame(columns=[node.name], index=pd.DatetimeIndex([], name="Time (with timezone)"))
 
-        # Build time series URL (note the duplicate parameters - API design quirk)
-        request_url = (
-            f"{self.url}/chart_data/{node.filter}/{node.region}/"
-            f"{node.filter}_{node.region}_{node.resolution}_{start_timestamp}.json"
-        )
+        chunk_timestamps = self._collect_chunk_timestamps(available_timestamps, from_time, to_time)
+        chunk_results = []
+        for chunk_begin_ts in chunk_timestamps:
+            # Build time series URL (note the duplicate parameters - API design quirk)
+            request_url = (
+                f"{self.url}/chart_data/{node.filter}/{node.region}/"
+                f"{node.filter}_{node.region}_{node.resolution}_{chunk_begin_ts}.json"
+            )
 
-        # Delegate to base class for actual request and DataFrame creation
-        result = super()._read_node(node, request_url)
+            # Delegate to base class for actual request and DataFrame creation
+            chunk_result = super()._read_node(node, request_url)
 
-        # Filter to requested time range
-        if not result.empty:
-            result = result.loc[from_time:to_time]
+            # Filter to requested time range
+            if not chunk_result.empty:
+                chunk_results.append(chunk_result)
 
-        return result
+        if not chunk_results:
+            return pd.DataFrame(columns=[node.name], index=pd.DatetimeIndex([], name="Time (with timezone)"))
+
+        # Merge Chunk-Results into single Df
+        result = pd.concat(chunk_results)
+        # Filter down to requested time-range
+        return result.loc[from_time:to_time]
 
     def read_series(
         self,

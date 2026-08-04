@@ -15,7 +15,7 @@ def solar_node():
     """Create a test node for solar power."""
     return SmardNode(
         name="solar_test",
-        url="https://smard.api.proxy.bund.dev/app",
+        url="https://smard.de/app",
         protocol="smard",
         filter=4068,  # Photovoltaik
         region="DE",
@@ -28,7 +28,7 @@ def solar_node_daily():
     """Create a test node for solar power with daily resolution."""
     return SmardNode(
         name="solar_daily",
-        url="https://smard.api.proxy.bund.dev/app",
+        url="https://smard.de/app",
         protocol="smard",
         filter=4068,  # Photovoltaik
         region="DE",
@@ -47,7 +47,7 @@ def test_node_creation():
     # Test with filter ID
     node1 = SmardNode(
         name="solar",
-        url="https://smard.api.proxy.bund.dev/app",
+        url="https://smard.de/app",
         protocol="smard",
         filter=4068,
         region="DE",
@@ -58,7 +58,7 @@ def test_node_creation():
     # Test with different resolution
     node2 = SmardNode(
         name="wind",
-        url="https://smard.api.proxy.bund.dev/app",
+        url="https://smard.de/app",
         protocol="smard",
         filter=4067,
         region="50Hertz",
@@ -73,7 +73,7 @@ def test_node_validation():
     with pytest.raises(ValueError, match="Invalid filter"):
         SmardNode(
             name="invalid",
-            url="https://smard.api.proxy.bund.dev/app",
+            url="https://smard.de/app",
             protocol="smard",
             filter=99999,
             region="DE",
@@ -83,7 +83,7 @@ def test_node_validation():
     with pytest.raises(ValueError, match="'region' must be in"):
         SmardNode(
             name="invalid",
-            url="https://smard.api.proxy.bund.dev/app",
+            url="https://d.dev/app",
             protocol="smard",
             filter=4068,
             region="INVALID",
@@ -93,7 +93,7 @@ def test_node_validation():
     with pytest.raises(ValueError, match="'resolution' must be in"):
         SmardNode(
             name="invalid",
-            url="https://smard.api.proxy.bund.dev/app",
+            url="https://smard.de/app",
             protocol="smard",
             filter=4068,
             region="DE",
@@ -105,7 +105,7 @@ def test_node_from_dict():
     """Test creating node from dictionary."""
     config = {
         "name": "solar_de",
-        "url": "https://smard.api.proxy.bund.dev/app",
+        "url": "https://smard.de/app",
         "protocol": "smard",
         "filter": "solar",  # Test string filter name
         "region": "DE",
@@ -120,7 +120,7 @@ def test_node_from_dict():
 
 def test_connection_initialization(connection: SmardConnection):
     """Test connection creation."""
-    assert connection.url == "https://smard.api.proxy.bund.dev/app"
+    assert connection.url == "https://smard.de/app"
     assert len(connection.selected_nodes) == 1
     assert connection.authentication is None  # No auth needed
 
@@ -154,7 +154,7 @@ def test_read_series_integration(connection: SmardConnection, solar_node: SmardN
     )
 
     assert isinstance(result, pd.DataFrame)
-    assert result.shape == (8, 1)
+    assert result.shape == (48, 1)
     assert solar_node.name in result.columns
     assert result.index.name == "Time (with timezone)"
     assert len(result) > 0
@@ -167,7 +167,7 @@ def test_multiple_nodes_integration():
     nodes = [
         SmardNode(
             name="solar",
-            url="https://smard.api.proxy.bund.dev/app",
+            url="https://smard.de/app",
             protocol="smard",
             filter=4068,
             region="DE",
@@ -175,7 +175,7 @@ def test_multiple_nodes_integration():
         ),
         SmardNode(
             name="wind_onshore",
-            url="https://smard.api.proxy.bund.dev/app",
+            url="https://smard.de/app",
             protocol="smard",
             filter=4067,
             region="DE",
@@ -206,3 +206,42 @@ def test_get_filter_name():
     assert SmardNode.get_filter_name(4068) == "solar"
     assert SmardNode.get_filter_name(4067) == "wind_onshore"
     assert SmardNode.get_filter_name(99999) is None
+
+
+def test_correct_result_size(connection, solar_node, solar_node_daily):
+    """Tests if for long time deltas (larger than SMARD-API provided chunks),
+    the correct requested chunk size is returned."""
+    to_time = datetime(2026, 1, 11, 14, 19, 0, tzinfo=UTC)
+    from_time = to_time - timedelta(days=14)
+
+    hourly_result = connection.read_series(
+        from_time=from_time,
+        to_time=to_time,
+        nodes=solar_node,
+    )
+
+    to_time = datetime(2025, 11, 11, 14, 19, 0, tzinfo=UTC)
+    from_time = to_time - timedelta(days=365)
+    day_result = connection.read_series(
+        from_time=from_time,
+        to_time=to_time,
+        nodes=solar_node_daily,
+    )
+    assert len(hourly_result) == 14 * 24
+    assert len(day_result) == 365
+
+
+def test_read_node_returns_empty_dataframe_when_chunk_responses_are_empty(monkeypatch, connection, solar_node):
+    """All-empty chunk responses should not fail during concatenation."""
+    from_time = datetime(2026, 1, 2, tzinfo=UTC)
+    to_time = from_time + timedelta(days=1)
+    available_timestamps = [int(datetime(2026, 1, 1, tzinfo=UTC).timestamp() * 1000)]
+
+    monkeypatch.setattr(connection, "_get_available_timestamps", lambda node: available_timestamps)
+    monkeypatch.setattr(connection, "_raw_request", lambda method, url, params=None: None)
+
+    result = connection.read_node(solar_node, from_time, to_time, timedelta(hours=1))
+
+    assert result.empty
+    assert list(result.columns) == [solar_node.name]
+    assert result.index.name == "Time (with timezone)"
