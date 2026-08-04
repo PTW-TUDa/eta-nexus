@@ -1,9 +1,10 @@
+import inspect
 from datetime import UTC, datetime, timedelta
 
 import pytest
 from dateutil import tz
 
-from eta_nexus.connections import WetterdienstConnection
+from eta_nexus.connections import WetterdienstConnection, WetterdienstPredictionConnection
 from eta_nexus.nodes import Node
 
 pred_nodes = [
@@ -56,6 +57,11 @@ obsv_nodes = [
 
 
 class TestWetterdienstConnection:
+    def test_prediction_default_interval(self):
+        parameters = inspect.signature(WetterdienstPredictionConnection.read_series).parameters
+
+        assert parameters["interval"].default == 3600
+
     @pytest.mark.xfail(reason="The Wetterdienst API is unstable.")
     @pytest.mark.timeout(60)
     def test_observation(self):
