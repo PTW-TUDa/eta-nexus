@@ -12,7 +12,6 @@ def main() -> None:
 
 def read_series() -> pd.DataFrame:
     # --begin_wetterdienst_doc_example--
-
     # Construct a node with the necessary information to request data from the Wetterdienst API
     node = (
         WetterdienstNode(  # type: ignore[abstract]

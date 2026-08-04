@@ -76,5 +76,6 @@ Example Usage
 -------------
 
 .. literalinclude:: ../../examples/connections/read_influx.py
-   :language: python
-   :linenos:
+    :start-after: --begin_influx_doc_example--
+    :end-before: --end_influx_doc_example--
+    :dedent:

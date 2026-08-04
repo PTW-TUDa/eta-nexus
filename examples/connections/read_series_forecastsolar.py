@@ -35,7 +35,6 @@ def read_series() -> pd.DataFrame:
 
     # --end_forecast_solar_doc_example1--
     # --begin_forecast_solar_doc_example2--
-
     # ------------------------------
     # Node with api key and multiple planes:
     # ------------------------------
