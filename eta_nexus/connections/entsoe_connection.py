@@ -53,11 +53,10 @@ class EntsoeConnection(RESTConnection[EntsoeNode], SeriesReadable[EntsoeNode], p
         nodes: Nodes[EntsoeNode] | None = None,
         retry_total: int = 3,
         retry_backoff_factor: float = 1.0,
+        **kwargs: Any,
     ) -> None:
         url = url.rstrip("/") + "/" + self.API_PATH
-        super().__init__(
-            url, None, None, nodes=nodes, retry_total=retry_total, retry_backoff_factor=retry_backoff_factor
-        )
+        super().__init__(url, nodes=nodes, retry_total=retry_total, retry_backoff_factor=retry_backoff_factor, **kwargs)
 
         if self._api_token is None:
             raise ValueError("ENTSOE_API_TOKEN environment variable is not set.")
@@ -85,7 +84,7 @@ class EntsoeConnection(RESTConnection[EntsoeNode], SeriesReadable[EntsoeNode], p
         :return: ENTSOEConnection object
         """
 
-        return super()._from_node(node)
+        return super()._from_node(node, **kwargs)
 
     def _handle_xml(self, xml_content: bytes) -> dict[str, dict[str, list[pd.Series]]]:
         """Transform XML data from request response into dictionary containing resolutions and time series for the node.
