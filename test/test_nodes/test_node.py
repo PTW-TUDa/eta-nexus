@@ -164,7 +164,7 @@ fail_nodes = (
             "azimuth": 0,
             "kwp": 0.0,
         },
-        "'longitude' must be >= -180: -200",
+        "'longitude' must be >= -180.0: -200.0",
     ),
     (
         {
@@ -624,7 +624,7 @@ nodes = (
         },
         {
             "name": "Serv.SolarForecast",
-            "url": "https://api.forecast.solar/clearsky/watts/0/0/0/0/0.0",
+            "url": "https://api.forecast.solar/clearsky/watts/0.0/0.0/0/0/0.0",
             "protocol": "forecast_solar",
             "endpoint": "clearsky",
             "data": "watts",
@@ -648,7 +648,7 @@ nodes = (
         },
         {
             "name": "Serv.SolarForecast",
-            "url": "https://api.forecast.solar/estimate/watts/9/8/0/0/0.0/1/1/1.0/2/2/2.0",
+            "url": "https://api.forecast.solar/estimate/watts/9.0/8.0/0/0/0.0/1/1/1.0/2/2/2.0",
             "protocol": "forecast_solar",
             "endpoint": "estimate",
             "latitude": 9,
@@ -673,7 +673,7 @@ nodes = (
         },
         {
             "name": "Serv.SolarForecast",
-            "url": "https://api.forecast.solar/estimate/watts/9/8/1/2/3.0",
+            "url": "https://api.forecast.solar/estimate/watts/9.0/8.0/1/2/3.0",
             "protocol": "forecast_solar",
             "endpoint": "estimate",
             "data": "watts",
@@ -698,7 +698,7 @@ nodes = (
         },
         {
             "name": "Serv.SolarForecast",
-            "url": "https://api.forecast.solar/history/watts/9/8/0/0/0.0/1/1/1.0/2/2/2.0",
+            "url": "https://api.forecast.solar/history/watts/9.0/8.0/0/0/0.0/1/1/1.0/2/2/2.0",
             "protocol": "forecast_solar",
             "endpoint": "history",
             "data": "watts",
