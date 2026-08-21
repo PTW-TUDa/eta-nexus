@@ -43,7 +43,7 @@ ForecastsolarNode
 Example Usage
 ----------------------------------------------------
 
-Simple node without API key:
+Simple node with optional API key:
 
 .. literalinclude:: ../../examples/connections/read_series_forecastsolar.py
     :start-after: --begin_forecast_solar_doc_example1--

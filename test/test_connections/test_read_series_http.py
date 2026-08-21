@@ -14,25 +14,31 @@ from eta_nexus.nodes import (
 )
 
 
-def test_forecastsolar_invalid_token_real_http_error(caplog):
+def test_forecastsolar_http_error_handled(caplog):
     node = ForecastsolarNode(
         name="Forecastsolar Node",
         url="https://api.forecast.solar",
         protocol="forecast_solar",
         latitude=49.86381,
         longitude=8.68105,
-        declination=[14, 23],
-        azimuth=[90, -90],
-        kwp=[23.31, 10.5],
+        declination=14,
+        azimuth=90,
+        kwp=23.31,
     )
 
-    conn = ForecastsolarConnection.from_node(node, api_token="A1B2C3D4E5F6G7H8")
+    conn = ForecastsolarConnection.from_node(node)
 
-    result = conn.read_series(
-        from_time=datetime(2024, 5, 7), to_time=datetime(2024, 5, 7, 1), interval=timedelta(minutes=15)
-    )
+    mock_response = MagicMock()
+    mock_response.raise_for_status.side_effect = HTTPError("401 Client Error: Unauthorized")
+    mock_response.status_code = 401
+
+    with patch.object(conn.session, "request", return_value=mock_response):
+        result = conn.read_series(
+            from_time=datetime(2024, 5, 7), to_time=datetime(2024, 5, 7, 1), interval=timedelta(minutes=15)
+        )
+
     assert result is not None
-    assert "401" in caplog.text
+    assert "401 Client Error" in caplog.text
 
 
 def test_entsoe_http_error_handled(monkeypatch, caplog):

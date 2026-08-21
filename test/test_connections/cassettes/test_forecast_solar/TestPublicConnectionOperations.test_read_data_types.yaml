@@ -1,0 +1,58 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      User-Agent:
+      - python-requests/2.33.1
+    method: GET
+    uri: https://api.forecast.solar/estimate/watts/51.15/10.45/20/0/12.34?time=utc
+  response:
+    body:
+      string: '{"result":{"2026-06-29T03:06:03+00:00":0,"2026-06-29T04:00:00+00:00":314,"2026-06-29T05:00:00+00:00":703,"2026-06-29T06:00:00+00:00":1128,"2026-06-29T07:00:00+00:00":1542,"2026-06-29T08:00:00+00:00":1916,"2026-06-29T09:00:00+00:00":2209,"2026-06-29T10:00:00+00:00":2420,"2026-06-29T11:00:00+00:00":2557,"2026-06-29T12:00:00+00:00":2516,"2026-06-29T13:00:00+00:00":2307,"2026-06-29T14:00:00+00:00":2020,"2026-06-29T15:00:00+00:00":1662,"2026-06-29T16:00:00+00:00":1251,"2026-06-29T17:00:00+00:00":817,"2026-06-29T18:00:00+00:00":408,"2026-06-29T19:00:00+00:00":117,"2026-06-29T19:37:22+00:00":0,"2026-06-30T03:06:40+00:00":0,"2026-06-30T04:00:00+00:00":338,"2026-06-30T05:00:00+00:00":950,"2026-06-30T06:00:00+00:00":1975,"2026-06-30T07:00:00+00:00":3169,"2026-06-30T08:00:00+00:00":3896,"2026-06-30T09:00:00+00:00":3647,"2026-06-30T10:00:00+00:00":3314,"2026-06-30T11:00:00+00:00":3418,"2026-06-30T12:00:00+00:00":4207,"2026-06-30T13:00:00+00:00":4197,"2026-06-30T14:00:00+00:00":3374,"2026-06-30T15:00:00+00:00":2235,"2026-06-30T16:00:00+00:00":1395,"2026-06-30T17:00:00+00:00":864,"2026-06-30T18:00:00+00:00":411,"2026-06-30T19:00:00+00:00":185,"2026-06-30T19:37:08+00:00":0},"message":{"code":0,"type":"success","text":"","pid":"g23zye5s","info":{"latitude":51.15,"longitude":10.45,"distance":0,"place":"Niederdorla,
+        Vogtei, Unstrut-Hainich-Kreis, Thüringen, Deutschland","timezone":"Europe/Berlin","time":"2026-06-29T22:45:43+02:00","time_utc":"2026-06-29T20:45:43+00:00"},"ratelimit":{"zone":"IP
+        84.133.57.116","period":3600,"limit":12,"remaining":6}}}'
+    headers:
+      Access-Control-Allow-Headers:
+      - Origin,Content-Type,Authorization,X-Requested-With,X-Delimiter,X-Separator,X-No-Cache
+      Access-Control-Allow-Methods:
+      - OPTIONS,HEAD,GET,POST
+      Access-Control-Allow-Origin:
+      - '*'
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Mon, 29 Jun 2026 20:45:43 GMT
+      Keep-Alive:
+      - timeout=60
+      Server:
+      - nginx
+      Transfer-Encoding:
+      - chunked
+      X-Pid:
+      - g23zye5s
+      X-Process-Time:
+      - 36 ms
+      X-Ratelimit-Limit:
+      - '12'
+      X-Ratelimit-Period:
+      - '3600'
+      X-Ratelimit-Remaining:
+      - '6'
+      X-Version:
+      - v7.38.2.2502
+    status:
+      code: 200
+      message: OK
+version: 1

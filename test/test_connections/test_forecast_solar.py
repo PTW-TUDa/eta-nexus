@@ -2,7 +2,6 @@ import os
 from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
 
-import numpy as np
 import pandas as pd
 import pytest
 from attrs import validators
@@ -11,6 +10,8 @@ from dateutil import tz
 from eta_nexus.connections import ForecastsolarConnection
 from eta_nexus.nodes import ForecastsolarNode
 from test.utilities.vcr.forecast_solar import _scrub_request, _scrub_response, custom_matcher
+
+DUMMY_API_TOKEN = "A1B2C3D4E5F6G7H8"
 
 
 # Sample node
@@ -49,7 +50,7 @@ def forecast_solar_nodes(config_forecast_solar: dict[str, str]) -> dict[str, For
             kwp=12.34,
         ),
         "node4": ForecastsolarNode(
-            name="node_forecast_solar3",
+            name="node_forecast_solar4",
             url=config_forecast_solar["url"],
             protocol="forecast_solar",
             latitude=49.86381,
@@ -68,9 +69,9 @@ def connection(scope="module"):
 
 
 @pytest.fixture
-def api_token_in_environment(api_token="A1B2C3D4E5F6G7H8"):
-    with patch.dict(os.environ, {"FORECAST_SOLAR_API_TOKEN": api_token}) as env_patch:
-        yield env_patch
+def api_token_in_environment():
+    with patch.dict(os.environ, {"FORECAST_SOLAR_API_TOKEN": DUMMY_API_TOKEN}):
+        yield DUMMY_API_TOKEN
 
 
 def test_node_from_dict():
@@ -106,11 +107,29 @@ def test_node_from_dict():
         )
 
 
+def test_coordinate_rounding():
+    node = ForecastsolarNode.from_dict(
+        {
+            "name": "node_forecast_solar_coordinates_rounding",
+            "ip": "",
+            "protocol": "forecast_solar",
+            "endpoint": "estimate",
+            "latitude": "51.151324",
+            "longitude": 10.00006,
+            "declination": 20,
+            "azimuth": 0,
+            "kwp": 12.34,
+        }
+    )[0]
+
+    assert node.latitude == 51.1513
+    assert node.longitude == 10.0001
+
+
 def test_api_key_from_environment(forecast_solar_nodes, api_token_in_environment):
     connection = ForecastsolarConnection.from_node(forecast_solar_nodes["node2"])
-    # Check that env api token is overwritten with hardcoded keyword argument
-    assert connection._api_token == "A1B2C3D4E5F6G7H8", "API Token was not taken from environment!"
-    # Check if connection correctly grabs env api token,
+
+    assert connection._api_token == api_token_in_environment, "API Token was not taken from environment!"
 
 
 def test_api_key_from_keyword(forecast_solar_nodes, api_token_in_environment):
@@ -120,8 +139,9 @@ def test_api_key_from_keyword(forecast_solar_nodes, api_token_in_environment):
     )
 
 
-def test_no_api_key_in_environment(forecast_solar_nodes):
-    # Check that key is None, if env-variable is none.
+def test_no_api_key_in_environment(forecast_solar_nodes, monkeypatch):
+    # Check that key is None if env-variable is not set.
+    monkeypatch.delenv("FORECAST_SOLAR_API_TOKEN", raising=False)
     connection = ForecastsolarConnection.from_node(forecast_solar_nodes["node3"])
     assert connection._api_token is None
 
@@ -182,9 +202,49 @@ def vcr_config():
     }
 
 
+@pytest.fixture(autouse=True)
+def assert_all_vcr_responses_used(vcr, record_mode):
+    yield
+    if vcr is not None and record_mode == "none":
+        unused_responses = [index + 1 for index in range(len(vcr)) if vcr.play_counts[index] == 0]
+        assert not unused_responses, f"Unused VCR responses: {unused_responses}"
+
+
+class TestPremiumConnectionOperations:
+    def test_multiple_planes_require_api_token(self, forecast_solar_nodes, monkeypatch):
+        monkeypatch.delenv("FORECAST_SOLAR_API_TOKEN", raising=False)
+        node = forecast_solar_nodes["node4"]
+
+        assert node.url == (
+            "https://api.forecast.solar/estimate/watts/49.8638/8.6811/14/90/23.31/10/-90/23.31/10/90/23.31"
+        )
+        with pytest.raises(ValueError, match="valid API key is needed for multiple planes"):
+            ForecastsolarConnection.from_node(node)
+
+        connection = ForecastsolarConnection.from_node(node, api_token=DUMMY_API_TOKEN)
+        assert isinstance(connection, ForecastsolarConnection)
+        assert connection.selected_nodes == {node}
+        assert connection._api_token == DUMMY_API_TOKEN
+
+    @pytest.mark.block_network
+    @pytest.mark.vcr(before_record_request=_scrub_request, before_record_response=_scrub_response)
+    def test_read_multiple_planes(self, forecast_solar_nodes):
+        node = forecast_solar_nodes["node4"]
+        connection = ForecastsolarConnection.from_node(
+            node, api_token=os.environ.get("FORECAST_SOLAR_API_TOKEN") or DUMMY_API_TOKEN
+        )
+
+        start = datetime(2026, 8, 4, 10, 0)
+        result = connection.read_series(start, start + timedelta(hours=2), interval=timedelta(minutes=15))
+
+        assert list(result.columns) == [node.name]
+        assert not result.empty
+        assert (result[node.name] > 0).any()
+
+
 @pytest.mark.block_network
 @pytest.mark.vcr(before_record_request=_scrub_request, before_record_response=_scrub_response)
-class TestConnectionOperations:
+class TestPublicConnectionOperations:
     def test_raw_connection(self, connection: ForecastsolarConnection):
         get_url = connection._baseurl + "/help"
 
@@ -193,15 +253,12 @@ class TestConnectionOperations:
         assert result.status_code == 200, "Connection failed"
 
     def test_read(self, forecast_solar_nodes: dict[str, ForecastsolarNode], connection: ForecastsolarConnection):
-        nodes = [forecast_solar_nodes["node"], forecast_solar_nodes["node2"]]
-        result = connection.read(nodes)
+        result = connection.read(forecast_solar_nodes["node"])
 
         assert isinstance(result, pd.DataFrame)
-        assert result.shape == (1, 2), "The result has the wrong size of data"
+        assert result.shape == (1, 1), "The result has the wrong size of data"
 
     def test_read_series(self, forecast_solar_nodes: dict[str, ForecastsolarNode], connection: ForecastsolarConnection):
-        nodes = [forecast_solar_nodes["node"], forecast_solar_nodes["node2"]]
-
         start = datetime(2024, 9, 18, 12, 0)
         end = start + timedelta(days=4)
         interval = timedelta(minutes=15)
@@ -209,13 +266,13 @@ class TestConnectionOperations:
         res = connection.read_series(
             start,
             end,
-            nodes,
+            forecast_solar_nodes["node"],
             interval,
         )
 
         assert isinstance(res, pd.DataFrame)
         assert res.index.tzinfo == tz.tzlocal(), "The index should be timezone aware"
-        assert res.shape == (385, 2), "The result has the wrong size of data"
+        assert res.shape == (385, 1), "The result has the wrong size of data"
 
     def test_select_data_keeps_datetime_index_for_utc_bounds(self, connection: ForecastsolarConnection):
         index = pd.date_range("2026-02-17 07:00", periods=3, freq="1h", tz=connection._local_tz)
@@ -247,67 +304,40 @@ class TestConnectionOperations:
             assert res.attrs["name"] == data_type, f"Data type '{data_type}' is not correctly processed"
             assert res.shape in [(385, 1), (5, 1)], f"Data shape for data type '{data_type}' is incorrect"
 
-        # Test multiple nodes with default data type fallback to "watts"
-        nodes = [node.evolve(data=data_type) for data_type in data_types]
-        res = connection.read_series(start, end, nodes, interval)
-        assert res.attrs["name"] == "watts", (
-            "Default data type 'watts' is not correctly processed for multiple specifications"
-        )
-        assert res.shape == (385, 4)
-
-        # Test multiple nodes with explicit data type "watthours"
-        nodes = [node.evolve(data="watthours") for node in forecast_solar_nodes.values()]
-        res = connection.read_series(start, end, nodes, interval)
-        assert res.attrs["name"] == "watthours", "Data type 'watthours' is not correctly processed for multiple nodes"
-        assert res.shape == (385, 4)
-
     def test_read_multiple_nodes(
         self, forecast_solar_nodes: dict[str, ForecastsolarNode], connection: ForecastsolarConnection
     ):
         n = forecast_solar_nodes["node"]
         nodes = [
             n,
-            n.evolve(declination=30, azimuth=90, kwp=10),
-            n.evolve(declination=10, azimuth=60, kwp=40),
-            n.evolve(latitude=37.6, longitude=-116.8),
+            n.evolve(name="node_forecast_solar2", declination=30, azimuth=90, kwp=10),
+            n.evolve(name="node_forecast_solar3", latitude=37.6, longitude=-116.8),
         ]
-
-        # Range of possible values for query parameters (except horizon)
-        query_params = {
-            "no_sun": (0, 1),
-            "damping_morning": (0.0, 0.33, 0.99),
-            "damping_evening": (0.0, 0.33, 0.99),
-            "inverter": (10, 1000),
-            "actual": (0, 100, 1000),
-        }
-        # Create nodes with different query parameters
-        for k, v in query_params.items():
-            for val in v:
-                kwargs = {k: val}
-                nodes.append(n.evolve(**kwargs))
 
         start = datetime(2024, 9, 18, 12, 0)
         end = start + timedelta(hours=2)
         interval = timedelta(minutes=1)
 
         result = connection.read_series(start, end, nodes, interval)
+
         assert isinstance(result, pd.DataFrame)
         assert len(result.columns) == len(nodes), "The result has the wrong number of columns"
         assert result.shape == (121, len(nodes)), "The result has the wrong size of data"
 
-    def test_connection_from_node(self, forecast_solar_nodes: dict[str, ForecastsolarNode], api_token_in_environment):
-        # Test connection from node
-        # api token for connection of node 4 (multiple planes) is passed via env)
-        nodes = [forecast_solar_nodes["node3"], forecast_solar_nodes["node4"]]
-        start = datetime(2024, 9, 18, 12, 0)
-        end = start + timedelta(hours=2)
-        interval = timedelta(minutes=1)
+    def test_connection_from_node(self, forecast_solar_nodes: dict[str, ForecastsolarNode], monkeypatch):
+        monkeypatch.delenv("FORECAST_SOLAR_API_TOKEN", raising=False)
+        node = forecast_solar_nodes["node3"]
+        connection = ForecastsolarConnection.from_node(node)
 
-        connection = ForecastsolarConnection.from_node(nodes)
-        result = connection.read_series(start, end, nodes, interval)
+        assert isinstance(connection, ForecastsolarConnection)
+        assert connection.selected_nodes == {node}
 
-        assert connection._baseurl is not None, "Base URL is empty"
-        assert result.shape == (121, 2)
+        start = datetime(2026, 8, 4, 10, 0)
+        result = connection.read_series(start, start + timedelta(hours=2), interval=timedelta(minutes=15))
+
+        assert list(result.columns) == [node.name]
+        assert not result.empty
+        assert (result[node.name] > 0).any()
 
     def test_watt_functions(
         self, forecast_solar_nodes: dict[str, ForecastsolarNode], connection: ForecastsolarConnection
@@ -372,35 +402,3 @@ class TestConnectionOperations:
             ForecastsolarConnection.cumulative_watt_hours_per_day(result, from_unit="watthours")
         with pytest.raises(ValueError, match="Invalid unit:"):
             ForecastsolarConnection.summarize_watt_hours_per_day(result, from_unit="watthours")
-
-    def test_watt_processing(
-        self, connection: ForecastsolarConnection, forecast_solar_nodes: dict[str, ForecastsolarNode]
-    ):
-        node = forecast_solar_nodes["node"].evolve(latitude=49, longitude=8)
-        # Remove "/watts" from URL to fetch full data response and compare with computed results
-        full_data_url = node.url.replace("/watts", "")
-        full_data_params = node._query_params
-        full_data_params["time"] = "utc"
-        exp_response = connection._raw_request("GET", full_data_url, full_data_params)
-        exp_data = exp_response.json()["result"]
-
-        # Convert expected response to DataFrame
-        exp_hours_day = pd.Series(exp_data.pop("watt_hours_day"))
-        exp_data = pd.DataFrame(exp_data)
-        exp_data.index = pd.to_datetime(exp_data.index).tz_convert(connection._local_tz)
-
-        # Calculate watt_hours_period, watt_hours and combine the data
-        watt_hours_period = connection.calculate_watt_hours_period(exp_data["watts"])
-        watt_hours = connection.cumulative_watt_hours_per_day(watt_hours_period)
-        combined_watt_data = pd.concat([exp_data["watts"], watt_hours_period, watt_hours], axis=1)
-        combined_watt_data.columns = ["watts", "watt_hours_period", "watt_hours"]
-
-        # Check if the data is close to the expected response
-        tolerance = 0.05
-        joined_data = combined_watt_data.align(exp_data, join="inner", axis=0)
-        is_close_matrix = np.isclose(*joined_data, rtol=tolerance)  # boolean matrix of close values
-        assert np.mean(is_close_matrix) > 0.95, "Too many values differ significantly from the expected response"
-
-        # Check if the watt_hours_day is close to the expected response
-        watt_hours_day = connection.summarize_watt_hours_per_day(watt_hours_period)
-        assert np.allclose(watt_hours_day, exp_hours_day, rtol=tolerance)

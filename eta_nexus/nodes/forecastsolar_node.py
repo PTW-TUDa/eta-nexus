@@ -64,6 +64,24 @@ def _check_plane(_type: TypeAlias, lower: int, upper: int) -> Callable:
     return validator
 
 
+def _coordinate_converter(value: Any, field: attrs.Attribute) -> float:
+    """Convert a coordinate to float and round it to the API precision."""
+    try:
+        coordinate = float(value)
+    except (TypeError, ValueError) as e:
+        raise ValueError(f"Could not convert value to {field.name} ({value}).") from e
+
+    rounded_coordinate = round(coordinate, 4)
+    if rounded_coordinate != coordinate:
+        log.warning(
+            "Forecast.Solar's '%s' only supports up to 4 decimals. Rounding %s to %s.",
+            field.name,
+            value,
+            rounded_coordinate,
+        )
+    return rounded_coordinate
+
+
 def _check_horizon(instance, attribute, value) -> None:  # type: ignore[no-untyped-def]
     """Attrs validator to check if horizon attribute corresponds to the API requirements."""
     if not isinstance(value, list) and value != 0:
@@ -149,9 +167,17 @@ class ForecastsolarNode(Node, protocol="forecast_solar", attrs_args=attrs_args):
         metadata={"QUERY_PARAM": False},
     )
     #: Latitude of plane location, -90 (south) … 90 (north); handled with a precision of 0.0001 or abt. 10 m
-    latitude: int = field(converter=int, validator=[vld.ge(-90), vld.le(90)], metadata={"QUERY_PARAM": False})
+    latitude: float = field(
+        converter=attrs.Converter(_coordinate_converter, takes_field=True),
+        validator=[vld.ge(-90.0), vld.le(90.0)],
+        metadata={"QUERY_PARAM": False},
+    )
     #: Longitude of plane location, -180 (west) … 180 (east); handled with a precision of 0.0001 or abt. 10 m
-    longitude: int = field(converter=int, validator=[vld.ge(-180), vld.le(180)], metadata={"QUERY_PARAM": False})
+    longitude: float = field(
+        converter=attrs.Converter(_coordinate_converter, takes_field=True),
+        validator=[vld.ge(-180.0), vld.le(180.0)],
+        metadata={"QUERY_PARAM": False},
+    )
     #: Plane declination, 0 (horizontal) … 90 (vertical) - always in relation to earth's surface; integer
     declination: int | list[int] = field(
         converter=_convert_list(int),

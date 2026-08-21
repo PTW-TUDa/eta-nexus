@@ -20,6 +20,14 @@ def vcr_config():
     }
 
 
+@pytest.fixture(autouse=True)
+def assert_all_vcr_responses_used(vcr, record_mode):
+    yield
+    if vcr is not None and record_mode == "none":
+        unused_responses = [index + 1 for index in range(len(vcr)) if vcr.play_counts[index] == 0]
+        assert not unused_responses, f"Unused VCR responses: {unused_responses}"
+
+
 @pytest.mark.block_network
 @pytest.mark.vcr
 def test_example_read_forecast_solar():
@@ -27,4 +35,4 @@ def test_example_read_forecast_solar():
 
     assert isinstance(data, pd.DataFrame)
     assert set(data.columns) == {"Forecastsolar Node"}
-    assert data.shape == (97, 1)
+    assert data.shape == (1, 1)

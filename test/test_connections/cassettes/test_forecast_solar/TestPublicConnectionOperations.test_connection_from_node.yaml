@@ -1,0 +1,58 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      User-Agent:
+      - python-requests/2.34.2
+    method: GET
+    uri: https://api.forecast.solar/estimate/watts/51.15/10.45/20/0/12.34?time=utc
+  response:
+    body:
+      string: "{\"result\":{\"2026-08-04T03:48:00+00:00\":0,\"2026-08-04T04:00:00+00:00\":198,\"2026-08-04T05:00:00+00:00\":582,\"2026-08-04T06:00:00+00:00\":1076,\"2026-08-04T07:00:00+00:00\":1564,\"2026-08-04T08:00:00+00:00\":2721,\"2026-08-04T09:00:00+00:00\":4538,\"2026-08-04T10:00:00+00:00\":4330,\"2026-08-04T11:00:00+00:00\":4303,\"2026-08-04T12:00:00+00:00\":6048,\"2026-08-04T13:00:00+00:00\":6186,\"2026-08-04T14:00:00+00:00\":5186,\"2026-08-04T15:00:00+00:00\":3790,\"2026-08-04T16:00:00+00:00\":2202,\"2026-08-04T17:00:00+00:00\":919,\"2026-08-04T18:00:00+00:00\":329,\"2026-08-04T19:00:00+00:00\":76,\"2026-08-04T19:00:38+00:00\":0,\"2026-08-05T03:49:31+00:00\":0,\"2026-08-05T04:00:00+00:00\":211,\"2026-08-05T05:00:00+00:00\":801,\"2026-08-05T06:00:00+00:00\":1919,\"2026-08-05T07:00:00+00:00\":3470,\"2026-08-05T08:00:00+00:00\":5170,\"2026-08-05T09:00:00+00:00\":6523,\"2026-08-05T10:00:00+00:00\":7040,\"2026-08-05T11:00:00+00:00\":6897,\"2026-08-05T12:00:00+00:00\":6269,\"2026-08-05T13:00:00+00:00\":5135,\"2026-08-05T14:00:00+00:00\":3781,\"2026-08-05T15:00:00+00:00\":2622,\"2026-08-05T16:00:00+00:00\":1700,\"2026-08-05T17:00:00+00:00\":879,\"2026-08-05T18:00:00+00:00\":437,\"2026-08-05T18:58:56+00:00\":0},\"message\":{\"code\":0,\"type\":\"success\",\"text\":\"\",\"pid\":\"56cv1U5Y\",\"info\":{\"latitude\":51.15,\"longitude\":10.45,\"distance\":0,\"place\":\"Niederdorla,
+        Vogtei, Unstrut-Hainich-Kreis, Th\xFCringen, Deutschland\",\"timezone\":\"Europe/Berlin\",\"time\":\"2026-08-04T18:58:04+02:00\",\"time_utc\":\"2026-08-04T16:58:04+00:00\"},\"ratelimit\":{\"zone\":\"IP
+        2001:41b8:83c:fa00:3574:b77e:cb38:da88\",\"period\":3600,\"limit\":12,\"remaining\":5}}}"
+    headers:
+      Access-Control-Allow-Headers:
+      - Origin,Content-Type,Authorization,X-Requested-With,X-Delimiter,X-Separator,X-No-Cache
+      Access-Control-Allow-Methods:
+      - OPTIONS,HEAD,GET,POST
+      Access-Control-Allow-Origin:
+      - '*'
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Tue, 04 Aug 2026 16:58:04 GMT
+      Keep-Alive:
+      - timeout=60
+      Server:
+      - nginx
+      Transfer-Encoding:
+      - chunked
+      X-Pid:
+      - 56cv1U5Y
+      X-Process-Time:
+      - 108 ms
+      X-Ratelimit-Limit:
+      - '12'
+      X-Ratelimit-Period:
+      - '3600'
+      X-Ratelimit-Remaining:
+      - '5'
+      X-Version:
+      - v7.39.0.2511
+    status:
+      code: 200
+      message: OK
+version: 1
